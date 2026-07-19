@@ -1,0 +1,183 @@
+package iTicket.Douglas.Usuarios.Controller;
+
+import iTicket.Douglas.Response.ApiResponse;
+import iTicket.Douglas.Usuarios.DTO.LoginDTO;
+import iTicket.Douglas.Usuarios.DTO.UsuarioDTO;
+import iTicket.Douglas.Usuarios.Service.UsuarioService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@Slf4j
+@RestController
+@RequestMapping("api/usuarios")
+@RequiredArgsConstructor
+public class UsuarioController {
+
+    private final UsuarioService service;
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<UsuarioDTO>> nuevoUsuario(@Valid @RequestBody UsuarioDTO json) {
+        try {
+            UsuarioDTO dto = service.nuevoUsuario(json);
+            if (dto != null) {
+                log.info("Nuevo usuario registrado " + dto);
+                ApiResponse<UsuarioDTO> respuestaExito = new ApiResponse<>(true, "Datos registrados exitosamente", dto);
+                return ResponseEntity.status(HttpStatus.CREATED).body(respuestaExito);
+            }
+            log.warn("Intento de insercion fallida " + json);
+            ApiResponse<UsuarioDTO> respuestaFallida = new ApiResponse<>(false, "Intento de insercion fallida");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuestaFallida);
+        } catch (Exception e) {
+            log.error("El proceso presentó un fallo inesperado contacte con el administrador");
+            e.printStackTrace();
+            ApiResponse<UsuarioDTO> respuestaFallida = new ApiResponse<>(false, "El proceso presentó un fallo inesperado contacte con el administrador");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaFallida);
+        }
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<UsuarioDTO>>> obtenerDatos(){
+        try {
+            List<UsuarioDTO> lista = service.obtenerTodo();
+            log.info("Datos de usuarios consultados");
+            ApiResponse<List<UsuarioDTO>> respuestaExito = new ApiResponse<>(true, "Datos encontrados", lista);
+            return ResponseEntity.ok(respuestaExito);
+        } catch (Exception e) {
+            log.error("No se pudieron obtener los datos de los usuarios");
+            e.printStackTrace();
+            ApiResponse<List<UsuarioDTO>> respuestaFallida = new ApiResponse<>(false, "No se pudieron obtener los datos de los usuarios");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaFallida);
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<UsuarioDTO>> obtenerDatosId(@PathVariable Long id) {
+        try {
+            UsuarioDTO dto = service.obtenerPorId(id);
+            if (dto != null) {
+                log.info("Se obtuvieron los datos del usuario con id " + id);
+                ApiResponse<UsuarioDTO> respuestaExitosa = new ApiResponse<>(true, "Se obtuvieron los datos del usuario con id " + id, dto);
+                return ResponseEntity.ok(respuestaExitosa);
+            }
+            log.warn("No se encontraron los datos del usuario con id " + id);
+            ApiResponse<UsuarioDTO> respuestaNoEncontrada = new ApiResponse<>(false, "Usuario no encontrado");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoEncontrada);
+        } catch (Exception e) {
+            log.error("Error crítico al obtener de usuario con id " + id);
+            e.printStackTrace();
+            ApiResponse<UsuarioDTO> respuestaError = new ApiResponse<>(false, "No se pudo obtener los datos del usuario");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
+        }
+    }
+
+    @GetMapping("/rol/{idRol}")
+    public ResponseEntity<ApiResponse<List<UsuarioDTO>>> obtenerPorRol(@PathVariable Long idRol) {
+        try {
+            List<UsuarioDTO> lista = service.obtenerPorRol(idRol);
+            log.info("Usuarios consultados por rol " + idRol);
+            ApiResponse<List<UsuarioDTO>> respuestaExito = new ApiResponse<>(true, "Usuarios consultados por rol " + idRol, lista);
+            return ResponseEntity.ok(respuestaExito);
+        } catch (Exception e) {
+            log.error("Error al consultar usuarios por rol " + idRol);
+            e.printStackTrace();
+            ApiResponse<List<UsuarioDTO>> respuestaFallida = new ApiResponse<>(false, "No se pudieron obtener los usuarios");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaFallida);
+        }
+    }
+
+    @GetMapping("/departamento/{idDepartamento}")
+    public ResponseEntity<ApiResponse<List<UsuarioDTO>>> obtenerPorDepartamento(@PathVariable Long idDepartamento) {
+        try {
+            List<UsuarioDTO> lista = service.obtenerPorDepartamento(idDepartamento);
+            log.info("Usuarios consultados por departamento " + idDepartamento);
+            ApiResponse<List<UsuarioDTO>> respuesta = new ApiResponse<>(true, "Usuarios encontrados por departamento "+idDepartamento, lista);
+            return ResponseEntity.ok(respuesta);
+        } catch (Exception e) {
+            log.error("Error al consultar usuarios por departamento " + idDepartamento);
+            e.printStackTrace();
+            ApiResponse<List<UsuarioDTO>> respuestaFallida = new ApiResponse<>(false, "No se pudieron obtener los usuarios");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaFallida);
+        }
+    }
+
+    @GetMapping("/area/{idArea}")
+    public ResponseEntity<ApiResponse<List<UsuarioDTO>>> obtenerPorArea(@PathVariable Long idArea) {
+        try {
+            List<UsuarioDTO> lista = service.obtenerPorArea(idArea);
+            log.info("Usuarios consultados por área " + idArea);
+            ApiResponse<List<UsuarioDTO>> respuesta = new ApiResponse<>(true, "Usuarios consultados por área " + idArea, lista);
+            return ResponseEntity.ok(respuesta);
+        } catch (Exception e) {
+            log.error("Error al consultar usuarios por área " + idArea);
+            e.printStackTrace();
+            ApiResponse<List<UsuarioDTO>> respuestaFallida = new ApiResponse<>(false, "No se pudieron obtener los usuarios");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaFallida);
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<UsuarioDTO>> actualizarUsuario(@PathVariable Long id, @Valid @RequestBody UsuarioDTO dto) {
+        try {
+            UsuarioDTO data = service.actualizarData(id, dto);
+            if (data != null) {
+                log.info("El usuario con id " + id + " fue actualizado");
+                ApiResponse<UsuarioDTO> respuestaExito = new ApiResponse<>(true, "Proceso completado", data);
+                return ResponseEntity.ok(respuestaExito);
+            }
+            log.warn("El usuario con id " + id + " NO fue actualizado");
+            ApiResponse<UsuarioDTO> respuestaNoCompletada = new ApiResponse<>(false, "Proceso no completado");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuestaNoCompletada);
+        } catch (Exception e) {
+            log.error("Error crítico en la actualización de usuario con id: " + id);
+            e.printStackTrace();
+            ApiResponse<UsuarioDTO> respuestaError = new ApiResponse<>(false, "No se pudo actualizar el usuario seleccionado");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> eliminarDatos(@PathVariable Long id) {
+        try {
+            boolean respuesta = service.eliminarUsuario(id);
+            if (respuesta) {
+                log.info("El usuario con ID: " + id + " ha sido eliminado");
+                ApiResponse<Void> respuestaExitosa = new ApiResponse<>(true, "El usuario con ID: " + id + " ha sido eliminado");
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).body(respuestaExitosa);
+            }
+            log.warn("No se pudo completar el proceso de eliminar, id: " + id);
+            ApiResponse<Void> noEncontrado = new ApiResponse<>(false, "El usuario con ID: " + id + " no se encontró");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(noEncontrado);
+        } catch (Exception e) {
+            log.error("Error crítico en la eliminación de usuario con id: " + id);
+            e.printStackTrace();
+            ApiResponse<Void> respuestaError = new ApiResponse<>(false, "No se pudo eliminar el usuario seleccionado");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
+        }
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<UsuarioDTO>> login(@Valid @RequestBody LoginDTO loginDTO) {
+        try {
+            UsuarioDTO dto = service.login(loginDTO.getCorreo(), loginDTO.getClave());
+            if (dto != null) {
+                log.info("Login exitoso: " + loginDTO.getCorreo());
+                ApiResponse<UsuarioDTO> respuestaExito = new ApiResponse<>(true, "Inicio de sesión exitoso", dto);
+                return ResponseEntity.ok(respuestaExito);
+            }
+            log.warn("Login fallido: " + loginDTO.getCorreo());
+            ApiResponse<UsuarioDTO> respuestaFallida = new ApiResponse<>(false, "Correo o contraseña incorrectos");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(respuestaFallida);
+        } catch (Exception e) {
+            log.error("Error crítico durante el login");
+            e.printStackTrace();
+            ApiResponse<UsuarioDTO> respuestaError = new ApiResponse<>(false, "El proceso no se pudo completar");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
+        }
+    }
+}
