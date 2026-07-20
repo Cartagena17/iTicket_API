@@ -5,6 +5,8 @@ import iTicket.Douglas.Departamentos.Repository.DepartamentoRepository;
 import iTicket.Douglas.Roles.Entity.RolEntity;
 import iTicket.Douglas.Roles.Repository.RolRepository;
 import iTicket.Douglas.Usuarios.DTO.UsuarioDTO;
+import iTicket.Douglas.Usuarios.DTO.UsuarioPatchDTO;
+import iTicket.Douglas.Usuarios.DTO.UsuarioUpdateDTO;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
 import iTicket.Douglas.Utils.PasswordUtil;
@@ -45,6 +47,7 @@ public class UsuarioService {
                 return null;
             }
 
+
             UsuarioEntity entity = convertirAEntity(dto, rolOpcional.get(), depaOpcional.get());
             UsuarioEntity entitySave = repo.save(entity);
             log.info("Nuevo usuario registrado: " + entitySave.getIdUsuario());
@@ -65,7 +68,7 @@ public class UsuarioService {
         return entidadOpcional.map(this::convertirADTO).orElse(null);
     }
 
-    public UsuarioDTO actualizarData(Long id, UsuarioDTO dto) {
+    public UsuarioDTO actualizarData(Long id, UsuarioUpdateDTO dto) {
         try {
             Optional<UsuarioEntity> registroExistente = repo.findById(id);
             if (registroExistente.isEmpty()) {
@@ -73,27 +76,23 @@ public class UsuarioService {
             }
             UsuarioEntity entidad = registroExistente.get();
 
-            if (dto.getIdRol() != null) {
-                Optional<RolEntity> rolOpcional = rolRepo.findById(dto.getIdRol());
-                if (rolOpcional.isEmpty()) {
-                    log.warn("El rol con id " + dto.getIdRol() + " no existe");
-                    return null;
-                }
-                entidad.setRol(rolOpcional.get());
+            Optional<RolEntity> rolOpcional = rolRepo.findById(dto.getIdRol());
+            if (rolOpcional.isEmpty()) {
+                log.warn("El rol con id " + dto.getIdRol() + " no existe");
+                return null;
             }
 
-            if (dto.getIdDepartamento() != null) {
-                Optional<DepartamentoEntity> depaOpcional = departamentoRepo.findById(dto.getIdDepartamento());
-                if (depaOpcional.isEmpty()) {
-                    log.warn("El departamento con id " + dto.getIdDepartamento() + " no existe");
-                    return null;
-                }
-                entidad.setDepartamento(depaOpcional.get());
+            Optional<DepartamentoEntity> depaOpcional = departamentoRepo.findById(dto.getIdDepartamento());
+            if (depaOpcional.isEmpty()) {
+                log.warn("El departamento con id " + dto.getIdDepartamento() + " no existe");
+                return null;
             }
 
             entidad.setNombreUsuario(dto.getNombreUsuario());
             entidad.setCorreo(dto.getCorreo());
             entidad.setImagenUrl(dto.getImagenUrl());
+            entidad.setRol(rolOpcional.get());
+            entidad.setDepartamento(depaOpcional.get());
 
             if (dto.getClave() != null && !dto.getClave().isBlank()) {
                 entidad.setClave(passwordUtil.encriptar(dto.getClave()));
@@ -107,6 +106,52 @@ public class UsuarioService {
             return null;
         }
     }
+
+    public UsuarioDTO actualizarParcial (Long id, UsuarioPatchDTO dto) {
+        try {
+            Optional<UsuarioEntity> registroExistente = repo.findById(id);
+            if (registroExistente != null){
+                return null;
+            }
+            UsuarioEntity entidad = registroExistente.get();
+
+            if (dto.getNombreUsuario() != null && !dto.getNombreUsuario().isBlank()) {
+                entidad.setNombreUsuario(dto.getNombreUsuario());
+            }
+            if (dto.getCorreo() != null && !dto.getCorreo().isBlank()) {
+                entidad.setCorreo(dto.getCorreo());
+            }
+            if (dto.getClave() != null && !dto.getClave().isBlank()) {
+                entidad.setClave(passwordUtil.encriptar(dto.getClave()));
+            }
+            if (dto.getImagenUrl() != null && !dto.getImagenUrl().isBlank()) {
+                entidad.setImagenUrl(dto.getImagenUrl());
+            }
+            if (dto.getIdRol() != null) {
+                Optional<RolEntity> rolOpcional = rolRepo.findById(dto.getIdRol());
+                if (rolOpcional.isEmpty()) {
+                    log.warn("El rol con id " + dto.getIdRol() + " no existe");
+                    return null;
+                }
+                entidad.setRol(rolOpcional.get());
+            }
+            if (dto.getIdDepartamento() != null) {
+                Optional<DepartamentoEntity> depaOpcional = departamentoRepo.findById(dto.getIdDepartamento());
+                if (depaOpcional.isEmpty()) {
+                    log.warn("El departamento con id " + dto.getIdDepartamento() + " no existe");
+                    return null;
+                }
+                entidad.setDepartamento(depaOpcional.get());
+            }
+
+            UsuarioEntity datosGuardados = repo.save(entidad);
+            log.info("Usuario con id " + id + " actualizado parcialmente");
+            return convertirADTO(datosGuardados);
+        } catch (Exception e) {
+            log.error("Ocurrió un error al procesar la info: " + e.getMessage());
+            return null;
+        }
+        }
 
     public boolean eliminarUsuario(Long id) {
         if (repo.existsById(id)) {

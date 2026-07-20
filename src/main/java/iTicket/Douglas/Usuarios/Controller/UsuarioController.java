@@ -3,6 +3,8 @@ package iTicket.Douglas.Usuarios.Controller;
 import iTicket.Douglas.Response.ApiResponse;
 import iTicket.Douglas.Usuarios.DTO.LoginDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioDTO;
+import iTicket.Douglas.Usuarios.DTO.UsuarioPatchDTO;
+import iTicket.Douglas.Usuarios.DTO.UsuarioUpdateDTO;
 import iTicket.Douglas.Usuarios.Service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -122,7 +124,7 @@ public class UsuarioController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<UsuarioDTO>> actualizarUsuario(@PathVariable Long id, @Valid @RequestBody UsuarioDTO dto) {
+    public ResponseEntity<ApiResponse<UsuarioDTO>> actualizarUsuario(@PathVariable Long id, @Valid @RequestBody UsuarioUpdateDTO dto) {
         try {
             UsuarioDTO data = service.actualizarData(id, dto);
             if (data != null) {
@@ -135,6 +137,26 @@ public class UsuarioController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuestaNoCompletada);
         } catch (Exception e) {
             log.error("Error crítico en la actualización de usuario con id: " + id);
+            e.printStackTrace();
+            ApiResponse<UsuarioDTO> respuestaError = new ApiResponse<>(false, "No se pudo actualizar el usuario seleccionado");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
+        }
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<ApiResponse<UsuarioDTO>> actualizarParcial (@PathVariable Long id, @Valid @RequestBody UsuarioPatchDTO dto) {
+        try {
+            UsuarioDTO data = service.actualizarParcial(id, dto);
+            if (data != null){
+                log.info("El usuario con id " + id + " fue actualizado");
+                ApiResponse<UsuarioDTO> respuestaExito = new ApiResponse<>(true, "Proceso completado", data);
+                return ResponseEntity.ok(respuestaExito);
+            }
+            log.warn("El usuario con id " + id + " fue actualizado");
+            ApiResponse<UsuarioDTO> respuestaNoCompletada = new ApiResponse<>(false, "Proceso no completado");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuestaNoCompletada);
+        }catch (Exception e) {
+            log.error("Error al actualizar el usuario con id " + id);
             e.printStackTrace();
             ApiResponse<UsuarioDTO> respuestaError = new ApiResponse<>(false, "No se pudo actualizar el usuario seleccionado");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
