@@ -18,7 +18,7 @@ public class DepartamentoEntity {
     @Column(name = "nombre_departamento")
     private String nombreDepartamento;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_area", nullable = false)
     private AreaEntity area;
 }
