@@ -23,6 +23,6 @@ public class DetalleTSEntity {
     private String ubicacion;
     //Quitar comentario cuando se unan las demas partes
 //    @ManyToOne (fetch = FetchType.LAZY)
-//    @JoinColumn (name = "ID_TICKET", referencedColumnName = "ASUNTO")
+//    @JoinColumn (name = "ID_TICKET", referencedColumnName = "ID_TICKET")
 //    private TicketsEntity ticket;
 }

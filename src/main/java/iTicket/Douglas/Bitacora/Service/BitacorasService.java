@@ -1,16 +1,15 @@
-package iTicket.Douglas.Bitacoras.Service;
+package iTicket.Douglas.Bitacora.Service;
 
 
-import iTicket.Douglas.Bitacoras.DTO.BitacorasDTO;
-import iTicket.Douglas.Bitacoras.Entity.BitacorasEntity;
-import iTicket.Douglas.Bitacoras.Repository.BitacorasRepository;
+import iTicket.Douglas.Bitacora.DTO.BitacorasDTO;
+import iTicket.Douglas.Bitacora.Entity.BitacorasEntity;
+import iTicket.Douglas.Bitacora.Repository.BitacorasRepository;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -37,11 +36,11 @@ public class BitacorasService {
         BitacorasEntity entidad = bitacorasRepo.save(convertirDatos);
         //Valida que el usuario exista en la base de datos
         //Quitar comentario cuando se unan las demas partes
-//        UsuariosEntity usuario = usuarioRepo.findById(dto.getId_usuario());
+//        UsuariosEntity usuario = usuarioRepo.findById(dto.getUsuario());
 //          .orElseThrow(() -> new IllegalArgumentException("El usuario con ID " + dto.getIdUsuario() + " no existe."));
         //Validar que el ticket existe en la base de datos
         //Quitar comentario cuando se unan las demas partes
-//        TicketsEntity ticket = ticketsRepo.findById(dto.getId_ticket());
+//        TicketsEntity ticket = ticketsRepo.findById(dto.getTicket());
 //            .orElseThrow(() -> new IllegalArgumentException("El ticket con ID " + dto.getIdTicket() + " no existe."));
         return convertirADTO(entidad);
     }
@@ -52,8 +51,8 @@ public class BitacorasService {
         dto.setFechaHora(respuesta.getFechaHora());
         dto.setNuevoEstado(respuesta.getNuevoEstado());
         //Quitar comentario cuando se unan las demas partes
-//        dto.setIdUsuario(respuesta.getUsuario());
-//        dto.setIdTicket(respuesta.getTicket());
+//        dto.setUsuario(respuesta.getUsuario().getIdUsuario());
+//        dto.setTicket(respuesta.getTicket().getIdTicket());
 
         return dto;
     }
@@ -65,8 +64,8 @@ public class BitacorasService {
         entity.setNuevoEstado(dto.getNuevoEstado());
         entity.setFechaHora(dto.getFechaHora());
         //Quitar el comentario cuando se unan las demas partes
-//        entity.setUsuario(dto.getId_usuario());
-//        entity.setTicket(dto.getId_ticket());
+//        entity.setUsuario(dto.getUsuario());
+//        entity.setTicket(dto.getTicket());
 
         return entity;
     }
@@ -81,9 +80,19 @@ public class BitacorasService {
         return dtos;
     }
 
-    public BitacorasDTO obtenerBitacoraPorId(Long id){
-        Optional<BitacorasEntity> entidadOpcional = bitacorasRepo.findById(id);
-        //Si existe se convierte a dto y se retorna, si no existe se retorna null
-        return  entidadOpcional.map(this::convertirADTO).orElse(null);
-    }
+    //Metodo para obtener bitacoras por id de ticket, quitar comentario cuando se unan las demas partes
+//    public BitacorasDTO obtenerBitacoraIdTicket(Long ticket){
+//       try {
+//           Optional<BitacorasEntity> entidadOpcional = bitacorasRepo.findByIdTicket(ticket);
+//           if (entidadOpcional != null){
+//               return convertirADTO(entidadOpcional.get());
+//           }
+//           log.warn("No existe ninguna bitacora con asunto de ticket: " + ticket);
+//           return null;
+//       }
+//       catch (Exception e){
+//           log.error("Ocurrio un error al obtener la bitacora con asunto de ticket: " + ticket);
+//           return null;
+//       }
+//    }
 }

@@ -1,4 +1,4 @@
-package iTicket.Douglas.Bitacoras.Entity;
+package iTicket.Douglas.Bitacora.Entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -9,12 +9,12 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter @Setter @ToString
-@Table (name = "Bitacoras")
+@Table (name = "BITACORAS")
 public class BitacorasEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_BITACORAS")
-    @SequenceGenerator(name = "SEQ-BITACORAS", sequenceName = "SEQ_BITACORAS", allocationSize = 1)
+    @SequenceGenerator(name = "SEQ_BITACORAS", sequenceName = "SEQ_BITACORAS", allocationSize = 1)
     @Column (name = "ID_BITACORA")
     private Long idBitacora;
 
@@ -30,6 +30,6 @@ public class BitacorasEntity {
 //    private UsuariosEntity usuario;
 //
 //    @ManyToOne (fetch = FetchType.LAZY)
-//    @JoinColumn (name = "ID_TICKET", referencedColumnName = "ASUNTO")
+//    @JoinColumn (name = "ID_TICKET", referencedColumnName = "ID_TICKET")
 //    private TicketsEntity ticket;
 }

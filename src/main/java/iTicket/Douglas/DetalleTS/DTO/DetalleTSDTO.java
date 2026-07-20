@@ -17,6 +17,7 @@ public class DetalleTSDTO {
     private String ubicacion;
     @NotBlank @Size (max = 20, message = "La nombre de la versión no puede exceder los 20 caracteres")
     private String version;
-    @NotNull @Positive (message = "El id del ticket es obligatorio")
-    private Long idTicket;
+    //Quitar comentario cuando se unan las demas partes
+//    @NotNull @Positive (message = "El id del ticket es obligatorio")
+//    private Long ticket;
 }

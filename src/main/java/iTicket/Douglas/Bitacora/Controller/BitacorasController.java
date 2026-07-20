@@ -1,8 +1,8 @@
-package iTicket.Douglas.Bitacoras.Controller;
+package iTicket.Douglas.Bitacora.Controller;
 
 
-import iTicket.Douglas.Bitacoras.DTO.BitacorasDTO;
-import iTicket.Douglas.Bitacoras.Service.BitacorasService;
+import iTicket.Douglas.Bitacora.DTO.BitacorasDTO;
+import iTicket.Douglas.Bitacora.Service.BitacorasService;
 import iTicket.Douglas.Response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +10,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.swing.text.Position;
 import java.util.List;
 
 @Slf4j
@@ -31,7 +30,7 @@ public class BitacorasController {
             if (dto != null){
                 log.info("Nueva bitacora registrada" + dto);
                 ApiResponse<BitacorasDTO> exito = new ApiResponse<>(true, "Proceso completado exitosamente", dto);
-                return ResponseEntity.ok(exito);
+                return ResponseEntity.status(HttpStatus.CREATED).body(exito);
             }
             log.warn("No se pudo registrar la bitacora" + json);
             ApiResponse<BitacorasDTO> bitacoraNoIngresada = new ApiResponse<>(false, "No se pudo registrar la bitacora", json);
@@ -66,24 +65,25 @@ public class BitacorasController {
         }
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<BitacorasDTO>> obtenerBitacoraPorId(@PathVariable Long id){
-        try{
-            BitacorasDTO dto = service.obtenerBitacoraPorId(id);
-            if (dto != null){
-                log.info("Se obtuvo la bitacora: " + id);
-                ApiResponse<BitacorasDTO> exito = new ApiResponse<>(true, "Se obtuvo la bitacora: " + id, dto);
-                return ResponseEntity.ok(exito);
-            }
-            log.info("Bitacora con id: " + id + "no encontrada");
-            ApiResponse<BitacorasDTO> bitacoraNoEncontrada = new ApiResponse<>(false, "Bitacora con id:" + id + "no encontrada");
-            return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(bitacoraNoEncontrada);
-        }
-        catch (Exception e){
-            log.error("Ocurrio un error al obtener la bitacora con id: " + id);
-            e.printStackTrace();
-            ApiResponse<BitacorasDTO> error = new ApiResponse<>(false, "Falló al obtener los datos");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-        }
-    }
+    //Metodo para obtener bitacora por id de ticket, quitar comentario cuando se unan las demas partes
+//    @GetMapping("/bitacoraAsunto/{ticket}")
+//    public ResponseEntity<ApiResponse<BitacorasDTO>> obtenerBitacoraIdTicket(@PathVariable TicketsEntity ticket){
+//        try{
+//            BitacorasDTO dto = service.obtenerBitacoraIdTicket(ticket);
+//            if (dto != null){
+//                log.info("Se obtuvo la bitacora con asunto: " + ticket);
+//                ApiResponse<BitacorasDTO> exito = new ApiResponse<>(true, "Se obtuvo la bitacora: " + ticket, dto);
+//                return ResponseEntity.ok(exito);
+//            }
+//            log.info("Bitacora: " + ticket + "no encontrada");
+//            ApiResponse<BitacorasDTO> bitacoraNoEncontrada = new ApiResponse<>(false, "Bitacora:" + ticket + "no encontrada");
+//            return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(bitacoraNoEncontrada);
+//        }
+//        catch (Exception e){
+//            log.error("Ocurrio un error al obtener la bitacora: " + ticket);
+//            e.printStackTrace();
+//            ApiResponse<BitacorasDTO> error = new ApiResponse<>(false, "Falló al obtener los datos");
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+//        }
+//    }
 }
