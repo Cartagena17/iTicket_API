@@ -65,8 +65,8 @@ public class MarcaController {
         try {
             MarcaDTO dto = service.obtenerporId(id);
             if (dto != null){
-                log.warn("Se obtuvieron los datos del departamento con id "+id);
-                ApiResponse<MarcaDTO> respuestaExito = new ApiResponse<>(true,"Se obtuvieron los datos del departamento con id "+id, dto );
+                log.warn("Se obtuvieron los datos de la marca con id "+id);
+                ApiResponse<MarcaDTO> respuestaExito = new ApiResponse<>(true,"Se obtuvieron los datos de la marca con id "+id, dto );
                 return ResponseEntity.ok(respuestaExito);
             }
             log.info("No se encontraron los datos de la marca con id "+id);
@@ -106,8 +106,8 @@ public class MarcaController {
             MarcaDTO data = service.actualizar(id,dto);
             if (data != null){
                 log.info("Se logro actualizar la marca con id "+id);
-                ApiResponse<MarcaDTO> respuestaExitosa = new ApiResponse<>(true,"Se logro actualizar la marca con id "+id, data);
-                return ResponseEntity.ok(respuestaExitosa);
+                ApiResponse<MarcaDTO> respuestaExito = new ApiResponse<>(true,"Se logro actualizar la marca con id "+id, data);
+                return ResponseEntity.ok(respuestaExito);
             }
             log.warn("No se pudo actualizar la marca con id "+id);
             ApiResponse<MarcaDTO> respuestaNoCompletada = new ApiResponse<>(false, "No se pudo actualizar la marca con id "+id);
