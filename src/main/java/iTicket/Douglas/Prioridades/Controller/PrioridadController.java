@@ -58,7 +58,7 @@ public class PrioridadController {
             }
             log.info("Datos no encontrados");
             ApiResponse<List<PrioridadDTO>> respuestaNoEncontrada = new ApiResponse<>(false,"Datos no encontrados");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoEncontrada);
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(respuestaNoEncontrada);
         }catch (Exception e){
             log.error("El proceso presentó un fallo inesperado. Consulta con el administrador");
             e.printStackTrace();
