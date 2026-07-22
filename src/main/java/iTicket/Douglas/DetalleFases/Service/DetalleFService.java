@@ -100,7 +100,7 @@ public class DetalleFService {
 
     public DetalleFDTO obtenerPorIdFase(FaseEntity idFase) {
         try {
-            Optional<DetalleFEntity> registro = repo.findByIdFase(idFase);
+            Optional<DetalleFEntity> registro = repo.findByFase(idFase);
             if (registro.isPresent()){
                 return convertirADTO(registro.get());
             }

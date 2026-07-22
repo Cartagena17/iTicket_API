@@ -16,7 +16,7 @@ public class FaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_FASES")
     @SequenceGenerator(name = "SEQ_FASES", sequenceName = "SEQ_FASES", allocationSize = 1)
-    @Column (name = "ID_ FASE")
+    @Column (name = "ID_FASE")
     private Long idFase;
 
     @Column (name = "NOMBRE_FASE")
@@ -53,7 +53,7 @@ public class FaseEntity {
     @Column (name = "DEPARTAMENTO_ENCARGADO")
     private String departamentoEncargado;
 
-    @ManyToOne (fetch = FetchType.LAZY)
-    @JoinColumn (name = "ID_PROYECTO", referencedColumnName = "ID_PROYECTO")
-    private ProyectoEntity proyecto;
+//    @ManyToOne (fetch = FetchType.LAZY)
+//    @JoinColumn (name = "ID_PROYECTO", referencedColumnName = "ID_PROYECTO")
+//    private ProyectoEntity proyecto;
 }

@@ -11,5 +11,5 @@ public interface DetalleFRepository extends JpaRepository<DetalleFEntity, Long> 
     //metodos personalizados
 
     //metodo para obtener Detalle de fase por id de fase
-    Optional<DetalleFEntity> findByIdFase(FaseEntity idFase);
+    Optional<DetalleFEntity> findByFase(FaseEntity idFase);
 }

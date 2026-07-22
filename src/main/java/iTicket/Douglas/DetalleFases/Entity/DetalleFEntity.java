@@ -24,6 +24,6 @@ public class DetalleFEntity {
     private Boolean completado;
 
     @ManyToOne (fetch = FetchType.LAZY)
-    @JoinColumn (name = "ID_FASE")
+    @JoinColumn (name = "ID_FASE", referencedColumnName = "ID_FASE")
     private FaseEntity fase;
 }

@@ -132,25 +132,4 @@ public class DetalleGController {
             return  ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
-
-    @PatchMapping("/{id}")
-    public ResponseEntity<ApiResponse<DetalleGDTO>> actualizarCampoDetalleG(@PathVariable Long id, @RequestBody DetalleGDTO dto){
-        try {
-            DetalleGDTO datos = service.actualizarCampoDetalleG(id, dto);
-            if (datos != null){
-                log.info("Ticket: " + id + ", ha sido actualizado");
-                ApiResponse<DetalleGDTO> exito = new ApiResponse<>(true, "Campo de ticket: " + id + ", ha sido actualizado", dto);
-                return  ResponseEntity.ok(exito);
-            }
-            log.warn("No se pudo actualizar el ticket: " + id);
-            ApiResponse<DetalleGDTO> respuesta = new ApiResponse<>(false, "No se pudo actualizar el detalle del ticket: " + id);
-            return  ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuesta);
-        }
-        catch (Exception e){
-            log.error("Error al actualizar el ticket: " + id);
-            e.printStackTrace();
-            ApiResponse<DetalleGDTO> error = new ApiResponse<>(false, "Error al actualizar el ticket: " + id);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-        }
-    }
 }

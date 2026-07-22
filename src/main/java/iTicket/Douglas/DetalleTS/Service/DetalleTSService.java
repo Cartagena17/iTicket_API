@@ -96,43 +96,6 @@ public class DetalleTSService {
         return false;
     }
 
-    public DetalleTSDTO actualizarCampoDetalleTS(Long id, DetalleTSDTO dto) {
-        try{
-            Optional<DetalleTSEntity> entidadOpcional = repo.findById(id);
-            if (entidadOpcional.isPresent()){
-                DetalleTSEntity entidad = entidadOpcional.get();
-
-                //Evaluar campo por campo la info nueva
-                if (dto.getNombreSoftware() != null && !dto.getNombreSoftware().trim().isEmpty()){
-                    entidad.setNombreSoftware(dto.getNombreSoftware());
-                }
-
-                if (dto.getVersion() != null && !dto.getVersion().trim().isEmpty()){
-                    entidad.setVersion(dto.getVersion());
-                }
-
-                if (dto.getUbicacion() != null && !dto.getUbicacion().trim().isEmpty()){
-                    entidad.setUbicacion(dto.getUbicacion());
-                }
-
-                //Quitar comentario cuando se unan las demas partes
-                if (dto.getTicket() != null){
-                    entidad.setTicket(buscarTicket(dto.getTicket()));
-                }
-
-                DetalleTSEntity datosGuardados = repo.save(entidad);
-                return  convertirADTO(datosGuardados);
-            }
-            log.warn("No se encontro el registro: " + id);
-            return null;
-        }
-        catch (Exception e){
-            log.error("Error al procesar la información del ticke: " + id);
-            return null;
-
-        }
-    }
-
     //Metodo para obtener detalle por id de ticket, quitar comentario al unir las demas partes
     public DetalleTSDTO obtenerDetalleTSIdTicket(TicketEntity ticket) {
         try {

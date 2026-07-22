@@ -132,25 +132,4 @@ public class DetalleTSController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
-
-    @PatchMapping("/{id}")
-    public ResponseEntity<ApiResponse<DetalleTSDTO>> actualizarCampoDetalleTS(@PathVariable Long id, @RequestBody DetalleTSDTO dto){
-        try {
-            DetalleTSDTO datos = service.actualizarCampoDetalleTS(id, dto);
-            if (datos != null){
-                log.info("Campo del ticket: " + id + ", modificado con éxito");
-                ApiResponse<DetalleTSDTO> exito = new ApiResponse<>(true, "Campo del ticket: " + id + ", modificado con exito", datos);
-                return ResponseEntity.ok(exito);
-            }
-            log.warn("No se pudo completar la actualizacion del ticket:" + id);
-            ApiResponse<DetalleTSDTO> respuesta = new ApiResponse<>(false, "No se pudo completar la actualización del ticket: " + id);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
-        }
-        catch (Exception e){
-            log.error("Error al modificar el ticket: " + id);
-            e.printStackTrace();
-            ApiResponse<DetalleTSDTO> error = new ApiResponse<>(false, "Error al modificar el ticket: " + id);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-        }
-    }
 }

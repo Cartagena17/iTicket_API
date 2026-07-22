@@ -85,32 +85,6 @@ public class DetalleGService {
         return false;
     }
 
-    public DetalleGDTO actualizarCampoDetalleG(Long id, DetalleGDTO dto) {
-        try {
-            Optional<DetalleGEntity> entidadOpcional = repo.findById(id);
-            if (entidadOpcional.isPresent()) {
-                DetalleGEntity entidad = entidadOpcional.get();
-
-                if (dto.getDescripcionUbicacion() != null && !dto.getDescripcionUbicacion().trim().isEmpty()) {
-                    entidad.setDescripcionUbicacion(dto.getDescripcionUbicacion());
-                }
-
-                //Quitar comentario cuando se unan las demas partes
-                if (dto.getTicket() != null) {
-                    entidad.setTicket(buscarTicket(dto.getTicket()));
-                }
-
-                    DetalleGEntity datosGuardados = repo.save(entidad);
-                    return convertirADTO(datosGuardados);
-                }
-                log.warn("No se encontro el registro: " + id);
-                return null;
-            }
-        catch(Exception e){
-                log.error("Error al procesar la información");
-                return null;
-            }
-        }
 
         //Metodo para obtener detalle de ticket general por id de ticket, quitar comentario cuando se unan las demas partes
         public DetalleGDTO obtenerDetallesIdTicket (TicketEntity ticket){
