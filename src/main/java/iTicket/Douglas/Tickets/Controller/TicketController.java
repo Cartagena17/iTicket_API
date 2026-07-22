@@ -49,7 +49,7 @@ public class TicketController {
         try {
             List<TicketDTO> lista = service.obtenerTodo();
             if (lista != null){
-                log.info("Datos de tickest consultados");
+                log.info("Datos de tickets consultados");
                 ApiResponse<List<TicketDTO>> respuestaExito = new ApiResponse<>(true, "Datos encontrados", lista);
                 return ResponseEntity.ok(respuestaExito);
             }
@@ -89,8 +89,8 @@ public class TicketController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> eliminarTicket(@PathVariable Long id){
         try {
-            boolean respueta = service.eliminarData(id);
-            if (respueta){
+            boolean respuesta = service.eliminarData(id);
+            if (respuesta){
                 log.info("Ticket con ID: " + id+ ", eliminado");
                 ApiResponse<Void> respuestExitosa = new ApiResponse<>(true, "Ticket con ID: " + id+ ", eliminado");
                 return ResponseEntity.status(HttpStatus.NO_CONTENT).body(respuestExitosa);
