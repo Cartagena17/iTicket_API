@@ -19,4 +19,7 @@ public interface TicketRepository extends JpaRepository<TicketEntity, Long> {
     List<TicketEntity> findByAsuntoContainingIgnoreCase(String asunto);
     //Containing es como un LIKE
     //IgnoreCase ignora mayúsculas y minúscula
+
+    //Metodo personalizado para buscar tickets por prioridad
+    List<TicketEntity> findByPrioridad(String prioridad);
 }

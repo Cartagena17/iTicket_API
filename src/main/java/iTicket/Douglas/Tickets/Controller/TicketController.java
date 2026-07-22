@@ -1,7 +1,9 @@
 package iTicket.Douglas.Tickets.Controller;
 
 import iTicket.Douglas.Response.ApiResponse;
+import iTicket.Douglas.Tickets.DTO.TicketAsignacionDTO;
 import iTicket.Douglas.Tickets.DTO.TicketDTO;
+import iTicket.Douglas.Tickets.DTO.TicketResolucionDTO;
 import iTicket.Douglas.Tickets.Service.TicketService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -16,13 +18,11 @@ import java.util.List;
 @RequestMapping("/api/tickets")//Endpoint
 public class TicketController {
 
-    /**Inyectamos la capa de servicios*/
     private final TicketService service;
     public TicketController(TicketService service) {
         this.service = service;
     }
 
-    //Petición POST
     @PostMapping
     public ResponseEntity<ApiResponse<TicketDTO>> nuevoTicket(@Valid @RequestBody TicketDTO json){
         try {
@@ -43,13 +43,12 @@ public class TicketController {
         }
     }
 
-    //Petición GET
     @GetMapping
     public ResponseEntity<ApiResponse<List<TicketDTO>>> obtenerDatos(){
         try {
             List<TicketDTO> lista = service.obtenerTodo();
             if (lista != null){
-                log.info("Datos de tickest consultados");
+                log.info("Datos de tickets consultados");
                 ApiResponse<List<TicketDTO>> respuestaExito = new ApiResponse<>(true, "Datos encontrados", lista);
                 return ResponseEntity.ok(respuestaExito);
             }
@@ -64,7 +63,6 @@ public class TicketController {
         }
     }
 
-    //Método para buscar tickets por id
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<TicketDTO>> obtenerTicketPorId(@PathVariable Long id){
         try {
@@ -85,12 +83,11 @@ public class TicketController {
         }
     }
 
-    //Petición DELETE
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> eliminarTicket(@PathVariable Long id){
         try {
-            boolean respueta = service.eliminarData(id);
-            if (respueta){
+            boolean respuesta = service.eliminarData(id);
+            if (respuesta){
                 log.info("Ticket con ID: " + id+ ", eliminado");
                 ApiResponse<Void> respuestExitosa = new ApiResponse<>(true, "Ticket con ID: " + id+ ", eliminado");
                 return ResponseEntity.status(HttpStatus.NO_CONTENT).body(respuestExitosa);
@@ -106,7 +103,6 @@ public class TicketController {
         }
     }
 
-    //Petición PUT
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<TicketDTO>> actualizarData(@PathVariable Long id, @Valid @RequestBody TicketDTO dto){
         try {
@@ -127,7 +123,6 @@ public class TicketController {
         }
     }
 
-    //Proceso de búsqueda por código
     @GetMapping("/codigo/{codigo}")
     public ResponseEntity<ApiResponse<TicketDTO>> buscarPorCodigo(@PathVariable String codigo){
         try {
@@ -165,6 +160,46 @@ public class TicketController {
             log.error("Error crítico al obtener ticket con asunto: " + asunto);
             e.printStackTrace();
             ApiResponse<List<TicketDTO>> respuestaError = new ApiResponse<>(false, "Error crítico al obtener tickets con asunto: " + asunto);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
+        }
+    }
+
+    @PatchMapping("/{id}/asignacion")
+    public ResponseEntity<ApiResponse<TicketAsignacionDTO>> asignarTicket(@PathVariable Long id, @Valid @RequestBody TicketAsignacionDTO dto) {
+        try {
+            boolean resultado = service.asignarTicket(id, dto);
+            if (resultado){
+                log.info("Ticket con ID: "+ id + " ha sido actualizado.");
+                ApiResponse<TicketAsignacionDTO> respuestaExitosa = new ApiResponse<>(true, "Ticket con ID: " + id + " ha sido actualizado.", dto);
+                return ResponseEntity.ok(respuestaExitosa);
+            }
+            log.warn("No se pudo completar la actualización del ticket con ID: "+ id);
+            ApiResponse<TicketAsignacionDTO> respuestaNoCompletada = new ApiResponse<>(false, "No se pudo completar la actualización del ticket con ID: "+ id);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuestaNoCompletada);
+        } catch (Exception e) {
+            log.error("Error crítico al actualizar los datos. Consulte con el administrador");
+            e.printStackTrace();
+            ApiResponse<TicketAsignacionDTO> respuestaError = new ApiResponse<>(false, "Error crítico al actualizar el ticket con ID: " + id);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
+        }
+    }
+
+    @PatchMapping("/{id}/reporte")
+    public ResponseEntity<ApiResponse<TicketResolucionDTO>> asignarTicket(@PathVariable Long id, @Valid @RequestBody TicketResolucionDTO dto) {
+        try {
+            boolean resultado = service.reporteTicket(id, dto);
+            if (resultado){
+                log.info("El reporte del ticket con ID: "+ id + " ha sido actualizado.");
+                ApiResponse<TicketResolucionDTO> respuestaExitosa = new ApiResponse<>(true, "Ticket con ID: " + id + " ha sido actualizado.", dto);
+                return ResponseEntity.ok(respuestaExitosa);
+            }
+            log.warn("No se pudo completar la actualización del ticket con ID: "+ id);
+            ApiResponse<TicketResolucionDTO> respuestaNoCompletada = new ApiResponse<>(false, "No se pudo completar la actualización del reporte del ticket con ID: "+ id);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuestaNoCompletada);
+        } catch (Exception e) {
+            log.error("Error crítico al actualizar los datos. Consulte con el administrador");
+            e.printStackTrace();
+            ApiResponse<TicketResolucionDTO> respuestaError = new ApiResponse<>(false, "Error crítico al actualizar el reporte del ticket con ID: " + id);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
         }
     }
