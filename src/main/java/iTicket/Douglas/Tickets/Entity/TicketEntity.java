@@ -3,9 +3,7 @@ package iTicket.Douglas.Tickets.Entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import iTicket.Douglas.Departamentos.Entity.DepartamentoEntity;
 import iTicket.Douglas.Evidencias.Entity.EvidenciaEntity;
-import iTicket.Douglas.Prioridades.Entity.PrioridadEntity;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
-import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -51,12 +49,14 @@ public class TicketEntity {
     @JoinColumn(name = "ID_TECNICO_ASIGNADO", referencedColumnName = "ID_USUARIO")
     private UsuarioEntity tecnicoAsignado;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ID_PRIORIDAD", referencedColumnName = "ID_PRIORIDAD")
-    private PrioridadEntity prioridad;
+    @Column(name = "PRIORIDAD")
+    private String prioridad;
 
     //Campos adicionales
     @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
     private List<EvidenciaEntity> evidencias = new ArrayList<>();
+
+    @Column(name = "TIPO_TICKET")
+    private String tipoTicket;
 }
