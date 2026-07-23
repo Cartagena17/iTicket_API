@@ -20,7 +20,7 @@ public class UbicacionesEntity {
     private Long id;
     @Column (name = "nombre_ubicacion")
     private String nombreUbicacion;
-    @ManyToOne
+    @ManyToOne(fetch =  FetchType.LAZY)
     @JoinColumn(name = "id_tipo_ubicacion")
     private TipoUbicacionEntity tipoUbicacion;
 }

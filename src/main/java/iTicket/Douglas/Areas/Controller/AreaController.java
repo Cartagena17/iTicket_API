@@ -27,8 +27,7 @@ public class AreaController {
             AreaDTO dto = service.nuevaArea(json);
             log.info("Nueva área registrada" + dto);
             ApiResponse<AreaDTO> respuesta = new ApiResponse<>(true, "Datos ingresados exitosamente", dto);
-            return ResponseEntity.ok(respuesta);
-
+            return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
         } catch (IllegalArgumentException e) {
             log.warn("Intento de inserción fallida: " + e.getMessage());
             ApiResponse<AreaDTO> respuestaFallida = new ApiResponse<>(false, e.getMessage(), null);
@@ -52,12 +51,12 @@ public class AreaController {
                 return ResponseEntity.ok(respuestaExito);
             }
             log.info("Datos no encontrados");
-            ApiResponse<List<AreaDTO>> respuestaNoEncontrada = new ApiResponse<>(true, "Datos encontrados", null);
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(respuestaNoEncontrada);
+            ApiResponse<List<AreaDTO>> respuestaNoEncontrada = new ApiResponse<>(true, "Datos no encontrados");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoEncontrada);
         } catch (Exception e) {
             log.error("El proceso presentó un fallo inesperado, consulte con el administrador");
             e.printStackTrace();
-            ApiResponse<List<AreaDTO>> respuesta = new ApiResponse<>(false, "El proceso no se pudo completar", null);
+            ApiResponse<List<AreaDTO>> respuesta = new ApiResponse<>(false, "El proceso no se pudo completar");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuesta);
         }
     }
@@ -92,12 +91,12 @@ public class AreaController {
                 return ResponseEntity.ok(respuestaExito);
             }
             log.warn("Intento de actualización fallida, id no encontrado: " + id);
-            ApiResponse<AreaDTO> respuestaNoEncontrada = new ApiResponse<>(false, "Área no encontrada", null);
+            ApiResponse<AreaDTO> respuestaNoEncontrada = new ApiResponse<>(false, "Área no encontrada");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoEncontrada);
         } catch (Exception e) {
             log.error("El proceso presentó un fallo inesperado, consulte con el administrador");
             e.printStackTrace();
-            ApiResponse<AreaDTO> respuesta = new ApiResponse<>(false, "El proceso no se pudo completar", json);
+            ApiResponse<AreaDTO> respuesta = new ApiResponse<>(false, "El proceso no se pudo completar");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuesta);
         }
     }
@@ -108,16 +107,16 @@ public class AreaController {
             boolean eliminado = service.eliminarArea(id);
             if (eliminado) {
                 log.info("Área eliminada, id: " + id);
-                ApiResponse<Void> respuestaExito = new ApiResponse<>(true, "Área eliminada correctamente", null);
-                return ResponseEntity.ok(respuestaExito);
+                ApiResponse<Void> respuestaExito = new ApiResponse<>(true, "Área eliminada correctamente");
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).body(respuestaExito);
             }
             log.warn("Intento de eliminación fallida, id no encontrado: " + id);
-            ApiResponse<Void> respuestaNoEncontrada = new ApiResponse<>(false, "Área no encontrada", null);
+            ApiResponse<Void> respuestaNoEncontrada = new ApiResponse<>(false, "Área no encontrada");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoEncontrada);
         } catch (Exception e) {
             log.error("El proceso presentó un fallo inesperado, consulte con el administrador");
             e.printStackTrace();
-            ApiResponse<Void> respuesta = new ApiResponse<>(false, "El proceso no se pudo completar", null);
+            ApiResponse<Void> respuesta = new ApiResponse<>(false, "El proceso no se pudo completar");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuesta);
         }
     }

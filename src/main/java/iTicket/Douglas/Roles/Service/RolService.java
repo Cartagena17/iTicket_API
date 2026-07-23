@@ -3,6 +3,7 @@ package iTicket.Douglas.Roles.Service;
 import iTicket.Douglas.Roles.DTO.RolDTO;
 import iTicket.Douglas.Roles.Entity.RolEntity;
 import iTicket.Douglas.Roles.Repository.RolRepository;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,7 +19,7 @@ public class RolService {
 
     private final RolRepository repo;
 
-    public RolDTO nuevoRol(RolDTO dto) {
+    public RolDTO nuevoRol(@Valid RolDTO dto) {
         try {
             RolEntity entity = convertirAEntity(dto);
             RolEntity entitySave = repo.save(entity);
@@ -48,7 +49,7 @@ public class RolService {
         return false;
     }
 
-    public RolDTO actualizarData(Long id, RolDTO dto) {
+    public RolDTO actualizarData(Long id,@Valid RolDTO dto) {
         try {
             Optional<RolEntity> registroExistente = repo.findById(id);
             if (registroExistente.isPresent()) {
@@ -65,13 +66,13 @@ public class RolService {
         }
     }
 
-    private RolEntity convertirAEntity(RolDTO dto) {
+    private RolEntity convertirAEntity(@Valid RolDTO dto) {
         RolEntity objEntity = new RolEntity();
         objEntity.setNombreRol(dto.getNombreRol());
         return objEntity;
     }
 
-    private RolDTO convertirADTO(RolEntity entity) {
+    private RolDTO convertirADTO(@Valid RolEntity entity) {
         RolDTO objDTO = new RolDTO();
         objDTO.setIdRol(entity.getIdRol());
         objDTO.setNombreRol(entity.getNombreRol());

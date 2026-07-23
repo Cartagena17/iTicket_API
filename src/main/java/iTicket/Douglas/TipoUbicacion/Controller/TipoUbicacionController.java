@@ -133,7 +133,7 @@ public class TipoUbicacionController {
         try{
 
             TipoUbicacionDTO data = service.buscarNombreTipoUbicacion(nombreTipoUbicacion);
-            if (nombreTipoUbicacion != null){
+            if (data != null){
                 log.info("Tipo de Ubicacion encontrado con nombre: " + nombreTipoUbicacion);
                 ApiResponse<TipoUbicacionDTO> respuesta = new ApiResponse<>(true, "Se obtuvieron los datos del Tipo de Ubicacion con nombre: " + nombreTipoUbicacion, data);
                 return ResponseEntity.ok(respuesta);

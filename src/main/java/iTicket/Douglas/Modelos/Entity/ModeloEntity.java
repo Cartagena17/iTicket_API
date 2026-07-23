@@ -13,6 +13,7 @@ public class ModeloEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "Seq_modelos")
     @SequenceGenerator(name = "Seq_modelos", sequenceName = "Seq_modelos", allocationSize = 1)
+    @Column(name = "id_modelo")
     private Long idModelo;
 
     @Column(name = "nombre_modelo")

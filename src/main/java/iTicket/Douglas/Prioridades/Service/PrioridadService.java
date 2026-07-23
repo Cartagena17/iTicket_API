@@ -77,7 +77,7 @@ public class PrioridadService {
         }
     }
 
-    private PrioridadDTO convertirADTO(PrioridadEntity entitySave) {
+    private PrioridadDTO convertirADTO(@Valid PrioridadEntity entitySave) {
         PrioridadDTO objDTO = new PrioridadDTO();
         objDTO.setIdPrioridad(entitySave.getIdPrioridad());
         objDTO.setNombrePrioridad(entitySave.getNombrePrioridad());

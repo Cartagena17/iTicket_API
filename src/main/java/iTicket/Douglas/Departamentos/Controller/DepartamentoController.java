@@ -27,7 +27,7 @@ public class DepartamentoController {
             if (dto != null){
                 log.info("Nuevo departamento registrado " + dto);
                 ApiResponse<DepartamentoDTO> respuestaExito = new ApiResponse<>(true, "Datos registrados exitosamente", dto);
-                return ResponseEntity.ok(respuestaExito);
+                return ResponseEntity.status(HttpStatus.CREATED).body(respuestaExito);
             }
             log.warn("Intento de insercion fallida " + json);
             ApiResponse<DepartamentoDTO> respuestaFallida = new ApiResponse<>(false, "Intento de insercion fallida " + json);
@@ -51,7 +51,7 @@ public class DepartamentoController {
             }
             log.warn("Datos de departamentos no encontrados");
             ApiResponse<List<DepartamentoDTO>> respuestaNoEncontrada = new ApiResponse<>(false, "Datos de departamentos no encontrados");
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(respuestaNoEncontrada);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoEncontrada);
         } catch (Exception e) {
             log.error("No se pudieron obtener los datos de los departamentos");
             e.printStackTrace();
@@ -91,7 +91,7 @@ public class DepartamentoController {
             }
             log.warn("No se pudo actualizar el departamento con id "+id);
             ApiResponse<DepartamentoDTO> respuestaNoCompletada = new ApiResponse<>(false, "No se pudo actualizar el departamento con id "+id);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuestaNoCompletada);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoCompletada);
         } catch (Exception e) {
             log.error("Error crítico en la actualizar el departamento con id " + id);
             e.printStackTrace();
@@ -107,7 +107,7 @@ public class DepartamentoController {
             if (respuesta) {
                 log.info("Se logró eliminar el departamento con id "+id);
                 ApiResponse<Void> respuestaExito = new ApiResponse<>(true, "Se logró eliminar el departamento con id "+id);
-                return ResponseEntity.ok(respuestaExito);
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).body(respuestaExito);
             }
             log.warn("No se logro eliminar el departamento con id "+id);
             ApiResponse<Void> respuestaNoEncontrada = new ApiResponse<>(false, "No se logro eliminar el departamento con id "+id);

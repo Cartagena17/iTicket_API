@@ -5,6 +5,7 @@ import iTicket.Douglas.Marcas.Repository.MarcaRepository;
 import iTicket.Douglas.Modelos.DTO.ModeloDTO;
 import iTicket.Douglas.Modelos.Entity.ModeloEntity;
 import iTicket.Douglas.Modelos.Repository.ModeloRepository;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,7 +22,7 @@ public class ModeloService {
     private final ModeloRepository repo;
     private final MarcaRepository marcaRepo;
 
-    public ModeloDTO nuevoModelo(ModeloDTO dto) {
+    public ModeloDTO nuevoModelo(@Valid ModeloDTO dto) {
         try {
             Optional<MarcaEntity> marcaOpcional = marcaRepo.findById(dto.getIdMarca());
             if (marcaOpcional.isEmpty()) {
@@ -54,7 +55,7 @@ public class ModeloService {
 //        return data.stream().map(this::convertirADTO).collect(Collectors.toList());
 //    }
 
-    public ModeloDTO actualizarData(Long id, ModeloDTO dto) {
+    public ModeloDTO actualizarData(Long id,@Valid ModeloDTO dto) {
         try {
             Optional<ModeloEntity> registroExistente = repo.findById(id);
             if (registroExistente.isEmpty()) {
@@ -90,7 +91,7 @@ public class ModeloService {
     }
 
 
-    private ModeloDTO convertirADTO(ModeloEntity entity) {
+    private ModeloDTO convertirADTO(@Valid ModeloEntity entity) {
         ModeloDTO objDTO = new ModeloDTO();
         objDTO.setIdModelo(entity.getIdModelo());
         objDTO.setNombreModelo(entity.getNombreModelo());
@@ -99,7 +100,7 @@ public class ModeloService {
         return objDTO;
     }
 
-    private ModeloEntity convertirAEntity(ModeloDTO dto, MarcaEntity marca) {
+    private ModeloEntity convertirAEntity(@Valid ModeloDTO dto, MarcaEntity marca) {
         ModeloEntity objEntity = new ModeloEntity();
         objEntity.setNombreModelo(dto.getNombreModelo());
         objEntity.setMarca(marca);

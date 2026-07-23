@@ -9,11 +9,4 @@ import java.util.Optional;
 
 @Repository
 public interface UsuarioRepository extends JpaRepository<UsuarioEntity, Long> {
-
-    Optional<UsuarioEntity> findByCorreo(String correo);
-    boolean existsByCorreo(String correo);
-
-    List<UsuarioEntity> findByRol_IdRol(Long idRol);
-    List<UsuarioEntity> findByDepartamento_IdDepartamento(Long idDepartamento);
-    List<UsuarioEntity> findByDepartamento_Area_IdArea(Long idArea);
 }

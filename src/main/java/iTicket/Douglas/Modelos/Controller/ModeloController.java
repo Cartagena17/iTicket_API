@@ -14,7 +14,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("api/modelos")
+@RequestMapping("/api/modelos")
 @RequiredArgsConstructor
 public class ModeloController {
 
@@ -44,9 +44,14 @@ public class ModeloController {
     public ResponseEntity<ApiResponse<List<ModeloDTO>>> obtenerDatos() {
         try {
             List<ModeloDTO> lista = service.obtenerTodo();
-            log.info("Datos de modelos consultados");
-            ApiResponse<List<ModeloDTO>> respuestaExito = new ApiResponse<>(true, "Datos encontrados", lista);
-            return ResponseEntity.ok(respuestaExito);
+            if (lista != null) {
+                log.info("Datos de modelos consultados");
+                ApiResponse<List<ModeloDTO>> respuestaExito = new ApiResponse<>(true, "Datos encontrados", lista);
+                return ResponseEntity.ok(respuestaExito);
+            }
+            log.info("Datos no encontrados");
+            ApiResponse<List<ModeloDTO>> respuestaNoEncontrada = new ApiResponse<>(true, "Datos no encontrados");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoEncontrada);
         } catch (Exception e) {
             log.error("No se pudieron obtener los datos de los modelos");
             e.printStackTrace();
@@ -86,7 +91,7 @@ public class ModeloController {
             }
             log.warn("El modelo con id " + id + " no fue actualizado");
             ApiResponse<ModeloDTO> respuestaNoCompletada = new ApiResponse<>(false, "Proceso no completado");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuestaNoCompletada);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoCompletada);
         } catch (Exception e) {
             log.error("Error crítico en la actualización de modelo con id: " + id);
             e.printStackTrace();

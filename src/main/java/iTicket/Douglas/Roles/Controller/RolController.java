@@ -26,7 +26,7 @@ public class RolController {
             if (dto != null) {
                 log.info("Nuevo rol registrado " + dto);
                 ApiResponse<RolDTO> respuestaExito = new ApiResponse<>(true, "Nuevo rol registrado", dto);
-                return ResponseEntity.ok(respuestaExito);
+                return ResponseEntity.status(HttpStatus.CREATED).body(respuestaExito);
             }
             log.warn("Intento de insercion fallida " + json);
             ApiResponse<RolDTO> respuestaFallida = new ApiResponse<>(false, "Intento de insercion fallida " + json);
@@ -50,7 +50,7 @@ public class RolController {
             }
             log.warn("Datos de roles no encontrados");
             ApiResponse<List<RolDTO>> respuestaNoEncontrada = new ApiResponse<>(false, "Datos de roles no encontrados");
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(respuestaNoEncontrada);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoEncontrada);
         } catch (Exception e) {
             log.error("No se pudieron obtener los datos de los roles");
             e.printStackTrace();
@@ -90,7 +90,7 @@ public class RolController {
             }
             log.warn("No se pudo actualizar el rol con id "+id);
             ApiResponse<RolDTO> respuestaNoCompletada = new ApiResponse<>(false, "No se pudo actualizar el rol con id "+id);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuestaNoCompletada);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoCompletada);
         } catch (Exception e) {
             log.error("Error crítico en la actualización de rol con id: " + id);
             e.printStackTrace();

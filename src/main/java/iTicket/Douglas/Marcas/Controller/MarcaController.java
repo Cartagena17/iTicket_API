@@ -14,7 +14,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping ("api/marcas")
+@RequestMapping ("/api/marcas")
 @RequiredArgsConstructor
 public class MarcaController {
 
@@ -27,7 +27,7 @@ public class MarcaController {
             if (dto != null){
                 log.info("Nuevo marca registrado +"+dto);
                 ApiResponse<MarcaDTO> respuestaExito = new ApiResponse<>(true, "Datos registrados exitosamente" ,dto);
-                return ResponseEntity.ok(respuestaExito);
+                return ResponseEntity.status(HttpStatus.CREATED).body(respuestaExito);
             }
             log.warn("Intento de insercion fallida "+json);
             ApiResponse<MarcaDTO> respuestaFallida = new ApiResponse<>(false, "Intento de insercion fallida "+json);
@@ -51,7 +51,7 @@ public class MarcaController {
             }
             log.warn("Datos de marcas no encontrados");
             ApiResponse<List<MarcaDTO>> respuestaNoEncontrada = new ApiResponse<>(false,"Datos de marcas no encontrados");
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(respuestaNoEncontrada);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoEncontrada);
         }catch (Exception e){
             log.error("No se pudieron obtener los datos de las marcas");
             e.printStackTrace();
@@ -87,7 +87,7 @@ public class MarcaController {
             if (respuesta){
                 log.info("Se logró eliminar la marca con id "+id);
                 ApiResponse<Void> respuestaExito = new ApiResponse<>(true, "Se logró eliminar la marca con id "+id);
-                return ResponseEntity.ok(respuestaExito);
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).body(respuestaExito);
             }
             log.warn("la marca con id "+id+" no fue encontrada");
             ApiResponse<Void> respuestaNoEncontrada = new ApiResponse<>(false,"la marca con id "+id+" no fue encontrada");

@@ -6,6 +6,4 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AreaRepository extends JpaRepository<AreaEntity,Long> {
-
-    boolean existsByNombreArea(String nombreArea);
 }
