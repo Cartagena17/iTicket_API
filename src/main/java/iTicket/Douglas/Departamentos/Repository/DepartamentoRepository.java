@@ -7,5 +7,4 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface DepartamentoRepository extends JpaRepository<DepartamentoEntity, Long>{
-    boolean existsByNombreDepartamento(@NotBlank String nombreDepartamento);
 }

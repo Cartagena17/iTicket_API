@@ -10,6 +10,7 @@ import iTicket.Douglas.Usuarios.DTO.UsuarioUpdateDTO;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
 import iTicket.Douglas.Utils.PasswordUtil;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,13 +29,8 @@ public class UsuarioService {
     private final DepartamentoRepository departamentoRepo;
     private final PasswordUtil passwordUtil;
 
-    public UsuarioDTO nuevoUsuario(UsuarioDTO dto) {
+    public UsuarioDTO nuevoUsuario(@Valid UsuarioDTO dto) {
         try {
-            if (repo.existsByCorreo(dto.getCorreo())) {
-                log.warn("Ya existe un usuario con el correo " + dto.getCorreo());
-                return null;
-            }
-
             Optional<RolEntity> rolOpcional = rolRepo.findById(dto.getIdRol());
             if (rolOpcional.isEmpty()) {
                 log.warn("El rol con id " + dto.getIdRol() + " no existe");
@@ -68,7 +64,7 @@ public class UsuarioService {
         return entidadOpcional.map(this::convertirADTO).orElse(null);
     }
 
-    public UsuarioDTO actualizarData(Long id, UsuarioUpdateDTO dto) {
+    public UsuarioDTO actualizarData(Long id,@Valid UsuarioUpdateDTO dto) {
         try {
             Optional<UsuarioEntity> registroExistente = repo.findById(id);
             if (registroExistente.isEmpty()) {
@@ -161,37 +157,6 @@ public class UsuarioService {
         return false;
     }
 
-    public List<UsuarioDTO> obtenerPorRol(Long idRol) {
-        List<UsuarioEntity> data = repo.findByRol_IdRol(idRol);
-        return data.stream().map(this::convertirADTO).collect(Collectors.toList());
-    }
-
-    public List<UsuarioDTO> obtenerPorDepartamento(Long idDepartamento) {
-        List<UsuarioEntity> data = repo.findByDepartamento_IdDepartamento(idDepartamento);
-        return data.stream().map(this::convertirADTO).collect(Collectors.toList());
-    }
-
-    public List<UsuarioDTO> obtenerPorArea(Long idArea) {
-        List<UsuarioEntity> data = repo.findByDepartamento_Area_IdArea(idArea);
-        return data.stream().map(this::convertirADTO).collect(Collectors.toList());
-    }
-
-    public UsuarioDTO login(String correo, String claveTextoPlano) {
-        Optional<UsuarioEntity> usuarioOpcional = repo.findByCorreo(correo);
-        if (usuarioOpcional.isEmpty()) {
-            log.warn("Intento de login con correo no registrado: " + correo);
-            return null;
-        }
-
-        UsuarioEntity usuario = usuarioOpcional.get();
-        if (!passwordUtil.coincidence(claveTextoPlano, usuario.getClave())) {
-            log.warn("Intento de login con contraseña incorrecta para: " + correo);
-            return null;
-        }
-
-        log.info("Login exitoso: " + correo);
-        return convertirADTO(usuario);
-    }
 
     private UsuarioEntity convertirAEntity(UsuarioDTO dto, RolEntity rol, DepartamentoEntity departamento) {
         UsuarioEntity objEntity = new UsuarioEntity();

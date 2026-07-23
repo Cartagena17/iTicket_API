@@ -2,6 +2,7 @@ package iTicket.Douglas.Areas.Controller;
 
 import iTicket.Douglas.Areas.DTO.AreaDTO;
 import iTicket.Douglas.Areas.Service.AreaService;
+import iTicket.Douglas.Marcas.DTO.MarcaDTO;
 import iTicket.Douglas.Response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,19 +26,19 @@ public class AreaController {
     public ResponseEntity<ApiResponse<AreaDTO>> nuevaArea(@Valid @RequestBody AreaDTO json) {
         try {
             AreaDTO dto = service.nuevaArea(json);
-            log.info("Nueva área registrada" + dto);
-            ApiResponse<AreaDTO> respuesta = new ApiResponse<>(true, "Datos ingresados exitosamente", dto);
-            return ResponseEntity.ok(respuesta);
-
-        } catch (IllegalArgumentException e) {
-            log.warn("Intento de inserción fallida: " + e.getMessage());
-            ApiResponse<AreaDTO> respuestaFallida = new ApiResponse<>(false, e.getMessage(), null);
+            if (dto != null){
+                log.info("Nuevo area registrado +"+dto);
+                ApiResponse<AreaDTO> respuestaExito = new ApiResponse<>(true, "Datos registrados exitosamente" ,dto);
+                return ResponseEntity.status(HttpStatus.CREATED).body(respuestaExito);
+            }
+            log.warn("Intento de inserción fallida: "+json);
+            ApiResponse<AreaDTO> respuestaFallida = new ApiResponse<>(false,"Intento de inserción fallida: "+json);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuestaFallida);
 
         } catch (Exception e) {
             log.error("El proceso presentó un fallo inesperado, consulte con el administrador");
             e.printStackTrace();
-            ApiResponse<AreaDTO> respuesta = new ApiResponse<>(false, "El proceso no se pudo completar", json);
+            ApiResponse<AreaDTO> respuesta = new ApiResponse<>(false, "El proceso no se pudo completar");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuesta);
         }
     }
@@ -52,12 +53,12 @@ public class AreaController {
                 return ResponseEntity.ok(respuestaExito);
             }
             log.info("Datos no encontrados");
-            ApiResponse<List<AreaDTO>> respuestaNoEncontrada = new ApiResponse<>(true, "Datos encontrados", null);
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(respuestaNoEncontrada);
+            ApiResponse<List<AreaDTO>> respuestaNoEncontrada = new ApiResponse<>(true, "Datos encontrados");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoEncontrada);
         } catch (Exception e) {
             log.error("El proceso presentó un fallo inesperado, consulte con el administrador");
             e.printStackTrace();
-            ApiResponse<List<AreaDTO>> respuesta = new ApiResponse<>(false, "El proceso no se pudo completar", null);
+            ApiResponse<List<AreaDTO>> respuesta = new ApiResponse<>(false, "El proceso no se pudo completar");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuesta);
         }
     }
@@ -109,7 +110,7 @@ public class AreaController {
             if (eliminado) {
                 log.info("Área eliminada, id: " + id);
                 ApiResponse<Void> respuestaExito = new ApiResponse<>(true, "Área eliminada correctamente", null);
-                return ResponseEntity.ok(respuestaExito);
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).body(respuestaExito);
             }
             log.warn("Intento de eliminación fallida, id no encontrado: " + id);
             ApiResponse<Void> respuestaNoEncontrada = new ApiResponse<>(false, "Área no encontrada", null);

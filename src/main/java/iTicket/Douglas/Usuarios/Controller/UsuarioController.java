@@ -1,7 +1,6 @@
 package iTicket.Douglas.Usuarios.Controller;
 
 import iTicket.Douglas.Response.ApiResponse;
-import iTicket.Douglas.Usuarios.DTO.LoginDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioPatchDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioUpdateDTO;
@@ -78,50 +77,6 @@ public class UsuarioController {
         }
     }
 
-    @GetMapping("/rol/{idRol}")
-    public ResponseEntity<ApiResponse<List<UsuarioDTO>>> obtenerPorRol(@PathVariable Long idRol) {
-        try {
-            List<UsuarioDTO> lista = service.obtenerPorRol(idRol);
-            log.info("Usuarios consultados por rol " + idRol);
-            ApiResponse<List<UsuarioDTO>> respuestaExito = new ApiResponse<>(true, "Usuarios consultados por rol " + idRol, lista);
-            return ResponseEntity.ok(respuestaExito);
-        } catch (Exception e) {
-            log.error("Error al consultar usuarios por rol " + idRol);
-            e.printStackTrace();
-            ApiResponse<List<UsuarioDTO>> respuestaFallida = new ApiResponse<>(false, "No se pudieron obtener los usuarios");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaFallida);
-        }
-    }
-
-    @GetMapping("/departamento/{idDepartamento}")
-    public ResponseEntity<ApiResponse<List<UsuarioDTO>>> obtenerPorDepartamento(@PathVariable Long idDepartamento) {
-        try {
-            List<UsuarioDTO> lista = service.obtenerPorDepartamento(idDepartamento);
-            log.info("Usuarios consultados por departamento " + idDepartamento);
-            ApiResponse<List<UsuarioDTO>> respuesta = new ApiResponse<>(true, "Usuarios encontrados por departamento "+idDepartamento, lista);
-            return ResponseEntity.ok(respuesta);
-        } catch (Exception e) {
-            log.error("Error al consultar usuarios por departamento " + idDepartamento);
-            e.printStackTrace();
-            ApiResponse<List<UsuarioDTO>> respuestaFallida = new ApiResponse<>(false, "No se pudieron obtener los usuarios");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaFallida);
-        }
-    }
-
-    @GetMapping("/area/{idArea}")
-    public ResponseEntity<ApiResponse<List<UsuarioDTO>>> obtenerPorArea(@PathVariable Long idArea) {
-        try {
-            List<UsuarioDTO> lista = service.obtenerPorArea(idArea);
-            log.info("Usuarios consultados por área " + idArea);
-            ApiResponse<List<UsuarioDTO>> respuesta = new ApiResponse<>(true, "Usuarios consultados por área " + idArea, lista);
-            return ResponseEntity.ok(respuesta);
-        } catch (Exception e) {
-            log.error("Error al consultar usuarios por área " + idArea);
-            e.printStackTrace();
-            ApiResponse<List<UsuarioDTO>> respuestaFallida = new ApiResponse<>(false, "No se pudieron obtener los usuarios");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaFallida);
-        }
-    }
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<UsuarioDTO>> actualizarUsuario(@PathVariable Long id, @Valid @RequestBody UsuarioUpdateDTO dto) {
@@ -183,23 +138,4 @@ public class UsuarioController {
         }
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<ApiResponse<UsuarioDTO>> login(@Valid @RequestBody LoginDTO loginDTO) {
-        try {
-            UsuarioDTO dto = service.login(loginDTO.getCorreo(), loginDTO.getClave());
-            if (dto != null) {
-                log.info("Login exitoso: " + loginDTO.getCorreo());
-                ApiResponse<UsuarioDTO> respuestaExito = new ApiResponse<>(true, "Inicio de sesión exitoso", dto);
-                return ResponseEntity.ok(respuestaExito);
-            }
-            log.warn("Login fallido: " + loginDTO.getCorreo());
-            ApiResponse<UsuarioDTO> respuestaFallida = new ApiResponse<>(false, "Correo o contraseña incorrectos");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(respuestaFallida);
-        } catch (Exception e) {
-            log.error("Error crítico durante el login");
-            e.printStackTrace();
-            ApiResponse<UsuarioDTO> respuestaError = new ApiResponse<>(false, "El proceso no se pudo completar");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
-        }
-    }
 }
