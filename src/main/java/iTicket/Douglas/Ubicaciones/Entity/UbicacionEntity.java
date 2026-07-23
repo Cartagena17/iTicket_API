@@ -5,13 +5,11 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
-
 @Entity
 @Getter
 @Setter
 @Table(name = "Ubicaciones")
-public class UbicacionesEntity {
+public class UbicacionEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "Seq_ubicaciones")

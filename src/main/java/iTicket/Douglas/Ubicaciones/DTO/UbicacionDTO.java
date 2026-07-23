@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
-public class UbicacionesDTO {
+public class UbicacionDTO {
 
     private Long id;
     @NotBlank @Size(max = 50, message = "Longitud invalida en el nombre de la Ubicacion [50 caracteres como maximo]")

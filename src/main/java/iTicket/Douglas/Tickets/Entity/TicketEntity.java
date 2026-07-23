@@ -1,6 +1,7 @@
 package iTicket.Douglas.Tickets.Entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import iTicket.Douglas.Comentarios.Entity.ComentarioEntity;
 import iTicket.Douglas.Departamentos.Entity.DepartamentoEntity;
 import iTicket.Douglas.Evidencias.Entity.EvidenciaEntity;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
@@ -59,4 +60,7 @@ public class TicketEntity {
 
     @Column(name = "TIPO_TICKET")
     private String tipoTicket;
+
+    @OneToMany(mappedBy = "ticket")
+    private List<ComentarioEntity> comentarios;
 }
