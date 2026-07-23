@@ -50,7 +50,7 @@ public class DepartamentoService {
         return entidadOpcional.map(this::convertirADTO).orElse(null);
     }
 
-    public DepartamentoDTO actualizar(Long id, DepartamentoDTO dto){
+    public DepartamentoDTO actualizar(Long id,@Valid DepartamentoDTO dto){
         try {
             Optional<DepartamentoEntity> registroExistente = repo.findById(id);
             if (registroExistente.isPresent()){

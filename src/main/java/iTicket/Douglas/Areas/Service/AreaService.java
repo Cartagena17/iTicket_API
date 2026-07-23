@@ -3,6 +3,7 @@ package iTicket.Douglas.Areas.Service;
     import iTicket.Douglas.Areas.DTO.AreaDTO;
     import iTicket.Douglas.Areas.Entity.AreaEntity;
     import iTicket.Douglas.Areas.Repository.AreaRepository;
+    import jakarta.validation.Valid;
     import lombok.RequiredArgsConstructor;
     import lombok.extern.slf4j.Slf4j;
     import org.springframework.stereotype.Service;
@@ -18,10 +19,8 @@ package iTicket.Douglas.Areas.Service;
 
         private final AreaRepository repo;
 
-        public AreaDTO nuevaArea(AreaDTO dto) {
-            if (repo.existsByNombreArea(dto.getNombreArea())) {
-                throw new IllegalArgumentException("Ya existe un area con ese nombre");
-            }
+        public AreaDTO nuevaArea(@Valid AreaDTO dto) {
+
             try {
                 //Convertir a Entity
                 AreaEntity entity = convertirAEntity(dto);
@@ -33,7 +32,6 @@ package iTicket.Douglas.Areas.Service;
                 log.error("Error al guardar el área"+e.getMessage());
                 throw new RuntimeException("No se pudo guardar el área");
             }
-
         }
 
         public List<AreaDTO> obtenerTodo() {
@@ -55,7 +53,7 @@ package iTicket.Douglas.Areas.Service;
             return null;
         }
 
-        public AreaDTO editarArea(Long id, AreaDTO dto) {
+        public AreaDTO editarArea(Long id,@Valid AreaDTO dto) {
             try {
                 // Buscar si el área existe
                 Optional<AreaEntity> registroExistente = repo.findById(id);
@@ -81,13 +79,13 @@ package iTicket.Douglas.Areas.Service;
             return false; // No se encontró el registro
         }
 
-        private AreaEntity convertirAEntity(AreaDTO dto) {
+        private AreaEntity convertirAEntity(@Valid AreaDTO dto) {
             AreaEntity objEntity = new AreaEntity();
             objEntity.setNombreArea(dto.getNombreArea());
             return objEntity;
         }
 
-        private AreaDTO convertirADTO(AreaEntity entity) {
+        private AreaDTO convertirADTO(@Valid AreaEntity entity) {
             AreaDTO objDTO = new AreaDTO();
             objDTO.setIdArea(entity.getIdArea());
             objDTO.setNombreArea(entity.getNombreArea());
