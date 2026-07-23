@@ -1,6 +1,6 @@
 package iTicket.Douglas.TipoUbicacion.Entity;
 
-import iTicket.Douglas.Ubicaciones.Entity.UbicacionesEntity;
+import iTicket.Douglas.Ubicaciones.Entity.UbicacionEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,5 +20,5 @@ public class TipoUbicacionEntity {
     @Column (name = "nombre_tipo_ubicacion")
     private String nombreTipoUbicacion;
     @OneToMany(mappedBy = "tipoUbicacion")
-    private List<UbicacionesEntity> ubicaciones;
+    private List<UbicacionEntity> ubicaciones;
 }

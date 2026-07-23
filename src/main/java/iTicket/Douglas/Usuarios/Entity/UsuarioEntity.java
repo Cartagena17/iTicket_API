@@ -1,10 +1,13 @@
 package iTicket.Douglas.Usuarios.Entity;
 
+import iTicket.Douglas.Comentarios.Entity.ComentarioEntity;
 import iTicket.Douglas.Departamentos.Entity.DepartamentoEntity;
 import iTicket.Douglas.Roles.Entity.RolEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
 
 @Entity
 @Getter @Setter
@@ -33,4 +36,7 @@ public class UsuarioEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_departamento", nullable = false)
     private DepartamentoEntity departamento;
+
+    @OneToMany(mappedBy = "usuario")
+    private List<ComentarioEntity> comentarios;
 }
