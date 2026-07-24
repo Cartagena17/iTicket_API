@@ -30,7 +30,7 @@ public class DepartamentoController {
                 return ResponseEntity.ok(respuestaExito);
             }
             log.warn("Intento de insercion fallida " + json);
-            ApiResponse<DepartamentoDTO> respuestaFallida = new ApiResponse<>(false, "Intento de insercion fallida " + json);
+            ApiResponse<DepartamentoDTO> respuestaFallida = new ApiResponse<>(false, "Intento de insercion fallida ");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuestaFallida);
         } catch (Exception e) {
             log.error("El proceso presentó un fallo inesperado contacte con el administrador");

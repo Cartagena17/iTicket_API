@@ -26,7 +26,7 @@ public class RolController {
             if (dto != null) {
                 log.info("Nuevo rol registrado " + dto);
                 ApiResponse<RolDTO> respuestaExito = new ApiResponse<>(true, "Nuevo rol registrado", dto);
-                return ResponseEntity.ok(respuestaExito);
+                return ResponseEntity.status(HttpStatus.CREATED).body(respuestaExito);
             }
             log.warn("Intento de insercion fallida " + json);
             ApiResponse<RolDTO> respuestaFallida = new ApiResponse<>(false, "Intento de insercion fallida " + json);
@@ -65,7 +65,7 @@ public class RolController {
             RolDTO dto = service.obtenerPorId(id);
             if (dto != null) {
                 log.info("Obtencion correcta de rol con id " + id);
-                ApiResponse<RolDTO> respuestaExitosa = new ApiResponse<>(true, "Proceso completado", dto);
+                ApiResponse<RolDTO> respuestaExitosa = new ApiResponse<>(true, "Obtencion correcta de rol con id " + id, dto);
                 return ResponseEntity.ok(respuestaExitosa);
             }
             log.warn("No se encontraron los datos del rol con id " + id);

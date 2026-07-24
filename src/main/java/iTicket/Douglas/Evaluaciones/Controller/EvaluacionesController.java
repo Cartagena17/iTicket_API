@@ -14,7 +14,6 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/api/evaluaciones")
-@CrossOrigin
 public class EvaluacionesController {
 
     private final EvaluacionesService service;

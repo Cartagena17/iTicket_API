@@ -107,7 +107,7 @@ public class UsuarioController {
                 ApiResponse<UsuarioDTO> respuestaExito = new ApiResponse<>(true, "Proceso completado", data);
                 return ResponseEntity.ok(respuestaExito);
             }
-            log.warn("El usuario con id " + id + " fue actualizado");
+            log.warn("El usuario con id " + id + " NO fue actualizado");
             ApiResponse<UsuarioDTO> respuestaNoCompletada = new ApiResponse<>(false, "Proceso no completado");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuestaNoCompletada);
         }catch (Exception e) {
