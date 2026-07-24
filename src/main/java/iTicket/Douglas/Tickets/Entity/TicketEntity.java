@@ -61,6 +61,7 @@ public class TicketEntity {
     @Column(name = "TIPO_TICKET")
     private String tipoTicket;
 
-    @OneToMany(mappedBy = "ticket")
+    @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<ComentarioEntity> comentarios;
 }

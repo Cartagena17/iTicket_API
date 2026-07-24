@@ -55,7 +55,7 @@ public class DetalleFController {
             List<DetalleFDTO> lista = service.obtenerDetallesF();
             if (lista != null){
                 log.info("Datos de detalle de fase consultados");
-                ApiResponse<List<DetalleFDTO>> exito = new ApiResponse<>(true, "Datos de detalle de fase consultados");
+                ApiResponse<List<DetalleFDTO>> exito = new ApiResponse<>(true, "Datos de detalle de fase consultados",lista);
                 return ResponseEntity.ok(exito);
             }
             log.warn("No se encontraron los datos de detalle de fase");
@@ -110,23 +110,23 @@ public class DetalleFController {
         }
     }
 
-    @GetMapping("/idFase/{fase}")
-    public ResponseEntity<ApiResponse<DetalleFDTO>> obtenerPorIdFase(@PathVariable FaseEntity idFase){
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<DetalleFDTO>> obtenerPorIdFase(@PathVariable FaseEntity id){
         try {
-            DetalleFDTO dto = service.obtenerPorIdFase(idFase);
+            DetalleFDTO dto = service.obtenerPorIdFase(id);
             if (dto != null) {
-                log.info("Se obtuvieron los datos del detalle de la fase: " + idFase);
-                ApiResponse<DetalleFDTO> exito = new ApiResponse<>(true, "Se obtuvieron los datos del detalle de la fase: " + idFase, dto);
+                log.info("Se obtuvieron los datos del detalle de la fase: " + id);
+                ApiResponse<DetalleFDTO> exito = new ApiResponse<>(true, "Se obtuvieron los datos del detalle de la fase: " + id, dto);
                 return ResponseEntity.ok(exito);
             }
-            log.warn("Datos no encontrados con ID: " + idFase);
-            ApiResponse<DetalleFDTO> respuesta = new ApiResponse<>(false, "Detalle de fase con id: " + idFase + ", no encontrado");
+            log.warn("Datos no encontrados con ID: " + id);
+            ApiResponse<DetalleFDTO> respuesta = new ApiResponse<>(false, "Detalle de fase con id: " + id + ", no encontrado");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
         }
         catch (Exception e){
-            log.error("Error al obtener el detalle de la fase: " + idFase);
+            log.error("Error al obtener el detalle de la fase: " + id);
             e.printStackTrace();
-            ApiResponse<DetalleFDTO> error = new ApiResponse<>(false, "No se pudo obtener los datos del detalle de la fase: " + idFase);
+            ApiResponse<DetalleFDTO> error = new ApiResponse<>(false, "No se pudo obtener los datos del detalle de la fase: " + id);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }

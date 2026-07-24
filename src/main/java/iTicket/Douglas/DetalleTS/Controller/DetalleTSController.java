@@ -5,6 +5,7 @@ import iTicket.Douglas.DetalleTS.DTO.DetalleTSDTO;
 import iTicket.Douglas.DetalleTS.Service.DetalleTSService;
 import iTicket.Douglas.Response.ApiResponse;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
+import iTicket.Douglas.Ubicaciones.Service.UbicacionService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

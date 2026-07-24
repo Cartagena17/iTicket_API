@@ -69,23 +69,23 @@ public class DetalleGController {
     }
 
     //Metodo para obtener detalle de ticket general por id de ticket, quitar comentario cuando se unan las demas partes
-    @GetMapping ("/detalleGIdTicket/{ticket}")
-    public ResponseEntity<ApiResponse<DetalleGDTO>> buscarDetalleGIdTicket(@PathVariable TicketEntity ticket){
+    @GetMapping ("/{id}")
+    public ResponseEntity<ApiResponse<DetalleGDTO>> buscarDetalleGIdTicket(@PathVariable TicketEntity id){
         try{
-            DetalleGDTO datos = service.obtenerDetallesIdTicket(ticket);
+            DetalleGDTO datos = service.obtenerDetallesIdTicket(id);
             if (datos != null){
-                log.info("Se obtuvo con exito el detalle del ticket: " + ticket);
-                ApiResponse<DetalleGDTO> exito = new ApiResponse<>(true, "Se obtuvo con exito el detalle del ticket: " + ticket);
+                log.info("Se obtuvo con exito el detalle del ticket: " + id);
+                ApiResponse<DetalleGDTO> exito = new ApiResponse<>(true, "Se obtuvo con exito el detalle del ticket: " + id);
                 return  ResponseEntity.ok(exito);
             }
-            log.warn("No se pudo encontrar el detalle del ticket: " + ticket);
-            ApiResponse<DetalleGDTO> respuesta = new ApiResponse<>(false, "No se pudo encontrar el detalle del ticket: " + ticket);
+            log.warn("No se pudo encontrar el detalle del ticket: " + id);
+            ApiResponse<DetalleGDTO> respuesta = new ApiResponse<>(false, "No se pudo encontrar el detalle del ticket: " + id);
             return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
         }
         catch (Exception e){
-            log.error("Error al obtener el detalle del ticket: " + ticket);
+            log.error("Error al obtener el detalle del ticket: " + id);
             e.printStackTrace();
-            ApiResponse<DetalleGDTO> error = new ApiResponse<>(false, "Error al obtener el detalle del ticket: " + ticket);
+            ApiResponse<DetalleGDTO> error = new ApiResponse<>(false, "Error al obtener el detalle del ticket: " + id);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }

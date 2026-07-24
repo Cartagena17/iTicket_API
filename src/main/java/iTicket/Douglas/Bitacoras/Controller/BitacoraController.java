@@ -4,6 +4,7 @@ package iTicket.Douglas.Bitacoras.Controller;
 import iTicket.Douglas.Bitacoras.DTO.BitacoraDTO;
 import iTicket.Douglas.Bitacoras.Service.BitacoraService;
 import iTicket.Douglas.Response.ApiResponse;
+import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -66,17 +67,17 @@ public class BitacoraController {
     }
 
     //Metodo para obtenere bitacora por id de ticket
-    @GetMapping("/bitacoraTicket/{ticket}")
-    public ResponseEntity<ApiResponse<BitacoraDTO>> obtenerBitacoraIdTicket(@PathVariable Long idTicket){
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<BitacoraDTO>> obtenerBitacoraIdTicket(@PathVariable TicketEntity idTicket ){
         try {
             BitacoraDTO dto = service.obtenerBitacoraIdTicket(idTicket);
             if (dto != null){
-                log.info("Se obtuvo la bitacora con ticket: " + idTicket);
-                ApiResponse<BitacoraDTO> exito = new ApiResponse<>(true, "Se obtuvo la bitacora con ticket: " + idTicket);
+                log.info("Se obtuvo la bitacora con idticket: " + idTicket);
+                ApiResponse<BitacoraDTO> exito = new ApiResponse<>(true, "Se obtuvo la bitacora con idticket: " + idTicket);
                 return ResponseEntity.ok(exito);
             }
-            log.warn("Bitacora con ticket: " + idTicket + ", no encontrada");
-            ApiResponse<BitacoraDTO> respuesta = new ApiResponse<>(false, "Bitacora con ticket: " + idTicket + ", no encontrada");
+            log.warn("Bitacora con idticket: " + idTicket + ", no encontrada");
+            ApiResponse<BitacoraDTO> respuesta = new ApiResponse<>(false, "Bitacora con idticket: " + idTicket + ", no encontrada");
             return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
         }
         catch (Exception e){

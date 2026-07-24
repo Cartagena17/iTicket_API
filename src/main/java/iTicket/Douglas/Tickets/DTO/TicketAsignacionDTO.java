@@ -19,6 +19,5 @@ public class TicketAsignacionDTO {
     private Long tecnicoAsignado;
 
     @NotNull(message = "La prioridad es obligatoria")
-    @Positive(message = "ID de prioridad inválido")
     private String prioridad;
 }

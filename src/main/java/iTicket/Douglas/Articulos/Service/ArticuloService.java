@@ -9,6 +9,7 @@ import iTicket.Douglas.Modelos.Entity.ModeloEntity;
 import iTicket.Douglas.Modelos.Repository.ModeloRepository;
 import iTicket.Douglas.Ubicaciones.Entity.UbicacionEntity;
 import iTicket.Douglas.Ubicaciones.Repository.UbicacionRepository;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

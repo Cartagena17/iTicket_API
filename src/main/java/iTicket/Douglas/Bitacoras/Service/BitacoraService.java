@@ -41,8 +41,9 @@ public class BitacoraService {
     public BitacoraEntity convertirAEntity(BitacoraDTO dto){
         BitacoraEntity entity = new BitacoraEntity();
         entity.setUsuario(buscarUsuario(dto.getUsuario()));
-        entity.setTicket(buscarTicket(dto.getTicket()));
+        entity.setIdTicket(buscarTicket(dto.getIdTicket()));
         entity.setNuevoEstado(dto.getNuevoEstado());
+        entity.setFechaHora(LocalDateTime.now());
         return entity;
     }
 
@@ -52,8 +53,8 @@ public class BitacoraService {
         dto.setIdBitacora(entity.getIdBitacora());
         dto.setUsuario(entity.getUsuario().getIdUsuario());
         dto.setNombreUsuario(entity.getUsuario().getNombreUsuario());
-        dto.setTicket(entity.getTicket().getIdTicket());
-        dto.setAsunto(entity.getTicket().getAsunto());
+        dto.setIdTicket(entity.getIdTicket().getIdTicket());
+        dto.setAsunto(entity.getIdTicket().getAsunto());
         dto.setNuevoEstado(entity.getNuevoEstado());
         dto.setFechaHora(entity.getFechaHora());
         return dto;
@@ -86,9 +87,9 @@ public class BitacoraService {
         return dto;
     }
 
-    public BitacoraDTO obtenerBitacoraIdTicket(Long idTicket) {
+    public BitacoraDTO obtenerBitacoraIdTicket(TicketEntity idTicket) {
         try {
-            Optional<BitacoraEntity> entidadOpcional = bitacoraRepo.findByTicket(idTicket);
+            Optional<BitacoraEntity> entidadOpcional = bitacoraRepo.findByIdTicket(idTicket);
             if (entidadOpcional.isPresent()){
                 return convertirADTO(entidadOpcional.get());
             }

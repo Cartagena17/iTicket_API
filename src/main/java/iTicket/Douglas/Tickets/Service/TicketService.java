@@ -204,6 +204,7 @@ public class TicketService {
             ticket.setPrioridad(dto.getPrioridad());
 
             repo.save(ticket);
+            return true;
         }
         return false;
     }
@@ -216,6 +217,7 @@ public class TicketService {
             ticket.setDescripcionFalla(dto.getDescripcionFalla());
             ticket.setDescripcionSolucion(dto.getDescripcionSolucion());
             repo.save(ticket);
+            return true;
         }
         return false;
     }

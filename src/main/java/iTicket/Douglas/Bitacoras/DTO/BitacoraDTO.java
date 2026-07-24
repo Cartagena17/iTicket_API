@@ -16,7 +16,7 @@ public class BitacoraDTO {
     private Long idBitacora;
     @NotNull(message = "El id del ticket es obligatorio.")
     @Positive
-    private Long ticket;
+    private Long idTicket;
     private String asunto;
 
     @NotNull (message = "El id del usuario es obligatorio.")
@@ -28,5 +28,6 @@ public class BitacoraDTO {
     @Size(max = 10, message = "El nuevo estado no puede exceder los 10 caracteres.")
     private String nuevoEstado;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime fechaHora;
 }

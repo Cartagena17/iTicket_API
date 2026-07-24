@@ -66,23 +66,23 @@ public class FaseController {
         }
     }
 
-    @GetMapping("/nombreFase/{nombreFase}")
-    public ResponseEntity<ApiResponse<FaseDTO>> buscarPorNombreFase(String nombreFase){
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<FaseDTO>> buscarPorNombreFase(String id){
         try{
-            FaseDTO dto = service.buscarPorNombreFase(nombreFase);
+            FaseDTO dto = service.buscarPorNombreFase(id);
             if (dto != null){
-                log.info("Fase: " + nombreFase + ", consultada con éxito");
-                ApiResponse<FaseDTO> exito = new ApiResponse<>(true, "Fase: " + nombreFase + ", consultada con éxito");
+                log.info("Fase: " + id + ", consultada con éxito");
+                ApiResponse<FaseDTO> exito = new ApiResponse<>(true, "Fase: " + id + ", consultada con éxito");
                 return ResponseEntity.ok(exito);
             }
-            log.warn("No se ha encontrado la fase: " + nombreFase);
-            ApiResponse<FaseDTO> respuesta = new ApiResponse<>(false, "No se ha encontrado la fase: " + nombreFase);
+            log.warn("No se ha encontrado la fase: " + id);
+            ApiResponse<FaseDTO> respuesta = new ApiResponse<>(false, "No se ha encontrado la fase: " + id);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
         }
         catch (Exception e){
-            log.error("No se pudo obtener la fase: " + nombreFase);
+            log.error("No se pudo obtener la fase: " + id);
             e.printStackTrace();
-            ApiResponse<FaseDTO> error = new ApiResponse<>(false, "No se pudo obtener la fase: " + nombreFase);
+            ApiResponse<FaseDTO> error = new ApiResponse<>(false, "No se pudo obtener la fase: " + id);
             return  ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }

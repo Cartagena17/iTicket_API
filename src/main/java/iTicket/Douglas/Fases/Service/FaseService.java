@@ -40,6 +40,7 @@ public class FaseService {
         entity.setPresupuestoEstimado(dto.getPresupuestoEstimado());
         entity.setGastoTotal(dto.getGastoTotal());
         entity.setFinalizado(dto.getFinalizado());
+        entity.setDepartamentoEncargado(dto.getDepartamentoEncargado());
         //Quitar comentario al unir las demas partes
         entity.setProyecto(buscarProyecto(dto.getProyecto()));
         return entity;
@@ -58,6 +59,7 @@ public class FaseService {
         dto.setPresupuestoEstimado(entity.getPresupuestoEstimado());
         dto.setGastoTotal(entity.getGastoTotal());
         dto.setFinalizado(entity.getFinalizado());
+        dto.setDepartamentoEncargado(entity.getDepartamentoEncargado());
         //quitar comentario al unir las demas partes
         dto.setProyecto(entity.getProyecto().getIdProyecto());
         return dto;
@@ -105,6 +107,7 @@ public class FaseService {
                 entidad.setPresupuestoEstimado(dto.getPresupuestoEstimado());
                 entidad.setGastoTotal(dto.getGastoTotal());
                 entidad.setFinalizado(dto.getFinalizado());
+                entidad.setDepartamentoEncargado(dto.getDepartamentoEncargado());
                 //Quitar comentario al unir las demas partes
                 entidad.setProyecto(buscarProyecto(dto.getProyecto()));
 
@@ -148,6 +151,9 @@ public class FaseService {
             if (entidadOpcional.isPresent()){
                 FaseEntity entidad = entidadOpcional.get();
 
+                if (dto.getDepartamentoEncargado() != null){
+                    entidad.setDepartamentoEncargado(dto.getDepartamentoEncargado());
+                }
                 if (dto.getGastoTotal() != null){
                     entidad.setGastoTotal(dto.getGastoTotal());
                 }

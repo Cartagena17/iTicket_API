@@ -17,4 +17,7 @@ public class PatchFaseDTO {
 
     @Future (message = "La fecha debe ser futura")
     private LocalDate fechaFinalEstimada;
+
+    @Size (max = 20, message = "El departamento encargado no puede exceder los 20 carácteres.")
+    private String departamentoEncargado;
 }

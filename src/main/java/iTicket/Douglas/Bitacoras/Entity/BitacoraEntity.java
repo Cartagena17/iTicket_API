@@ -23,7 +23,7 @@ public class BitacoraEntity {
     private UsuarioEntity usuario;
     @ManyToOne (fetch = FetchType.LAZY)
     @JoinColumn (name = "ID_TICKET", referencedColumnName = "ID_TICKET")
-    private TicketEntity ticket;
+    private TicketEntity idTicket;
     @Column (name = "NUEVO_ESTADO")
     private String nuevoEstado;
     @Column (name = "FECHA_HORA")
