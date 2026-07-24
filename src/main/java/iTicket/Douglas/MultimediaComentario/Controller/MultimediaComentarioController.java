@@ -2,11 +2,16 @@ package iTicket.Douglas.MultimediaComentario.Controller;
 
 import iTicket.Douglas.MultimediaComentario.DTO.MultimediaComentarioDTO;
 import iTicket.Douglas.MultimediaComentario.Service.MultimediaComentarioService;
+import iTicket.Douglas.Response.ApiResponse;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/multimediaComentarios")
 public class MultimediaComentarioController {
@@ -18,38 +23,108 @@ public class MultimediaComentarioController {
     }
 
     @PostMapping
-    public MultimediaComentarioDTO guardar(@RequestBody @Valid MultimediaComentarioDTO dto){
+    public ResponseEntity<ApiResponse<MultimediaComentarioDTO>> nuevaMultimedia(@Valid @RequestBody MultimediaComentarioDTO json){
 
-        return service.nuevaMultimedia(dto);
-
+        try{
+            MultimediaComentarioDTO dto = service.nuevaMultimedia(json);
+            if (dto != null){
+                log.info("Nueva Multimedia: " + dto);
+                ApiResponse<MultimediaComentarioDTO> respuesta = new ApiResponse<>(true, "Datos ingresados correctamente", dto);
+                return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
+            }
+            log.warn("Intento de insercion fallido: " + json);
+            ApiResponse<MultimediaComentarioDTO> respuestaFallida = new ApiResponse<>(false, "El proceso no se pudo completar", json);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuestaFallida);
+        } catch (Exception e) {
+            log.error("El proceso presento fallas inesperadas. Consulte con el administrador");
+            e.printStackTrace();
+            ApiResponse<MultimediaComentarioDTO> respuesta = new ApiResponse<>(false, "El proceso no se pudo completar", json);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuesta);
+        }
     }
 
     @GetMapping
-    public List<MultimediaComentarioDTO> obtenerTodo(){
+    private ResponseEntity<ApiResponse<List<MultimediaComentarioDTO>>> obtenerDatos(){
 
-        return service.obtenerTodo();
+        try {
+            List<MultimediaComentarioDTO> lista = service.obtenerTodo();
+            if (lista != null){
+                log.info("Datos de la Ubicacion consultados");
+                ApiResponse<List<MultimediaComentarioDTO>> respuestaExito = new ApiResponse<>(true,"Datos encontrados", lista);
+                return ResponseEntity.ok(respuestaExito);
+            }
+            log.info("Datos No encontrados");
+            ApiResponse<List<MultimediaComentarioDTO>> respuestaNoEncontrada = new ApiResponse<>(true,"Datos encontrados");
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(respuestaNoEncontrada);
 
+        } catch (Exception e) {
+            log.error("El proceso presento errores inesperados. Consulte con un administrador");
+            e.printStackTrace();
+            ApiResponse<List<MultimediaComentarioDTO>> respuestaFallida = new ApiResponse<>(false, "El proceso no se pudo completar");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaFallida);
+        }
     }
 
     @GetMapping("/{id}")
-    public MultimediaComentarioDTO buscarPorId(@PathVariable Long id){
+    public ResponseEntity<ApiResponse<MultimediaComentarioDTO>> obtenerDatosPorId(@PathVariable Long id){
 
-        return service.buscarPorId(id);
-
-    }
-
-    @PutMapping("/{id}")
-    public MultimediaComentarioDTO actualizar(@PathVariable Long id,
-                                               @RequestBody @Valid MultimediaComentarioDTO dto){
-
-        return service.actualizar(id,dto);
-
+        try {
+            MultimediaComentarioDTO dto = service.buscarPorId(id);
+            if (dto != null){
+                log.info("Se obtubieron los datos de la Multimedia del comentario" + dto);
+                ApiResponse<MultimediaComentarioDTO> respuesta = new ApiResponse<>(true,"Se obtubieron los datos de la Multimedia del comentario mediante su ID: " + id, dto);
+                return ResponseEntity.ok(respuesta);
+            }
+            log.info("Los datos de la Multimedia no se encontraron con el ID: " + id);
+            ApiResponse<MultimediaComentarioDTO> respuesta = new ApiResponse<>(false,"Los datos de la Multimedia no se encontraron con el ID: " + id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
+        } catch (Exception e) {
+            log.error("Error critico al obtener la Multimedia con ID: " + id);
+            e.printStackTrace(); // Muestra el lugar exacto de donde ocurrio el error en la ejecución
+            ApiResponse<MultimediaComentarioDTO> respuesta = new ApiResponse<>(false, "Error al obtener el la Multimedia con ID: " + id);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body((respuesta));
+        }
     }
 
     @DeleteMapping("/{id}")
-    public boolean eliminar(@PathVariable Long id){
+    public ResponseEntity<ApiResponse<Void>> eliminarMultimedia(@PathVariable Long id){
+        try {
+            boolean respuesta = service.eliminarData(id);
+            if (respuesta){
+                log.info("La Multimedia con ID: " + id + " Ya fue eliminado");
+                ApiResponse<Void> respuestaExitosa = new ApiResponse<>(true, "La Multimedia con ID: " + id + "Ya fue eliminado");
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).body((respuestaExitosa));
+            }
+            log.info("La Multimedia con ID: " + id + " no fue encontrado");
+            ApiResponse<Void> respuestaNoEncontrada = new ApiResponse<>(false, "La Multimedia con ID: " + id + " no fue encontrado");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoEncontrada);
+        }
+        catch (Exception e){
+            log.error("Error critico al eliminar la Multimedia con ID: " + id);
+            e.printStackTrace();
+            ApiResponse<Void> respuesta = new ApiResponse<>(false, "Error al eliminar la Multimedia con ID: " + id);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body((respuesta));
+        }
+    }
 
-        return service.eliminarData(id);
-
+    @PatchMapping("/{id}")
+    public ResponseEntity<ApiResponse<MultimediaComentarioDTO>> actualizarData(@PathVariable Long id, @Valid @RequestBody MultimediaComentarioDTO dto){
+        try{
+            MultimediaComentarioDTO data = service.actualizar(id, dto);
+            if (data != null){
+                log.info("La Multimedia con ID: " + id + " ha sido actualizado");
+                ApiResponse<MultimediaComentarioDTO> respuesta = new ApiResponse<>(true, "La Multimedia con ID: " + id + " ha sido actualizado", data);
+                return ResponseEntity.ok(respuesta);
+            }
+            log.warn("No se pudo completar la actualización de la Multimedia con ID: " + id );
+            ApiResponse<MultimediaComentarioDTO> respuesta = new ApiResponse<>(false, "No se pudo completar la actualización la de Multimedia con ID: " + id );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuesta);
+        }
+        catch (Exception e){
+            log.error("Error critico al actualizar la Multimedia con ID: " + id);
+            e.printStackTrace();
+            ApiResponse<MultimediaComentarioDTO> respuesta = new ApiResponse<>(false, "Error al actualizar la Mutimedia con ID: " + id);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body((respuesta));
+        }
     }
 }
