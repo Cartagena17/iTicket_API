@@ -5,6 +5,8 @@ import iTicket.Douglas.DetalleTS.Entity.DetalleTSEntity;
 import iTicket.Douglas.DetalleTS.Repository.DetalleTSRepository;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
+import iTicket.Douglas.Ubicaciones.Entity.UbicacionEntity;
+import iTicket.Douglas.Ubicaciones.Repository.UbicacionRepository;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,10 +21,12 @@ public class DetalleTSService {
 
     private final DetalleTSRepository repo;
     private final TicketRepository ticketRepo;
+    private final UbicacionRepository ubicacionRepo;
 
-    public DetalleTSService(DetalleTSRepository repo, TicketRepository ticketRepo) {
+    public DetalleTSService(DetalleTSRepository repo, TicketRepository ticketRepo, UbicacionRepository ubicacionRepo) {
         this.repo = repo;
         this.ticketRepo = ticketRepo;
+        this.ubicacionRepo = ubicacionRepo;
     }
 
     public DetalleTSDTO nuevoDetalleTS(@Valid DetalleTSDTO dto) {
@@ -44,7 +48,7 @@ public class DetalleTSService {
         DetalleTSEntity entity = new DetalleTSEntity();
         entity.setNombreSoftware(dto.getNombreSoftware());
         entity.setVersion(dto.getVersion());
-        entity.setUbicacion(dto.getUbicacion());
+        entity.setUbicacion(buscarUbicacion(dto.getIdUbicacion()));
         entity.setTicket(buscarTicket(dto.getTicket()));
         return entity;
     }
@@ -54,7 +58,8 @@ public class DetalleTSService {
         dto.setIdDetalleTs(entity.getIdDetalleTS());
         dto.setNombreSoftware(entity.getNombreSoftware());
         dto.setVersion(entity.getVersion());
-        dto.setUbicacion(entity.getUbicacion());
+        dto.setIdUbicacion(entity.getUbicacion().getId());
+        dto.setNombreUbicacion(entity.getUbicacion().getNombreUbicacion());
         //Quitar comentario al unir las demas partes
         dto.setTicket(entity.getTicket().getIdTicket());
         dto.setAsunto(entity.getTicket().getAsunto());
@@ -74,7 +79,7 @@ public class DetalleTSService {
                 //Convertir y asignar los nuevos valores
                 entidad.setNombreSoftware(dto.getNombreSoftware());
                 entidad.setVersion(dto.getVersion());
-                entidad.setUbicacion(dto.getUbicacion());
+                entidad.setUbicacion(buscarUbicacion(dto.getIdUbicacion()));
                 //Quitar comentaario al unir las demas partes
                 entidad.setTicket(buscarTicket(dto.getTicket()));
                 DetalleTSEntity datosGuardados = repo.save(entidad);
@@ -119,5 +124,14 @@ public class DetalleTSService {
         }
         log.warn("No existe ningun ticket con id: " + id);
         throw new RuntimeException("No existe ningun ticket con id: " + id);
+    }
+
+    private UbicacionEntity buscarUbicacion(Long id){
+        Optional<UbicacionEntity> ubicacion = ubicacionRepo.findById(id);
+        if (ubicacion.isPresent()){
+            return ubicacion.get();
+        }
+        log.warn("No existe ninguna ubicacion con id: " + id);
+        throw new RuntimeException("No existe ninguna ubicacion con id: " + id);
     }
 }

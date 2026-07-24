@@ -2,6 +2,7 @@ package iTicket.Douglas.DetalleTS.Entity;
 
 
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
+import iTicket.Douglas.Ubicaciones.Entity.UbicacionEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,10 +24,11 @@ public class DetalleTSEntity {
     @Column (name = "VERSION")
     private String version;
 
-    @Column (name = "UBICACION")
-    private String ubicacion;
-
     @ManyToOne (fetch = FetchType.LAZY)
     @JoinColumn (name = "ID_TICKET", referencedColumnName = "ID_TICKET")
     private TicketEntity ticket;
+
+    @ManyToOne (fetch = FetchType.LAZY)
+    @JoinColumn (name = "ID_UBICACION", referencedColumnName = "ID_UBICACION")
+    private UbicacionEntity ubicacion;
 }

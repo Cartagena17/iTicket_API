@@ -3,10 +3,10 @@ package iTicket.Douglas.Evidencias.Service;
 import iTicket.Douglas.Evidencias.DTO.EvidenciaDTO;
 import iTicket.Douglas.Evidencias.Entity.EvidenciaEntity;
 import iTicket.Douglas.Evidencias.Repository.EvidenciaRepository;
-import iTicket.Douglas.Prioridades.Entity.PrioridadEntity;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 

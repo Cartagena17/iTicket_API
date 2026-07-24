@@ -1,6 +1,8 @@
 package iTicket.Douglas.Fases.Entity;
 
 
+import iTicket.Douglas.Proyectos.Entity.ProyectoEntity;
+import iTicket.Douglas.Utils.BooleanToCharConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -47,13 +49,13 @@ public class FaseEntity {
     private Double gastoTotal;
 
     @Column (name = "FINALIZADO")
-//    @Convert(converter = BooleanToCharConverter.class)
+    @Convert(converter = BooleanToCharConverter.class)
     private Boolean finalizado;
 
     @Column (name = "DEPARTAMENTO_ENCARGADO")
     private String departamentoEncargado;
 
-//    @ManyToOne (fetch = FetchType.LAZY)
-//    @JoinColumn (name = "ID_PROYECTO", referencedColumnName = "ID_PROYECTO")
-//    private ProyectoEntity proyecto;
+    @ManyToOne (fetch = FetchType.LAZY)
+    @JoinColumn (name = "ID_PROYECTO", referencedColumnName = "ID_PROYECTO")
+    private ProyectoEntity proyecto;
 }

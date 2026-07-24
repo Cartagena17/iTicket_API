@@ -74,7 +74,7 @@ public class ModeloController {
             ApiResponse<ModeloDTO> respuestaNoEncontrada = new ApiResponse<>(false, "Modelo no encontrado");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoEncontrada);
         } catch (Exception e) {
-            log.error("Error crítico al obtener de modelo con id " + id);
+            log.error("Error crítico al obtener datos de modelo con id " + id);
             e.printStackTrace();
             ApiResponse<ModeloDTO> respuestaError = new ApiResponse<>(false, "No se pudo obtener los datos del modelo");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);

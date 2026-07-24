@@ -8,7 +8,7 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
-@Table(name = "MultimediaComentarios")
+@Table(name = "Multimedia_Comentarios")
 public class MultimediaComentarioEntity {
 
     @Id

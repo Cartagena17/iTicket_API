@@ -2,6 +2,7 @@ package iTicket.Douglas.DetalleFases.Entity;
 
 
 import iTicket.Douglas.Fases.Entity.FaseEntity;
+import iTicket.Douglas.Utils.BooleanToCharConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,7 +21,7 @@ public class DetalleFEntity {
     private String descripcionDetalle;
 
     @Column (name = "COMPLETADO")
-//    @Convert (converter = BooleanToCharConverter.class)
+    @Convert (converter = BooleanToCharConverter.class)
     private Boolean completado;
 
     @ManyToOne (fetch = FetchType.LAZY)

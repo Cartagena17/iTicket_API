@@ -32,7 +32,7 @@ public class ComentarioEntity {
     @OneToMany(mappedBy = "comentario")
     private List<MultimediaComentarioEntity> multimediaComentarios;
 
-    @Column(name = "fecha_hora")
+    @Column(name = "fecha_hora", insertable = false, updatable = false)
     private LocalDateTime fechaHora;
 
     @ManyToOne

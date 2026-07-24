@@ -38,7 +38,6 @@ public class ComentarioService {
         ComentarioEntity objEntity = new ComentarioEntity();
 
         objEntity.setComentario(dto.getComentario());
-        objEntity.setFechaHora(dto.getFechaHora());
 
         TicketEntity ticket = new TicketEntity();
         ticket.setIdTicket(dto.getIdTicket());
@@ -90,7 +89,6 @@ public class ComentarioService {
                 ComentarioEntity entidad = registroExiste.get();
 
                 entidad.setComentario(dto.getComentario());
-                entidad.setFechaHora(dto.getFechaHora());
 
                 TicketEntity ticket = new TicketEntity();
                 ticket.setIdTicket(dto.getIdTicket());

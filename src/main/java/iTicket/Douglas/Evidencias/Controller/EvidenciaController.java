@@ -2,7 +2,6 @@ package iTicket.Douglas.Evidencias.Controller;
 
 import iTicket.Douglas.Evidencias.DTO.EvidenciaDTO;
 import iTicket.Douglas.Evidencias.Service.EvidenciaService;
-import iTicket.Douglas.Prioridades.DTO.PrioridadDTO;
 import iTicket.Douglas.Response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
