@@ -2,18 +2,19 @@ package iTicket.Douglas.Evidencias.Controller;
 
 import iTicket.Douglas.Evidencias.DTO.EvidenciaDTO;
 import iTicket.Douglas.Evidencias.Service.EvidenciaService;
-import iTicket.Douglas.Prioridades.DTO.PrioridadDTO;
 import iTicket.Douglas.Response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 @Slf4j
 @RestController
+@CrossOrigin
 @RequestMapping("/api/evidencias")//Endpoint
 public class EvidenciaController {
 
@@ -25,22 +26,17 @@ public class EvidenciaController {
     }
 
     //Método POST
-    @PostMapping
-    public ResponseEntity<ApiResponse<EvidenciaDTO>> nuevaEvidencia(@Valid @RequestBody EvidenciaDTO json){
-        try{
-            EvidenciaDTO dto = service.nuevaEvidencia(json);
-            if (dto != null){
-                log.info("Nueva evidencia registrada: " + dto);
-                ApiResponse<EvidenciaDTO> respuesta = new ApiResponse<>(true, "Datos ingresados exitosamente", dto);
-                return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
-            }
-            log.warn("Intento de insersión fallido: " + json);
-            ApiResponse<EvidenciaDTO> respuestaFallida = new ApiResponse<>(false, "El proceso no se pudo completar", json);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuestaFallida);
-        } catch (Exception e){
-            log.error("El proceso presentó fallas inesperadas. Consulte con el administrador");
+    @PostMapping(value = "/subir", consumes = "multipart/form-data")
+    public ResponseEntity<ApiResponse<EvidenciaDTO>> subirEvidencia(@RequestParam("archivo") MultipartFile archivo, @RequestParam("idTicket") Long idTicket) {
+        try {
+            EvidenciaDTO dto = service.subirEvidencia(archivo, idTicket);
+            log.info("Evidencia subida y registrada para el ticket: " + idTicket);
+            ApiResponse<EvidenciaDTO> respuestaExito = new ApiResponse<>(true, "Evidencia subida correctamente", dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(respuestaExito);
+        } catch (Exception e) {
+            log.error("Error al subir evidencia para el ticket " + idTicket);
             e.printStackTrace();
-            ApiResponse<EvidenciaDTO> respuestaError = new ApiResponse<>(false, "El proceso no se pudo completar", json);
+            ApiResponse<EvidenciaDTO> respuestaError = new ApiResponse<>(false, "No se pudo subir la evidencia");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
         }
     }
@@ -133,5 +129,6 @@ public class EvidenciaController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
         }
     }
+
 
 }

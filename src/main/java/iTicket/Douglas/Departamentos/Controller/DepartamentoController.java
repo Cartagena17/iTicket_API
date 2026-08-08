@@ -14,6 +14,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
+@CrossOrigin
 @RequestMapping("/api/departamentos")
 @RequiredArgsConstructor
 public class DepartamentoController {
@@ -117,6 +118,21 @@ public class DepartamentoController {
             e.printStackTrace();
             ApiResponse<Void> respuestaFallida = new ApiResponse<>(false, "Error crítico al eliminar el departamento con id " + id);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaFallida);
+        }
+    }
+
+    @GetMapping("/asignables/{idUsuario}")
+    public ResponseEntity<ApiResponse<List<DepartamentoDTO>>> obtenerAsignables(@PathVariable Long idUsuario){
+        try {
+            List<DepartamentoDTO> lista = service.obtenerDepartamentosAsignables(idUsuario);
+            log.info("Departamentos asignables consultados para usuario: " + idUsuario);
+            ApiResponse<List<DepartamentoDTO>> respuestaExito = new ApiResponse<>(true, "Departamentos asignables encontrados", lista);
+            return ResponseEntity.ok(respuestaExito);
+        } catch (Exception e) {
+            log.error("Error al obtener departamentos asignables para usuario " + idUsuario);
+            e.printStackTrace();
+            ApiResponse<List<DepartamentoDTO>> respuestaError = new ApiResponse<>(false, "No se pudieron obtener los departamentos asignables");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
         }
     }
 }

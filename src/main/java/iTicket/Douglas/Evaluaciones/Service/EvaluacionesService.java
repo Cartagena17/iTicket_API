@@ -3,11 +3,15 @@ package iTicket.Douglas.Evaluaciones.Service;
 import iTicket.Douglas.Evaluaciones.DTO.EvaluacionesDTO;
 import iTicket.Douglas.Evaluaciones.Entity.EvaluacionesEntity;
 import iTicket.Douglas.Evaluaciones.Repository.EvaluacionesRepository;
+import iTicket.Douglas.Tickets.DTO.TicketEstadoDTO;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
+import iTicket.Douglas.Tickets.Service.TicketService;
 import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,24 +19,23 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@AllArgsConstructor
+@Transactional(readOnly = true)
 public class EvaluacionesService {
 
     private final EvaluacionesRepository repo;
     private final TicketRepository ticketRepository;
+    private final TicketService ticketService;
 
-    public EvaluacionesService(EvaluacionesRepository repo, TicketRepository ticketRepository) {
-        this.repo = repo;
-        this.ticketRepository = ticketRepository;
-    }
-
+    @Transactional
     public EvaluacionesDTO nuevaEvaluacion(@Valid EvaluacionesDTO dto) {
         try {
-            // 0. VALIDACIÓN: Un ticket solo puede tener una única evaluación
+            // 0. Un ticket solo puede tener una única evaluación
             if (repo.findByTicket_IdTicket(dto.getIdTicket()).isPresent()) {
                 throw new RuntimeException("El Ticket con ID " + dto.getIdTicket() + " ya cuenta con una evaluación.");
             }
 
-            // 1. PASO CLAVE: Buscamos el ticket en la BD. Si no existe, lanzamos un error.
+            // 1.Buscamos el ticket en la BD. Si no existe, lanzamos un error.
             TicketEntity ticketExistente = ticketRepository.findById(dto.getIdTicket())
                     .orElseThrow(() -> new RuntimeException("El Ticket con ID " + dto.getIdTicket() + " no existe."));
 
@@ -42,6 +45,9 @@ public class EvaluacionesService {
             // 3. Guardamos la evaluación
             EvaluacionesEntity entitySave = repo.save(entity);
 
+            TicketEstadoDTO dtoT = new TicketEstadoDTO();
+            dtoT.setEstado("Cerrado");
+            ticketService.actualizarEstado(dto.getIdTicket(), dtoT);
             // 4. Retornamos la respuesta mapeada a DTO
             return convertirADTO(entitySave);
 
@@ -72,6 +78,7 @@ public class EvaluacionesService {
         return entidadOpcional.map(this::convertirADTO).orElse(null);
     }
 
+    @Transactional
     public EvaluacionesDTO actualizarEvaluacion(Long id, @Valid EvaluacionesDTO dto) {
         try {
             EvaluacionesEntity entity = repo.findById(id)
@@ -98,6 +105,7 @@ public class EvaluacionesService {
         }
     }
 
+    @Transactional
     public boolean eliminarEvaluacion(Long id) {
         if (repo.existsById(id)) {
             repo.deleteById(id);

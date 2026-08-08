@@ -9,7 +9,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,7 +44,11 @@ public class TicketEntity {
     private String descripcionSolucion;
 
     @Column(name = "FECHA_VENCIMIENTO")
-    private LocalDate fechaVencimiento;
+    private LocalDateTime fechaVencimiento;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ID_CREADOR", referencedColumnName = "ID_USUARIO")
+    private UsuarioEntity creador;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ID_TECNICO_ASIGNADO", referencedColumnName = "ID_USUARIO")
@@ -61,6 +65,12 @@ public class TicketEntity {
     @Column(name = "TIPO_TICKET")
     private String tipoTicket;
 
+    @Column(name = "ESTADO")
+    private String estado;
+
     @OneToMany(mappedBy = "ticket")
     private List<ComentarioEntity> comentarios;
+
+    @Column(name = "FECHA_CREACION", insertable = false, updatable = false)
+    private LocalDateTime fechaCreacion;
 }

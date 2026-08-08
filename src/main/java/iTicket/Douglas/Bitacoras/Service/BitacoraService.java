@@ -4,44 +4,45 @@ package iTicket.Douglas.Bitacoras.Service;
 import iTicket.Douglas.Bitacoras.DTO.BitacoraDTO;
 import iTicket.Douglas.Bitacoras.Entity.BitacoraEntity;
 import iTicket.Douglas.Bitacoras.Repository.BitacoraRepository;
-import iTicket.Douglas.Tickets.Entity.TicketEntity;
-import iTicket.Douglas.Tickets.Repository.TicketRepository;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class BitacoraService {
 
     private final BitacoraRepository bitacoraRepo;
     private final UsuarioRepository usuarioRepo;
-    private final TicketRepository ticketRepo;
 
-    public BitacoraService(BitacoraRepository bitacoraRepo, UsuarioRepository usuarioRepo, TicketRepository ticketRepo) {
-        this.bitacoraRepo = bitacoraRepo;
-        this.usuarioRepo = usuarioRepo;
-        this.ticketRepo = ticketRepo;
-    }
-
+    @Transactional
     public BitacoraDTO nuevaBitacora(@Valid BitacoraDTO dto) {
-
-        BitacoraEntity convertirDatos = convertirAEntity(dto);
-        BitacoraEntity entity = bitacoraRepo.save(convertirDatos);
-        return convertirADTO(entity);
+        try {
+            BitacoraEntity convertirDatos = convertirAEntity(dto);
+            BitacoraEntity entity = bitacoraRepo.save(convertirDatos);
+            return convertirADTO(entity);
+        }catch (Exception e){
+            log.error("Error al registrar la bitacora " + e.getMessage());
+            if (e instanceof RuntimeException re) throw re;
+            throw new RuntimeException("Error al registrar la bitacora", e);        }
     }
 
     public BitacoraEntity convertirAEntity(BitacoraDTO dto){
         BitacoraEntity entity = new BitacoraEntity();
         entity.setUsuario(buscarUsuario(dto.getUsuario()));
-        entity.setTicket(buscarTicket(dto.getTicket()));
+        entity.setIdTicket(dto.getIdTicket());
+        entity.setCodigoTicket(dto.getCodigoTicket());
+        entity.setAsuntoTicket(dto.getAsuntoTicket());
         entity.setNuevoEstado(dto.getNuevoEstado());
         return entity;
     }
@@ -52,8 +53,9 @@ public class BitacoraService {
         dto.setIdBitacora(entity.getIdBitacora());
         dto.setUsuario(entity.getUsuario().getIdUsuario());
         dto.setNombreUsuario(entity.getUsuario().getNombreUsuario());
-        dto.setTicket(entity.getTicket().getIdTicket());
-        dto.setAsunto(entity.getTicket().getAsunto());
+        dto.setIdTicket(entity.getIdTicket());
+        dto.setCodigoTicket(entity.getCodigoTicket());
+        dto.setAsuntoTicket(entity.getAsuntoTicket());
         dto.setNuevoEstado(entity.getNuevoEstado());
         dto.setFechaHora(entity.getFechaHora());
         return dto;
@@ -68,15 +70,6 @@ public class BitacoraService {
         throw new RuntimeException("No existe ningun usuario con id: " + id);
     }
 
-    private TicketEntity buscarTicket (Long id){
-        Optional<TicketEntity> ticket = ticketRepo.findById(id);
-        if (ticket.isPresent()){
-            return ticket.get();
-        }
-        log.warn("No existe ningun ticket con id: " + id);
-        throw new RuntimeException("No existe ningun ticket con id: " + id);
-    }
-
     public List<BitacoraDTO> obtenerBitacoras() {
         List<BitacoraEntity> lista = bitacoraRepo.findAll();
         List<BitacoraDTO> dto = new ArrayList<>();
@@ -88,7 +81,7 @@ public class BitacoraService {
 
     public BitacoraDTO obtenerBitacoraIdTicket(Long idTicket) {
         try {
-            Optional<BitacoraEntity> entidadOpcional = bitacoraRepo.findByTicket(idTicket);
+            Optional<BitacoraEntity> entidadOpcional = bitacoraRepo.findByIdTicket(idTicket);
             if (entidadOpcional.isPresent()){
                 return convertirADTO(entidadOpcional.get());
             }

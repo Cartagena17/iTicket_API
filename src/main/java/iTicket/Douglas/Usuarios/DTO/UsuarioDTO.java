@@ -35,4 +35,7 @@ public class UsuarioDTO {
     @NotNull(message = "Debe indicar el departamento del usuario")
     private Long idDepartamento;
     private String nombreDepartamento;
+
+    @NotNull(message = "Debe indicar el estado del usuario")
+    private Boolean estado;
 }

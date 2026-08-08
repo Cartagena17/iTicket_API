@@ -3,6 +3,7 @@ package iTicket.Douglas.Usuarios.Entity;
 import iTicket.Douglas.Comentarios.Entity.ComentarioEntity;
 import iTicket.Douglas.Departamentos.Entity.DepartamentoEntity;
 import iTicket.Douglas.Roles.Entity.RolEntity;
+import iTicket.Douglas.Utils.BooleanToCharConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -39,4 +40,8 @@ public class UsuarioEntity {
 
     @OneToMany(mappedBy = "usuario")
     private List<ComentarioEntity> comentarios;
+
+    @Convert(converter = BooleanToCharConverter.class)//Se aplica el BooleanToCharConverter para traducir el boolean a String
+    @Column(name = "ESTADO")
+    private Boolean estado;
 }

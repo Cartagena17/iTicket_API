@@ -7,9 +7,12 @@ import iTicket.Douglas.DetalleTA.Entity.DetalleTAEntity;
 import iTicket.Douglas.DetalleTA.Repository.DetalleTARepository;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,25 +20,28 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@Validated
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class DetalleTAService {
 
     private final DetalleTARepository repo;
     private final TicketRepository ticketRepo;
     private final ArticuloRepository articuloRepo;
 
-    public DetalleTADTO nuevoDetalle(DetalleTADTO dto) {
+    @Transactional
+    public DetalleTADTO nuevoDetalle(@Valid DetalleTADTO dto) {
         try {
             Optional<TicketEntity> ticketOpcional = ticketRepo.findById(dto.getIdTicket());
             if (ticketOpcional.isEmpty()) {
                 log.warn("El ticket con id " + dto.getIdTicket() + " no existe");
-                return null;
+                throw new RuntimeException("El ticket con id " + dto.getIdTicket() + " no existe");
             }
 
             Optional<ArticuloEntity> articuloOpcional = articuloRepo.findById(dto.getIdArticulo());
             if (articuloOpcional.isEmpty()) {
                 log.warn("El artículo con id " + dto.getIdArticulo() + " no existe");
-                return null;
+                throw new RuntimeException("El artículo con id " + dto.getIdArticulo() + " no existe");
             }
 
             DetalleTAEntity entity = convertirAEntity(ticketOpcional.get(), articuloOpcional.get());
@@ -44,7 +50,8 @@ public class DetalleTAService {
             return convertirADTO(entitySave);
         } catch (Exception e) {
             log.error("Error al ingresar la información del detalle: " + e.getMessage());
-            return null;
+            if (e instanceof RuntimeException re) throw re;
+            throw new RuntimeException("Error al registrar el detalle de artículo", e);
         }
     }
 
@@ -58,6 +65,7 @@ public class DetalleTAService {
         return entidadOpcional.map(this::convertirADTO).orElse(null);
     }
 
+    @Transactional
     public DetalleTADTO actualizarData(Long id, DetalleTADTO dto) {
         try {
             Optional<DetalleTAEntity> registroExistente = repo.findById(id);
@@ -93,6 +101,7 @@ public class DetalleTAService {
         }
     }
 
+    @Transactional
     public boolean eliminarDetalle(Long id) {
         if (repo.existsById(id)) {
             repo.deleteById(id);
@@ -116,5 +125,19 @@ public class DetalleTAService {
         objDTO.setIdArticulo(entity.getArticulo().getIdArticulo());
         objDTO.setCodigoArticulo(entity.getArticulo().getCodigoArticulo());
         return objDTO;
+    }
+
+    @Transactional
+    public void reemplazarDetalles(TicketEntity ticket, List<String> codigosArticulos) {
+        repo.deleteByTicket(ticket);
+
+        for (String codigo : codigosArticulos) {
+            ArticuloEntity articulo = articuloRepo.findByCodigoArticulo(codigo).orElseThrow(() -> new RuntimeException("No existe ningún artículo con código: " + codigo));
+
+            DetalleTAEntity entity = new DetalleTAEntity();
+            entity.setTicket(ticket);
+            entity.setArticulo(articulo);
+            repo.save(entity);
+        }
     }
 }

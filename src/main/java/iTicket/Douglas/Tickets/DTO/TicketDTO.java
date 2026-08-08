@@ -1,9 +1,12 @@
 package iTicket.Douglas.Tickets.DTO;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import iTicket.Douglas.DetalleTS.DTO.DetalleTSDTO;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class TicketDTO {
@@ -31,12 +34,20 @@ public class TicketDTO {
     @Size (max = 500, message = "Longitud inválida de la descripción de la solución [500 caracteres]")
     private String descripcionSolucion;
 
+    @JsonFormat(pattern = "dd/MM/yyyy HH:mm", timezone = "America/El_Salvador")
     @FutureOrPresent(message = "La fecha de vencimiento debe ser futura o actual")
-    private LocalDate fechaVencimiento;
+    private LocalDateTime fechaVencimiento;
+
+    @NotNull
+    @Positive
+    private Long creador;
+    private String nombreCreador;//Este atributo solo se mostrará en los GET
+    private String correoCreador;
 
     @Positive
     private Long tecnicoAsignado;
     private String nombreTecnico;//Este atributo solo se mostrará en los GET
+    private String correoTecnico;
 
     @Size(max = 10, message = "Longitud inválida de la prioridad del ticket [10 caracteres]")
     private String prioridad;
@@ -44,4 +55,19 @@ public class TicketDTO {
     @NotBlank(message = "Es obligatorio seleccionar el tipo de ticket")
     @Size(max = 10, message = "Longitud inválida en el tipo de ticket [10 caracteres]")
     private String tipoTicket;
+
+    @Size(max = 10, message = "Longitud inválida en el estado del ticket [10 caracteres]")
+    private String estado;
+
+    @JsonFormat(pattern = "dd/MM/yyyy HH:mm", timezone = "America/El_Salvador")
+    private LocalDateTime fechaCreacion;
+
+    //Atributos que se muestran según el tipo de ticket
+    private String descripcionUbicacion; //Si tipoTicket = "General"
+    private List<String> codigosArticulos; //Si tipoTicket = "Articulo"
+    private Long idUbicacionSoftware; //Si tipoTicket = "Software"
+    private List<DetalleTSDTO> detallesSoftware; //Si tipoTicket = "Software"
+
+    private List<String> evidencias;
+    private String ubicacion;
 }

@@ -1,5 +1,9 @@
 package iTicket.Douglas.Tickets.DTO;
 
+import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;

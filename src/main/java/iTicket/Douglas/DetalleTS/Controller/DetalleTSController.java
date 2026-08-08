@@ -70,23 +70,18 @@ public class DetalleTSController {
     }
 
     //Metodo para obtener detalles por id de ticket, quitar comentario al unir las demas partes
-    @GetMapping("/detalleTSIdTicket/{ticket}")
-    public ResponseEntity<ApiResponse<DetalleTSDTO>> buscarDetalleTSIdTicket(@PathVariable TicketEntity ticket){
+    @GetMapping("/detalleTSIdTicket/{idTicket}")
+    public ResponseEntity<ApiResponse<DetalleTSDTO>> buscarDetalleTSIdTicket(@PathVariable Long idTicket){
         try{
-            DetalleTSDTO datos = service.obtenerDetalleTSIdTicket(ticket);
-            if (datos != null){
-                log.info("Se obtuvo con exito el detalle del ticket: " + ticket);
-                ApiResponse<DetalleTSDTO> exito = new ApiResponse<>(true, "Se obtuvo con exito el detalle del ticket: " + ticket);
-                return  ResponseEntity.ok(exito);
-            }
-            log.warn("No se pudo encontrar el detalle del ticket: " + ticket);
-            ApiResponse<DetalleTSDTO> respuesta = new ApiResponse<>(false, "No se pudo encontrar el detalle del ticket: " + ticket);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
+            List<DetalleTSDTO> datos = service.obtenerDetalleTSIdTicket(idTicket);
+            log.info("Se obtuvo con exito el detalle del ticket: " + idTicket);
+            ApiResponse<DetalleTSDTO> exito = new ApiResponse<>(true, "Se obtuvo con exito el detalle del ticket: " + idTicket);
+            return  ResponseEntity.ok(exito);
         }
         catch (Exception e){
-            log.error("Error al obtener el detalle del ticket: " + ticket);
+            log.error("Error al obtener el detalle del ticket: " + idTicket);
             e.printStackTrace();
-            ApiResponse<DetalleTSDTO> error = new ApiResponse<>(false, "Error al obtener el detalle del ticket: " + ticket);
+            ApiResponse<DetalleTSDTO> error = new ApiResponse<>(false, "Error al obtener el detalle del ticket: " + idTicket);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }

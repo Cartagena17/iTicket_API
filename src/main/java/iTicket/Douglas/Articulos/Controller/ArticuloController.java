@@ -14,6 +14,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
+@CrossOrigin
 @RequestMapping("/api/articulos")
 @RequiredArgsConstructor
 public class ArticuloController {
@@ -118,6 +119,20 @@ public class ArticuloController {
         } catch (Exception e) {
             log.error("Error crítico en la eliminación del artículo con id "+ id);
             ApiResponse<Void> respuestaError = new ApiResponse<>(false, "No se pudo eliminar el artículo seleccionado");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
+        }
+    }
+
+    @GetMapping("/buscar")
+    public ResponseEntity<ApiResponse<List<ArticuloDTO>>> buscarPorCodigoParcial(@RequestParam String codigo){
+        try{
+            List<ArticuloDTO> lista = service.buscarPorCodigoParcial(codigo);
+            log.info("Búsqueda de artículos por fragmento de código: "+ codigo);
+            ApiResponse<List<ArticuloDTO>> respuestaExito = new ApiResponse<>(true, "Artículos encontrados", lista);
+            return ResponseEntity.ok(respuestaExito);
+        }catch (Exception e){
+            log.error("Error al buscar artículos con fragmento: "+ codigo);
+            ApiResponse<List<ArticuloDTO>> respuestaError = new ApiResponse<>(false, "No se pudieron buscar los artículos.");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
         }
     }

@@ -181,4 +181,15 @@ public class UsuarioService {
         objDTO.setNombreDepartamento(entity.getDepartamento().getNombreDepartamento());
         return objDTO;
     }
+
+    public List<UsuarioDTO> obtenerTecnicosPorDepartamento(Long idDepartamento) {
+        Optional<DepartamentoEntity> departamento = departamentoRepo.findById(idDepartamento);
+        if (departamento.isEmpty()){
+            log.warn("No existe ningún departamento con id: " + idDepartamento);
+            throw new RuntimeException("No existe ningún departamento con id: " + idDepartamento);
+        }
+
+        List<UsuarioEntity> lista = repo.findByRol_NombreRolInAndEstadoAndDepartamento_NombreDepartamentoIgnoreCase(List.of("Tecnico", "Administrador"), true, departamento.get().getNombreDepartamento());
+        return lista.stream().map(this::convertirADTO).collect(Collectors.toList());
+    }
 }

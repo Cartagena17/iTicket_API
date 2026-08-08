@@ -5,6 +5,8 @@ import iTicket.Douglas.Areas.Repository.AreaRepository;
 import iTicket.Douglas.Departamentos.DTO.DepartamentoDTO;
 import iTicket.Douglas.Departamentos.Entity.DepartamentoEntity;
 import iTicket.Douglas.Departamentos.Repository.DepartamentoRepository;
+import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
+import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -18,10 +20,11 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class DepartamentoService {
+public class  DepartamentoService {
 
     private final DepartamentoRepository repo;
     private final AreaRepository arearepo;
+    private final UsuarioRepository usuarioRepo;
 
     public DepartamentoDTO nuevoDepartamento(@Valid DepartamentoDTO dto) {
         try {
@@ -98,6 +101,19 @@ public class DepartamentoService {
         objDTO.setIdArea(entity.getArea().getIdArea());
         objDTO.setNombreArea(entity.getArea().getNombreArea());
         return objDTO;
+    }
+
+    public List<DepartamentoDTO> obtenerDepartamentosAsignables(Long idUsuarioCreador) {
+        Optional<UsuarioEntity> usuarioOpcional = usuarioRepo.findById(idUsuarioCreador);
+        if (usuarioOpcional.isEmpty()) {
+            log.warn("No existe ningún usuario con id: " + idUsuarioCreador);
+            throw new RuntimeException("No existe ningún usuario con id: " + idUsuarioCreador);
+        }
+
+        Long idArea = usuarioOpcional.get().getDepartamento().getArea().getIdArea();
+        List<DepartamentoEntity> data = repo.findAsignablesPorArea(idArea);
+
+        return data.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
 }
