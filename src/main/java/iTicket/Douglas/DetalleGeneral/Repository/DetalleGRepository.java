@@ -13,5 +13,7 @@ public interface DetalleGRepository extends JpaRepository<DetalleGEntity, Long> 
     //Metodos personalizados
 
     //Metodo para obtener detalle general por id de ticket, quitar comentario cuando se unan las demas partes
+    Optional<DetalleGEntity> findByTicket_IdTicket(Long idTicket);
+
     Optional<DetalleGEntity> findByTicket(TicketEntity ticket);
 }

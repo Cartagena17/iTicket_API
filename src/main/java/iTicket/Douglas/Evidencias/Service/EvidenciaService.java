@@ -3,12 +3,23 @@ package iTicket.Douglas.Evidencias.Service;
 import iTicket.Douglas.Evidencias.DTO.EvidenciaDTO;
 import iTicket.Douglas.Evidencias.Entity.EvidenciaEntity;
 import iTicket.Douglas.Evidencias.Repository.EvidenciaRepository;
-import iTicket.Douglas.Prioridades.Entity.PrioridadEntity;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.UUID;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,18 +27,70 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@Transactional(readOnly = true)
 public class EvidenciaService {
 
     //Inyectar dependencias
     private final EvidenciaRepository repo;
     private final TicketRepository ticketsRepo; //Para buscar si el ticket existe
 
-    public EvidenciaService(EvidenciaRepository repo, TicketRepository ticketsrepo) {
+    @Value("${file.upload-dir}")
+    private String uploadDir;
+
+    public EvidenciaService(EvidenciaRepository repo, TicketRepository ticketsRepo) {
         this.repo = repo;
-        this.ticketsRepo = ticketsrepo;
+        this.ticketsRepo = ticketsRepo;
     }
 
+    //Método para guardar el archivo físico en disco y registrar la evidencia en BD
+    @Transactional
+    public EvidenciaDTO subirEvidencia(MultipartFile archivo, Long idTicket) {
+        try {
+            //Verifica que el ticket exista antes de procesar el archivo
+            if (!ticketsRepo.existsById(idTicket)) {
+                throw new RuntimeException("El ticket con ID: " + idTicket + " no existe");
+            }
+
+            //Genera un nombre único para evitar que dos archivos con el mismo nombre se sobrescriban
+            String extension = obtenerExtension(archivo.getOriginalFilename());
+            String nombreArchivo = UUID.randomUUID() + extension;
+
+            //Crea la carpeta de destino si aún no existe
+            Path carpetaDestino = Paths.get(uploadDir);
+            if (!Files.exists(carpetaDestino)) {
+                Files.createDirectories(carpetaDestino);
+            }
+
+            //Copia el archivo del request hacia la carpeta física
+            Path rutaDestino = carpetaDestino.resolve(nombreArchivo);
+            Files.copy(archivo.getInputStream(), rutaDestino, StandardCopyOption.REPLACE_EXISTING);
+
+            //Arma la URL pública
+            String urlPublica = "http://localhost:8080/uploads/" + nombreArchivo;
+
+            //Guarda el registro en la tabla Evidencias
+            EvidenciaDTO dto = new EvidenciaDTO();
+            dto.setEvidenciaUrl(urlPublica);
+            dto.setTicket(idTicket);
+
+            return nuevaEvidencia(dto);
+        } catch (IOException e) {
+            log.error("Error al guardar el archivo físico: " + e.getMessage());
+            throw new RuntimeException("Error al guardar el archivo físico", e);
+        }
+    }
+
+    @Transactional
+    private String obtenerExtension(@Nullable String nombreOriginal) {
+        if (nombreOriginal == null || !nombreOriginal.contains(".")) {
+            return "";
+        }
+        return nombreOriginal.substring(nombreOriginal.lastIndexOf("."));
+    }
+
+
     //Método para crear evidencias
+    @Transactional
     public EvidenciaDTO nuevaEvidencia(@Valid EvidenciaDTO dto){
         try {
             EvidenciaEntity entity = convertirAEntity(dto);
@@ -37,7 +100,7 @@ public class EvidenciaService {
             return convertirADTO(entitySave);
         }catch (Exception e){
             log.error("Error al registrar la evidencia " + e.getMessage());
-            throw new RuntimeException("Error al registrar la evidencia");
+            return null;
         }
     }
 
@@ -58,6 +121,7 @@ public class EvidenciaService {
     }
 
     //Método para eliminar
+    @Transactional
     public boolean eliminarData(Long id) {
         if (repo.existsById(id)){ //Validar si existe
             repo.deleteById(id);
@@ -103,5 +167,6 @@ public class EvidenciaService {
         }
         return objDTO;
     }
+
 
 }

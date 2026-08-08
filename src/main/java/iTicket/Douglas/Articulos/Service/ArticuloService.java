@@ -12,7 +12,9 @@ import iTicket.Douglas.Ubicaciones.Repository.UbicacionRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
 import java.util.List;
 import java.util.Optional;
@@ -152,5 +154,10 @@ public class ArticuloService {
         objDTO.setNombreUbicacion(entity.getUbicacion().getNombreUbicacion());
 
         return objDTO;
+    }
+
+    public List<ArticuloDTO> buscarPorCodigoParcial(String fragmento){
+        List<ArticuloEntity> data = repo.findByCodigoArticuloContainingIgnoreCase(fragmento, PageRequest.of(0,8));
+        return data.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 }

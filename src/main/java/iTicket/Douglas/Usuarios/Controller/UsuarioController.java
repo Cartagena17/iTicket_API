@@ -18,6 +18,7 @@ import java.util.List;
 @RestController
 @RequestMapping("api/usuarios")
 @RequiredArgsConstructor
+@CrossOrigin
 public class UsuarioController {
 
     private final UsuarioService service;
@@ -138,4 +139,17 @@ public class UsuarioController {
         }
     }
 
+    @GetMapping("/tecnicos")
+    public ResponseEntity<ApiResponse<List<UsuarioDTO>>> obtenerTecnicosPorDepartamento(@RequestParam Long idDepartamento) {
+        try {
+            List<UsuarioDTO> lista = service.obtenerTecnicosPorDepartamento(idDepartamento);
+            ApiResponse<List<UsuarioDTO>> respuesta = new ApiResponse<>(true, "Técnicos encontrados", lista);
+            return ResponseEntity.ok(respuesta);
+        } catch (Exception e) {
+            log.error("Error al obtener técnicos por departamento");
+            e.printStackTrace();
+            ApiResponse<List<UsuarioDTO>> respuestaError = new ApiResponse<>(false, "No se pudieron obtener los técnicos");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
+        }
+    }
 }

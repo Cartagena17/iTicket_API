@@ -1,24 +1,22 @@
 package iTicket.Douglas.Tickets.DTO;
 
-import jakarta.validation.constraints.FutureOrPresent;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 public class TicketAsignacionDTO {
 
     @NotNull(message = "La fecha de vencimiento es obligatoria")
     @FutureOrPresent(message = "La fecha de vencimiento debe ser futura o actual")
-    private LocalDate fechaVencimiento;
+    private LocalDateTime fechaVencimiento;
 
     @NotNull(message = "Es obligatorio asignar un técnico")
     @Positive(message = "ID de técnico inválido")
     private Long tecnicoAsignado;
 
-    @NotNull(message = "La prioridad es obligatoria")
-    @Positive(message = "ID de prioridad inválido")
+    @NotBlank(message = "La prioridad es obligatoria")
+    @Size(max = 10, message = "Longitud inválida en la prioridad del ticket [10 caracteres]")
     private String prioridad;
 }
