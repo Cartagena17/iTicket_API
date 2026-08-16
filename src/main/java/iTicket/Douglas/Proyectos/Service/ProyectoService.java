@@ -95,6 +95,7 @@ public class ProyectoService {
             entidad.setCoordinador(buscarUsuario(dto.getCoordinador()));
             entidad.setSupervisor(buscarUsuario(dto.getSupervisor()));
             entidad.setFinalizado(dto.getFinalizado());
+            entidad.setGastoTotal(dto.getGastoTotal());
             ProyectoEntity datosGuardados = repo.save(entidad);
             return convertirADTO(datosGuardados);
         }

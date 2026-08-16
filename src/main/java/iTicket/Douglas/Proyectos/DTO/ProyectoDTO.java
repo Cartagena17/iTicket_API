@@ -23,7 +23,7 @@ public class ProyectoDTO {
     private String ubicacion;
 
     @NotBlank(message = "La descripción es obligatoria")
-    @Size(max = 100, message = "Longitud inválida en la descripción del proyecto [300 caracteres]")
+    @Size(max = 300, message = "Longitud inválida en la descripción del proyecto [300 caracteres]")
     private String descripcionProyecto;
 
     @NotNull(message = "El presupuesto estimado es obligatorio")

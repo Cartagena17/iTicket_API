@@ -5,6 +5,8 @@ import iTicket.Douglas.Fases.DTO.FaseDTO;
 import iTicket.Douglas.Fases.DTO.PatchFaseDTO;
 import iTicket.Douglas.Fases.Entity.FaseEntity;
 import iTicket.Douglas.Fases.Repository.FaseRepository;
+import iTicket.Douglas.Proyectos.Entity.ProyectoEntity;
+import iTicket.Douglas.Proyectos.Repository.ProyectoRepository;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,11 +21,11 @@ public class FaseService {
 
     private final FaseRepository repo;
     //Quitar comentario al unir las demas partes
-//    private final ProyectoRepository proyectoRepo;
+    private final ProyectoRepository proyectoRepo;
 
-    public FaseService(FaseRepository repo /* ProyectoRepository proyectoRepo*/) {
+    public FaseService(FaseRepository repo, ProyectoRepository proyectoRepo) {
         this.repo = repo;
-//        this.proyectoRepo = proyectoRepo;
+        this.proyectoRepo = proyectoRepo;
     }
 
     private FaseEntity convertirAEntity(@Valid FaseDTO dto){
@@ -38,8 +40,9 @@ public class FaseService {
         entity.setPresupuestoEstimado(dto.getPresupuestoEstimado());
         entity.setGastoTotal(dto.getGastoTotal());
         entity.setFinalizado(dto.getFinalizado());
+        entity.setDepartamentoEncargado(dto.getDepartamentoEncargado());
         //Quitar comentario al unir las demas partes
-//        entity.setProyecto(buscarProyecto(dto.getProyecto()));
+        entity.setProyecto(buscarProyecto(dto.getProyecto()));
         return entity;
     }
 
@@ -56,20 +59,21 @@ public class FaseService {
         dto.setPresupuestoEstimado(entity.getPresupuestoEstimado());
         dto.setGastoTotal(entity.getGastoTotal());
         dto.setFinalizado(entity.getFinalizado());
+        dto.setDepartamentoEncargado(entity.getDepartamentoEncargado());
         //quitar comentario al unir las demas partes
-//        dto.setProyecto(entity.getProyecto().getNombreProyecto());
+        dto.setProyecto(entity.getProyecto().getIdProyecto());
         return dto;
     }
 
     //quitar comentario al unir las demas partes
-//    private ProyectoEntity buscarProyecto (Long id){
-//        Optional<ProyectoEntity> proyecto = proyectoRepo.findById(id);
-//        if (proyecto.isPresent()){
-//            return proyecto.get();
-//        }
-//        log.warn("No existe ningun proyecto con id: " + id);
-//        throw new RuntimeException("No existe ningun proyecto con id:" + id);
-//    }
+    private ProyectoEntity buscarProyecto (Long id){
+        Optional<ProyectoEntity> proyecto = proyectoRepo.findById(id);
+        if (proyecto.isPresent()){
+            return proyecto.get();
+        }
+        log.warn("No existe ningun proyecto con id: " + id);
+        throw new RuntimeException("No existe ningun proyecto con id:" + id);
+    }
 
 
     public FaseDTO nuevaFase(@Valid FaseDTO dto){
@@ -104,7 +108,7 @@ public class FaseService {
                 entidad.setGastoTotal(dto.getGastoTotal());
                 entidad.setFinalizado(dto.getFinalizado());
                 //Quitar comentario al unir las demas partes
-//                entidad.setProyecto(buscarProyecto(dto.getProyecto()));
+                entidad.setProyecto(buscarProyecto(dto.getProyecto()));
 
                 FaseEntity datosGuardados = repo.save(entidad);
                 return convertirADTO(datosGuardados);
@@ -166,6 +170,22 @@ public class FaseService {
         }
         catch (Exception e){
             log.error("Error al actualizar parcialmente la fase con id: " + id);
+            return null;
+        }
+    }
+
+    public List<FaseDTO> buscarPorIdProyecto(Long proyecto){
+        try{
+            List<FaseEntity> registro = repo.findByProyecto_IdProyecto(proyecto);
+            if (registro != null && !registro.isEmpty()){
+                return registro.stream().map(this::convertirADTO).collect(Collectors.toList());
+            }
+            log.warn("No existen fases asociadas al proyecto con id: " + proyecto);
+            return null;
+        }
+        catch (Exception e){
+            log.error("Ocurrió un error durante el proceso de obtención");
+            e.printStackTrace();
             return null;
         }
     }
