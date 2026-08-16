@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class ComentarioDTO {
@@ -20,4 +21,9 @@ public class ComentarioDTO {
     private Long idTicket;
 
     private Long idUsuarioComentario;
+
+    //Solo de lectura: se completan al devolver el comentario, no se usan al crearlo/editarlo
+    private String correoUsuario;
+
+    private List<String> multimediaUrls;
 }

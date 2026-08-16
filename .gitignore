@@ -33,7 +33,3 @@ build/
 ### VS Code ###
 .vscode/
 
-
-##Ignora las imagenes subidas pero conservar la carpeta
-uploads/*
-!uploads/.gitkeep

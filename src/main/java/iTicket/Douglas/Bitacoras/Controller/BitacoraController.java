@@ -14,6 +14,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
+@CrossOrigin
 @RequestMapping ("/api/bitacoras")
 public class BitacoraController {
 
@@ -65,24 +66,24 @@ public class BitacoraController {
         }
     }
 
-    //Metodo para obtenere bitacora por id de ticket
-    @GetMapping("/bitacoraTicket/{ticket}")
-    public ResponseEntity<ApiResponse<BitacoraDTO>> obtenerBitacoraIdTicket(@PathVariable Long idTicket){
+    //Metodo para obtenere bitacoras por id de ticket
+    @GetMapping("/bitacoraTicket/{idTicket}")
+    public ResponseEntity<ApiResponse<List<BitacoraDTO>>> obtenerBitacorasIdTicket(@PathVariable Long idTicket){
         try {
-            BitacoraDTO dto = service.obtenerBitacoraIdTicket(idTicket);
-            if (dto != null){
+            List<BitacoraDTO> lista = service.obtenerBitacorasIdTicket(idTicket);
+            if (lista != null){
                 log.info("Se obtuvo la bitacora con ticket: " + idTicket);
-                ApiResponse<BitacoraDTO> exito = new ApiResponse<>(true, "Se obtuvo la bitacora con ticket: " + idTicket);
+                ApiResponse<List<BitacoraDTO>> exito = new ApiResponse<>(true, "Se obtuvo la bitacora con ticket: " + idTicket, lista);
                 return ResponseEntity.ok(exito);
             }
             log.warn("Bitacora con ticket: " + idTicket + ", no encontrada");
-            ApiResponse<BitacoraDTO> respuesta = new ApiResponse<>(false, "Bitacora con ticket: " + idTicket + ", no encontrada");
+            ApiResponse<List<BitacoraDTO>> respuesta = new ApiResponse<>(false, "Bitacora con ticket: " + idTicket + ", no encontrada");
             return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
         }
         catch (Exception e){
             log.error("Ocurrio un error al obtener la bitacora con ticket: " + idTicket);
             e.printStackTrace();
-            ApiResponse<BitacoraDTO> error = new ApiResponse<>(false, "Error al obtener la bitacora: " + idTicket);
+            ApiResponse<List<BitacoraDTO>> error = new ApiResponse<>(false, "Error al obtener la bitacora: " + idTicket);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }

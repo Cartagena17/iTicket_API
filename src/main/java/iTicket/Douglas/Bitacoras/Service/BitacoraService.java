@@ -13,8 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -53,6 +55,7 @@ public class BitacoraService {
         dto.setIdBitacora(entity.getIdBitacora());
         dto.setUsuario(entity.getUsuario().getIdUsuario());
         dto.setNombreUsuario(entity.getUsuario().getNombreUsuario());
+        dto.setCorreoUsuario(entity.getUsuario().getCorreo());
         dto.setIdTicket(entity.getIdTicket());
         dto.setCodigoTicket(entity.getCodigoTicket());
         dto.setAsuntoTicket(entity.getAsuntoTicket());
@@ -79,18 +82,19 @@ public class BitacoraService {
         return dto;
     }
 
-    public BitacoraDTO obtenerBitacoraIdTicket(Long idTicket) {
+    public List<BitacoraDTO> obtenerBitacorasIdTicket(Long idTicket) {
         try {
-            Optional<BitacoraEntity> entidadOpcional = bitacoraRepo.findByIdTicket(idTicket);
-            if (entidadOpcional.isPresent()){
-                return convertirADTO(entidadOpcional.get());
+            List<BitacoraEntity> lista = bitacoraRepo.findByIdTicketOrderByFechaHoraAsc(idTicket);
+            if (!lista.isEmpty()){
+                return lista.stream().map(this::convertirADTO).collect(Collectors.toList());
             }
-            log.warn("No existe ninguna bitacora con ticket: " + idTicket);
-            return null;
+            log.warn("No existe ninguna bitácora para el ticket con ID: " + idTicket);
+            return Collections.emptyList();
         }
         catch (Exception e){
-            log.error("Ocurrio un error al obtener la bitacora con ticket: " + idTicket);
+            log.error("Ocurrio un error al obtener las bitacoras con ticket: " + idTicket);
             return null;
         }
     }
+
 }

@@ -34,7 +34,6 @@ public class TicketDTO {
     @Size (max = 500, message = "Longitud inválida de la descripción de la solución [500 caracteres]")
     private String descripcionSolucion;
 
-    @JsonFormat(pattern = "dd/MM/yyyy HH:mm", timezone = "America/El_Salvador")
     @FutureOrPresent(message = "La fecha de vencimiento debe ser futura o actual")
     private LocalDateTime fechaVencimiento;
 
@@ -59,7 +58,6 @@ public class TicketDTO {
     @Size(max = 10, message = "Longitud inválida en el estado del ticket [10 caracteres]")
     private String estado;
 
-    @JsonFormat(pattern = "dd/MM/yyyy HH:mm", timezone = "America/El_Salvador")
     private LocalDateTime fechaCreacion;
 
     //Atributos que se muestran según el tipo de ticket

@@ -357,7 +357,7 @@ public class TicketService {
             if (ticket.getTecnicoAsignado() == null || !ticket.getTecnicoAsignado().getIdUsuario().equals(idUsuarioTecnico)) {
                 throw new RuntimeException("Solo el usuario asignado puede hacer un reporte de este ticket");
             }
-            if (!List.of("En proceso", "En espera", "Vencido").contains(ticket.getEstado())) {
+            if (!List.of("En proceso", "En espera", "Vencido", "Resuelto").contains(ticket.getEstado())) {
                 throw new RuntimeException("El ticket no se encuentra en un estado que permita generar el reporte");
             }
             ticket.setDescripcionFalla(dto.getDescripcionFalla());
