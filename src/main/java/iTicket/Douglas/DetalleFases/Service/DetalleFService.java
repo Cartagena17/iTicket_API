@@ -37,7 +37,7 @@ public class DetalleFService {
     private DetalleFDTO convertirADTO(DetalleFEntity entity){
         DetalleFDTO dto = new DetalleFDTO();
         dto.setIdDetalleFase(entity.getIdDetalleFase());
-        dto.setDescripcionDetalle(dto.getDescripcionDetalle());
+        dto.setDescripcionDetalle(entity.getDescripcionDetalle());
         dto.setCompletado(entity.getCompletado());
         dto.setFase(entity.getFase().getIdFase());
         dto.setNombreFase(entity.getFase().getNombreFase());
@@ -98,18 +98,18 @@ public class DetalleFService {
         return false;
     }
 
-    public DetalleFDTO obtenerPorIdFase(FaseEntity idFase) {
+    public List<DetalleFDTO> obtenerPorIdFase(Long fase) {
         try {
-            Optional<DetalleFEntity> registro = repo.findByFase(idFase);
-            if (registro.isPresent()){
-                return convertirADTO(registro.get());
+            List<DetalleFEntity> registro = repo.findByFase_idFase(fase);
+            if (registro != null && !registro.isEmpty()){
+                return registro.stream().map(this::convertirADTO).collect(Collectors.toList());
             }
-            log.warn("No existe ningún detalle de fase con id: " + idFase);
-
+            log.warn("No existe ningún detalle de fase con id: " + fase);
             return null;
         }
         catch (Exception e){
             log.error("Ocurrió un error durante el proceso de obtención");
+            e.printStackTrace();
             return null;
         }
     }

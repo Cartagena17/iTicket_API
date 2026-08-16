@@ -3,6 +3,7 @@ package iTicket.Douglas.Fases.Coontroller;
 import iTicket.Douglas.Fases.DTO.FaseDTO;
 import iTicket.Douglas.Fases.DTO.PatchFaseDTO;
 import iTicket.Douglas.Fases.Service.FaseService;
+import iTicket.Douglas.Proyectos.Entity.ProyectoEntity;
 import iTicket.Douglas.Response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
+@CrossOrigin
 @RequestMapping("/api/fases")
 public class FaseController {
 
@@ -67,12 +69,12 @@ public class FaseController {
     }
 
     @GetMapping("/nombreFase/{nombreFase}")
-    public ResponseEntity<ApiResponse<FaseDTO>> buscarPorNombreFase(String nombreFase){
+    public ResponseEntity<ApiResponse<FaseDTO>> buscarPorNombreFase(@PathVariable String nombreFase){
         try{
             FaseDTO dto = service.buscarPorNombreFase(nombreFase);
             if (dto != null){
                 log.info("Fase: " + nombreFase + ", consultada con éxito");
-                ApiResponse<FaseDTO> exito = new ApiResponse<>(true, "Fase: " + nombreFase + ", consultada con éxito");
+                ApiResponse<FaseDTO> exito = new ApiResponse<>(true, "Fase: " + nombreFase + ", consultada con éxito", dto);
                 return ResponseEntity.ok(exito);
             }
             log.warn("No se ha encontrado la fase: " + nombreFase);
@@ -84,6 +86,27 @@ public class FaseController {
             e.printStackTrace();
             ApiResponse<FaseDTO> error = new ApiResponse<>(false, "No se pudo obtener la fase: " + nombreFase);
             return  ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    @GetMapping("proyecto/{proyecto}")
+    public ResponseEntity<ApiResponse<List<FaseDTO>>> buscarPorIdProyecto(@PathVariable Long proyecto){
+        try{
+            List<FaseDTO> lista = service.buscarPorIdProyecto(proyecto);
+            if (lista != null){
+                log.info("Se consultaron las fases asociadas al proyecto con id: " + proyecto);
+                ApiResponse<List<FaseDTO>> exito = new ApiResponse<>(true,"Se consultaron las fases asociadas al proyecto con id:" + proyecto, lista);
+                return ResponseEntity.ok(exito);
+            }
+            log.warn("No se han encontrado fases asociadas el proyecto con id: " + proyecto);
+            ApiResponse<List<FaseDTO>> respuesta = new ApiResponse<>(false, "No se han encontrado fases asociadas al proyecto con id: " + proyecto);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
+        }
+        catch(Exception e){
+            log.error("No se pudieron obtener las fases asociadas al proyecto con id: " + proyecto);
+            e.printStackTrace();
+            ApiResponse<List<FaseDTO>> error = new ApiResponse<>(false, "No se pudieron obtener las fases asociadas al proyecto con id: " + proyecto);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
