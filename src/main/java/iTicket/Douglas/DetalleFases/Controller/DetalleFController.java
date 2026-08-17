@@ -19,6 +19,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
+@CrossOrigin
 @RequestMapping ("/api/detalleFase")
 public class DetalleFController {
 
@@ -111,22 +112,22 @@ public class DetalleFController {
     }
 
     @GetMapping("/idFase/{fase}")
-    public ResponseEntity<ApiResponse<DetalleFDTO>> obtenerPorIdFase(@PathVariable FaseEntity idFase){
+    public ResponseEntity<ApiResponse<List<DetalleFDTO>>> obtenerPorIdFase(@PathVariable Long fase){
         try {
-            DetalleFDTO dto = service.obtenerPorIdFase(idFase);
+           List<DetalleFDTO> dto = service.obtenerPorIdFase(fase);
             if (dto != null) {
-                log.info("Se obtuvieron los datos del detalle de la fase: " + idFase);
-                ApiResponse<DetalleFDTO> exito = new ApiResponse<>(true, "Se obtuvieron los datos del detalle de la fase: " + idFase, dto);
+                log.info("Se obtuvieron los datos del detalle de la fase: " + fase);
+                ApiResponse<List<DetalleFDTO>> exito = new ApiResponse<>(true, "Se obtuvieron los datos del detalle de la fase: " + fase, dto);
                 return ResponseEntity.ok(exito);
             }
-            log.warn("Datos no encontrados con ID: " + idFase);
-            ApiResponse<DetalleFDTO> respuesta = new ApiResponse<>(false, "Detalle de fase con id: " + idFase + ", no encontrado");
+            log.warn("Datos no encontrados con ID: " + fase);
+            ApiResponse<List<DetalleFDTO>> respuesta = new ApiResponse<>(false, "Detalle de fase con id: " + fase + ", no encontrado");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
         }
         catch (Exception e){
-            log.error("Error al obtener el detalle de la fase: " + idFase);
+            log.error("Error al obtener el detalle de la fase: " + fase);
             e.printStackTrace();
-            ApiResponse<DetalleFDTO> error = new ApiResponse<>(false, "No se pudo obtener los datos del detalle de la fase: " + idFase);
+            ApiResponse<List<DetalleFDTO>> error = new ApiResponse<>(false, "No se pudo obtener los datos del detalle de la fase: " + fase);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
