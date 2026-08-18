@@ -1,6 +1,5 @@
 package iTicket.Douglas.Tickets.DTO;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import iTicket.Douglas.DetalleTS.DTO.DetalleTSDTO;
 import jakarta.validation.constraints.*;
 import lombok.Data;

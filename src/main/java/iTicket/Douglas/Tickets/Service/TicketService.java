@@ -36,7 +36,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -686,5 +689,32 @@ public class TicketService {
         ticket.setEstado(dto.getEstado());
         repo.save(ticket);
         return true;
+    }
+
+    private static final List<String> diasSemana = List.of("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom");
+
+    public List<TicketResumenDiaDTO> obtenerResumenSemanal(Long idUsuario) {
+        try {
+            LocalDate hoy = LocalDate.now();
+            LocalDateTime inicio = hoy.with(DayOfWeek.MONDAY).atStartOfDay();
+            LocalDateTime fin = hoy.atTime(LocalTime.MAX);
+
+            List<TicketEntity> tickets = repo.findByCreador_IdUsuarioAndFechaCreacionBetween(idUsuario, inicio, fin);
+
+            Map<DayOfWeek, Long> conteosPorDia = tickets.stream().collect(Collectors.groupingBy(t -> t.getFechaCreacion().getDayOfWeek(), Collectors.counting()));
+
+            List<TicketResumenDiaDTO> resumen = new ArrayList<>();
+            for (DayOfWeek dia : DayOfWeek.values()) { //ya vienen en orden Lunes a Domingo
+                resumen.add(new TicketResumenDiaDTO(diasSemana.get(dia.getValue() - 1), conteosPorDia.getOrDefault(dia, 0L)));
+            }
+            return resumen;
+        } catch (Exception e) {
+            log.error("Ocurrió un error al obtener el resumen semanal");
+            List<TicketResumenDiaDTO> resumenVacio = new ArrayList<>();
+            for (DayOfWeek dia : DayOfWeek.values()) {
+                resumenVacio.add(new TicketResumenDiaDTO(diasSemana.get(dia.getValue() - 1), 0L));
+            }
+            return resumenVacio;
+        }
     }
 }
