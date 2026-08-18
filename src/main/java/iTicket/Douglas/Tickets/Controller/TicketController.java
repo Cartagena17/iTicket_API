@@ -236,6 +236,21 @@ public class TicketController {
         }
     }
 
+    @GetMapping("/resumen-semanal/{idUsuario}")
+    public ResponseEntity<ApiResponse<List<TicketResumenDiaDTO>>> obtenerResumenSemanal(@PathVariable Long idUsuario){
+        try {
+            List<TicketResumenDiaDTO> resumen = service.obtenerResumenSemanal(idUsuario);
+            log.info("Resumen semanal de tickets consultado");
+            ApiResponse<List<TicketResumenDiaDTO>> respuesta = new ApiResponse<>(true, "Resumen semanal obtenido", resumen);
+            return ResponseEntity.ok(respuesta);
+        } catch (Exception e) {
+            log.error("Error al obtener el resumen semanal de tickets");
+            e.printStackTrace();
+            ApiResponse<List<TicketResumenDiaDTO>> respuestaError = new ApiResponse<>(false, "No se pudo obtener el resumen semanal");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
+        }
+    }
+
     @GetMapping("/aprobaciones-pendientes")
     public ResponseEntity<ApiResponse<List<TicketDTO>>> obtenerAprobacionesPendientes(@RequestParam(defaultValue = "5") int limite, @RequestParam Long idUsuarioAdmin) {
         try {
