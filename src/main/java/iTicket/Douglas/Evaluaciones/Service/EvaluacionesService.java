@@ -1,8 +1,10 @@
 package iTicket.Douglas.Evaluaciones.Service;
 
 import iTicket.Douglas.Evaluaciones.DTO.EvaluacionesDTO;
+import iTicket.Douglas.Evaluaciones.DTO.MetricasDTO;
 import iTicket.Douglas.Evaluaciones.Entity.EvaluacionesEntity;
 import iTicket.Douglas.Evaluaciones.Repository.EvaluacionesRepository;
+import iTicket.Douglas.Exception.OperacionInvalidaException;
 import iTicket.Douglas.Exception.RecursoDuplicadoException;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Tickets.DTO.TicketEstadoDTO;
@@ -12,9 +14,14 @@ import iTicket.Douglas.Tickets.Service.TicketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,6 +43,10 @@ public class EvaluacionesService {
 
         TicketEntity ticketExistente = ticketRepository.findById(dto.getIdTicket())
                 .orElseThrow(() -> new RecursoNoEncontradoException("El ticket con ID " + dto.getIdTicket() + " no existe."));
+
+        if (!"Resuelto".equalsIgnoreCase(ticketExistente.getEstado())) {
+            throw new OperacionInvalidaException("Solo los tickets en estado 'Resuelto' pueden ser evaluados. El ticket actualmente está: " + ticketExistente.getEstado());
+        }
 
         EvaluacionesEntity entity = convertirAEntity(dto, ticketExistente);
         EvaluacionesEntity entitySave = repo.save(entity);
@@ -95,6 +106,45 @@ public class EvaluacionesService {
         return false;
     }
 
+    public long contarEvaluaciones() {
+        return repo.countEvaluaciones();
+    }
+
+    public Page<EvaluacionesDTO> obtenerEvaluacionesPaginadas(String busqueda, Double calificacion, LocalDate fecha, Pageable pageable) {
+        String filtroBusqueda = (busqueda != null && !busqueda.trim().isEmpty()) ? busqueda.trim() : null;
+        Double filtroCalificacion = (calificacion != null && calificacion > 0) ? calificacion : null;
+
+        LocalDateTime fechaInicio = (fecha != null) ? fecha.atStartOfDay() : null;
+        LocalDateTime fechaFin = (fecha != null) ? fecha.atTime(LocalTime.MAX) : null;
+
+        Page<EvaluacionesEntity> paginaEntities = repo.buscarPorFiltrosPaginado(filtroBusqueda, filtroCalificacion, fechaInicio, fechaFin, pageable);
+        return paginaEntities.map(this::convertirADTO);
+    }
+
+    public MetricasDTO obtenerMetricas(String busqueda, Double calificacion, LocalDate fecha) {
+        String filtroBusqueda = (busqueda != null && !busqueda.trim().isEmpty()) ? busqueda.trim() : null;
+        Double filtroCalificacion = (calificacion != null && calificacion > 0) ? calificacion : null;
+
+        LocalDateTime fechaInicio = (fecha != null) ? fecha.atStartOfDay() : null;
+        LocalDateTime fechaFin = (fecha != null) ? fecha.atTime(LocalTime.MAX) : null;
+
+        Object[] res = repo.obtenerMetricasRaw(filtroBusqueda, filtroCalificacion, fechaInicio, fechaFin);
+
+        if (res == null || res.length == 0 || res[0] == null) {
+            return new MetricasDTO(0L, 0.0, 0L, 0L);
+        }
+
+        Object[] fila = (res[0] instanceof Object[]) ? (Object[]) res[0] : res;
+
+        Long total = (fila.length > 0 && fila[0] != null) ? ((Number) fila[0]).longValue() : 0L;
+        Double promedioRaw = (fila.length > 1 && fila[1] != null) ? ((Number) fila[1]).doubleValue() : 0.0;
+        Double promedio = Math.round(promedioRaw * 10.0) / 10.0;
+        Long positivas = (fila.length > 2 && fila[2] != null) ? ((Number) fila[2]).longValue() : 0L;
+        Long negativas = (fila.length > 3 && fila[3] != null) ? ((Number) fila[3]).longValue() : 0L;
+
+        return new MetricasDTO(total, promedio, positivas, negativas);
+    }
+
     private EvaluacionesEntity convertirAEntity(EvaluacionesDTO dto, TicketEntity ticket) {
         EvaluacionesEntity objEntity = new EvaluacionesEntity();
         objEntity.setCalificacion(dto.getCalificacion());
@@ -111,8 +161,16 @@ public class EvaluacionesService {
 
         if (entity.getTicket() != null) {
             dto.setIdTicket(entity.getTicket().getIdTicket());
-        }
+            dto.setCodigoTicket(entity.getTicket().getCodigo());
+            dto.setAsuntoTicket(entity.getTicket().getAsunto());
+            dto.setFechaEvaluacion(entity.getTicket().getFechaCreacion());
 
+            if (entity.getTicket().getTecnicoAsignado() != null) {
+                dto.setNombreTecnico(entity.getTicket().getTecnicoAsignado().getNombreUsuario());
+            } else {
+                dto.setNombreTecnico("Sin técnico asignado");
+            }
+        }
         return dto;
     }
 }

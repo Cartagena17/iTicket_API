@@ -1,16 +1,21 @@
 package iTicket.Douglas.Evaluaciones.Controller;
 
 import iTicket.Douglas.Response.ApiResponse;
+import iTicket.Douglas.Evaluaciones.DTO.MetricasDTO;
 import iTicket.Douglas.Evaluaciones.DTO.EvaluacionesDTO;
 import iTicket.Douglas.Evaluaciones.Service.EvaluacionesService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.time.LocalDate;
 
 @Slf4j
 @RestController
@@ -27,14 +32,6 @@ public class EvaluacionesController {
         log.info("Nueva evaluación creada: " + dto);
         ApiResponse<EvaluacionesDTO> respuesta = new ApiResponse<>(true, "Evaluación ingresada correctamente", dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
-    }
-
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<EvaluacionesDTO>>> obtenerTodas() {
-        List<EvaluacionesDTO> lista = service.obtenerTodas();
-        log.info("Datos de evaluaciones consultados");
-        ApiResponse<List<EvaluacionesDTO>> respuesta = new ApiResponse<>(true, "Evaluaciones encontradas", lista);
-        return ResponseEntity.ok(respuesta);
     }
 
     @GetMapping("/{id}")
@@ -71,5 +68,36 @@ public class EvaluacionesController {
         }
         ApiResponse<Void> respuesta = new ApiResponse<>(false, "Evaluación con ID: " + id + ", no encontrada");
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
+    }
+
+    @GetMapping("/contar_evaluaciones")
+    public ResponseEntity<ApiResponse<Long>> obtenerTotalEvaluaciones() {
+        long total = service.contarEvaluaciones();
+        log.info("Total de evaluaciones consultado: " + total);
+        ApiResponse<Long> respuesta = new ApiResponse<>(true, "Total de evaluaciones", total);
+        return ResponseEntity.ok(respuesta);
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<EvaluacionesDTO>>> obtenerTodas(
+            @RequestParam(required = false) String busqueda,
+            @RequestParam(required = false) Double calificacion,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            @PageableDefault(page = 0, size = 10) Pageable pageable) {
+        Page<EvaluacionesDTO> pagina = service.obtenerEvaluacionesPaginadas(busqueda, calificacion, fecha, pageable);
+        log.info("Consulta paginada de evaluaciones realizada exitosamente");
+        ApiResponse<Page<EvaluacionesDTO>> respuesta = new ApiResponse<>(true, "Evaluaciones consultadas correctamente", pagina);
+        return ResponseEntity.ok(respuesta);
+    }
+
+    @GetMapping("/metricas")
+    public ResponseEntity<ApiResponse<MetricasDTO>> obtenerMetricas(
+            @RequestParam(required = false) String busqueda,
+            @RequestParam(required = false) Double calificacion,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
+        MetricasDTO metricas = service.obtenerMetricas(busqueda, calificacion, fecha);
+        log.info("Consulta de métricas globales realizada exitosamente");
+        ApiResponse<MetricasDTO> respuesta = new ApiResponse<>(true, "Métricas consultadas correctamente", metricas);
+        return ResponseEntity.ok(respuesta);
     }
 }
