@@ -22,117 +22,52 @@ public class DepartamentoController {
     private final DepartamentoService service;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<DepartamentoDTO>> nuevoDepartamento (@Valid @RequestBody DepartamentoDTO json){
-        try {
-            DepartamentoDTO dto = service.nuevoDepartamento(json);
-            if (dto != null){
-                log.info("Nuevo departamento registrado " + dto);
-                ApiResponse<DepartamentoDTO> respuestaExito = new ApiResponse<>(true, "Datos registrados exitosamente", dto);
-                return ResponseEntity.ok(respuestaExito);
-            }
-            log.warn("Intento de insercion fallida " + json);
-            ApiResponse<DepartamentoDTO> respuestaFallida = new ApiResponse<>(false, "Intento de insercion fallida " + json);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuestaFallida);
-        } catch (Exception e) {
-            log.error("El proceso presentó un fallo inesperado contacte con el administrador");
-            e.printStackTrace();
-            ApiResponse<DepartamentoDTO> respuestaFallida = new ApiResponse<>(false, "El proceso presentó un fallo inesperado contacte con el administrador");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaFallida);
-        }
+    public ResponseEntity<ApiResponse<DepartamentoDTO>> nuevoDepartamento(@Valid @RequestBody DepartamentoDTO json) {
+        DepartamentoDTO dto = service.nuevoDepartamento(json);
+        log.info("Nuevo departamento registrado " + dto);
+        ApiResponse<DepartamentoDTO> respuesta = new ApiResponse<>(true, "Datos registrados exitosamente", dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<DepartamentoDTO>>> obtenerDatos(){
-        try {
-            List<DepartamentoDTO> lista = service.obetenerTodo();
-            if (lista != null) {
-                log.info("Datos de departamentos consultados");
-                ApiResponse<List<DepartamentoDTO>> respuestaExito = new ApiResponse<>(true, "Datos encontrados", lista);
-                return ResponseEntity.ok(respuestaExito);
-            }
-            log.warn("Datos de departamentos no encontrados");
-            ApiResponse<List<DepartamentoDTO>> respuestaNoEncontrada = new ApiResponse<>(false, "Datos de departamentos no encontrados");
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(respuestaNoEncontrada);
-        } catch (Exception e) {
-            log.error("No se pudieron obtener los datos de los departamentos");
-            e.printStackTrace();
-            ApiResponse<List<DepartamentoDTO>> respuestaFallida = new ApiResponse<>(false, "No se pudieron obtener los datos de los departamentos");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaFallida);
-        }
+    public ResponseEntity<ApiResponse<List<DepartamentoDTO>>> obtenerDatos() {
+        List<DepartamentoDTO> lista = service.obetenerTodo();
+        ApiResponse<List<DepartamentoDTO>> respuesta = new ApiResponse<>(true, "Datos encontrados", lista);
+        return ResponseEntity.ok(respuesta);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<DepartamentoDTO>> obtenerDatosId(@PathVariable Long id) {
-        try {
-            DepartamentoDTO dto = service.obtenerPorId(id);
-            if (dto != null) {
-                log.info("Se obtuvieron los datos del departamento con id " + id);
-                ApiResponse<DepartamentoDTO> respuestaExito = new ApiResponse<>(true, "Se obtuvieron los datos del departamento con id " + id, dto);
-                return ResponseEntity.ok(respuestaExito);
-            }
-            log.warn("No se encontraron los datos del departamento con id " + id);
-            ApiResponse<DepartamentoDTO> respuestaNoEncontrada = new ApiResponse<>(false, "No se encontraron los datos del departamento con id " + id);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoEncontrada);
-        } catch (Exception e) {
-            log.error("Error crítico al obtener los datos del departamento con id  " + id);
-            e.printStackTrace();
-            ApiResponse<DepartamentoDTO> respuestaError = new ApiResponse<>(false, "Error crítico al obtener los datos del departamento con id  " + id);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
-        }
+        DepartamentoDTO dto = service.obtenerPorId(id);
+        ApiResponse<DepartamentoDTO> respuesta = new ApiResponse<>(true, "Se obtuvieron los datos del departamento con id " + id, dto);
+        return ResponseEntity.ok(respuesta);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<DepartamentoDTO>> actualizarDepartamento(@PathVariable Long id, @Valid @RequestBody DepartamentoDTO dto) {
-        try {
-            DepartamentoDTO data = service.actualizar(id, dto);
-            if (data != null) {
-                log.info("Se logró actualizar el departamento con id "+id);
-                ApiResponse<DepartamentoDTO> respuestaExito = new ApiResponse<>(true, "Se logró actualizar el departamento con id "+id, data);
-                return ResponseEntity.ok(respuestaExito);
-            }
-            log.warn("No se pudo actualizar el departamento con id "+id);
-            ApiResponse<DepartamentoDTO> respuestaNoCompletada = new ApiResponse<>(false, "No se pudo actualizar el departamento con id "+id);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuestaNoCompletada);
-        } catch (Exception e) {
-            log.error("Error crítico en la actualizar el departamento con id " + id);
-            e.printStackTrace();
-            ApiResponse<DepartamentoDTO> respuestaError = new ApiResponse<>(false, "Error crítico en la actualizar el departamento con id " + id);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
-        }
+        DepartamentoDTO data = service.actualizar(id, dto);
+        log.info("Se logró actualizar el departamento con id " + id);
+        ApiResponse<DepartamentoDTO> respuesta = new ApiResponse<>(true, "Se logró actualizar el departamento con id " + id, data);
+        return ResponseEntity.ok(respuesta);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> eliminar(@PathVariable Long id) {
-        try {
-            boolean respuesta = service.eliminar(id);
-            if (respuesta) {
-                log.info("Se logró eliminar el departamento con id "+id);
-                ApiResponse<Void> respuestaExito = new ApiResponse<>(true, "Se logró eliminar el departamento con id "+id);
-                return ResponseEntity.ok(respuestaExito);
-            }
-            log.warn("No se logro eliminar el departamento con id "+id);
-            ApiResponse<Void> respuestaNoEncontrada = new ApiResponse<>(false, "No se logro eliminar el departamento con id "+id);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoEncontrada);
-        } catch (Exception e) {
-            log.error("Error crítico al eliminar el departamento con id " + id);
-            e.printStackTrace();
-            ApiResponse<Void> respuestaFallida = new ApiResponse<>(false, "Error crítico al eliminar el departamento con id " + id);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaFallida);
+        boolean eliminado = service.eliminar(id);
+        if (eliminado) {
+            log.info("Se logró eliminar el departamento con id " + id);
+            ApiResponse<Void> respuesta = new ApiResponse<>(true, "Se logró eliminar el departamento con id " + id);
+            return ResponseEntity.ok(respuesta);
         }
+        ApiResponse<Void> respuesta = new ApiResponse<>(false, "No se logró eliminar el departamento con id " + id);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
     }
 
     @GetMapping("/asignables/{idUsuario}")
-    public ResponseEntity<ApiResponse<List<DepartamentoDTO>>> obtenerAsignables(@PathVariable Long idUsuario){
-        try {
-            List<DepartamentoDTO> lista = service.obtenerDepartamentosAsignables(idUsuario);
-            log.info("Departamentos asignables consultados para usuario: " + idUsuario);
-            ApiResponse<List<DepartamentoDTO>> respuestaExito = new ApiResponse<>(true, "Departamentos asignables encontrados", lista);
-            return ResponseEntity.ok(respuestaExito);
-        } catch (Exception e) {
-            log.error("Error al obtener departamentos asignables para usuario " + idUsuario);
-            e.printStackTrace();
-            ApiResponse<List<DepartamentoDTO>> respuestaError = new ApiResponse<>(false, "No se pudieron obtener los departamentos asignables");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
-        }
+    public ResponseEntity<ApiResponse<List<DepartamentoDTO>>> obtenerAsignables(@PathVariable Long idUsuario) {
+        List<DepartamentoDTO> lista = service.obtenerDepartamentosAsignables(idUsuario);
+        log.info("Departamentos asignables consultados para usuario: " + idUsuario);
+        ApiResponse<List<DepartamentoDTO>> respuesta = new ApiResponse<>(true, "Departamentos asignables encontrados", lista);
+        return ResponseEntity.ok(respuesta);
     }
 }

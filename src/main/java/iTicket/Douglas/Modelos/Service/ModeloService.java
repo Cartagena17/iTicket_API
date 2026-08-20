@@ -1,5 +1,6 @@
 package iTicket.Douglas.Modelos.Service;
 
+import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Marcas.Entity.MarcaEntity;
 import iTicket.Douglas.Marcas.Repository.MarcaRepository;
 import iTicket.Douglas.Modelos.DTO.ModeloDTO;
@@ -9,35 +10,29 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class ModeloService {
 
     private final ModeloRepository repo;
     private final MarcaRepository marcaRepo;
 
+    @Transactional
     public ModeloDTO nuevoModelo(@Valid ModeloDTO dto) {
-        try {
-            Optional<MarcaEntity> marcaOpcional = marcaRepo.findById(dto.getIdMarca());
-            if (marcaOpcional.isEmpty()) {
-                log.warn("La marca con id " + dto.getIdMarca() + " no existe");
-                return null;
-            }
+        MarcaEntity marca = marcaRepo.findById(dto.getIdMarca())
+                .orElseThrow(() -> new RecursoNoEncontradoException("La marca con id " + dto.getIdMarca() + " no existe"));
 
-            ModeloEntity entity = convertirAEntity(dto, marcaOpcional.get());
-            ModeloEntity entitySave = repo.save(entity);
-            log.info("Nuevo modelo registrado: " + entitySave.getIdModelo());
-            return convertirADTO(entitySave);
-        } catch (Exception e) {
-            log.error("Error al ingresar la información del modelo: " + e.getMessage());
-            return null;
-        }
+        ModeloEntity entity = convertirAEntity(dto, marca);
+        ModeloEntity entitySave = repo.save(entity);
+        log.info("Nuevo modelo registrado: " + entitySave.getIdModelo());
+        return convertirADTO(entitySave);
     }
 
     public List<ModeloDTO> obtenerTodo() {
@@ -46,42 +41,29 @@ public class ModeloService {
     }
 
     public ModeloDTO obtenerPorId(Long id) {
-        Optional<ModeloEntity> entidadOpcional = repo.findById(id);
-        return entidadOpcional.map(this::convertirADTO).orElse(null);
+        ModeloEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un modelo con id " + id));
+        return convertirADTO(entidad);
     }
 
-//    public List<ModeloDTO> obtenerPorMarca(Long idMarca) {
-//        List<ModeloEntity> data = repo.findByMarca_IdMarca(idMarca);
-//        return data.stream().map(this::convertirADTO).collect(Collectors.toList());
-//    }
+    @Transactional
+    public ModeloDTO actualizarData(Long id, @Valid ModeloDTO dto) {
+        ModeloEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un modelo con id " + id));
 
-    public ModeloDTO actualizarData(Long id,@Valid ModeloDTO dto) {
-        try {
-            Optional<ModeloEntity> registroExistente = repo.findById(id);
-            if (registroExistente.isEmpty()) {
-                return null;
-            }
-            ModeloEntity entidad = registroExistente.get();
-
-            if (dto.getIdMarca() != null) {
-                Optional<MarcaEntity> marcaOpcional = marcaRepo.findById(dto.getIdMarca());
-                if (marcaOpcional.isEmpty()) {
-                    log.warn("La marca con id " + dto.getIdMarca() + " no existe");
-                    return null;
-                }
-                entidad.setMarca(marcaOpcional.get());
-            }
-
-            entidad.setNombreModelo(dto.getNombreModelo());
-            ModeloEntity datosGuardados = repo.save(entidad);
-            log.info("Modelo con id " + id + " actualizado");
-            return convertirADTO(datosGuardados);
-        } catch (Exception e) {
-            log.error("Ocurrió un error al procesar la info: " + e.getMessage());
-            return null;
+        if (dto.getIdMarca() != null) {
+            MarcaEntity marca = marcaRepo.findById(dto.getIdMarca())
+                    .orElseThrow(() -> new RecursoNoEncontradoException("La marca con id " + dto.getIdMarca() + " no existe"));
+            entidad.setMarca(marca);
         }
+
+        entidad.setNombreModelo(dto.getNombreModelo());
+        ModeloEntity datosGuardados = repo.save(entidad);
+        log.info("Modelo con id " + id + " actualizado");
+        return convertirADTO(datosGuardados);
     }
 
+    @Transactional
     public boolean eliminarModelo(Long id) {
         if (repo.existsById(id)) {
             repo.deleteById(id);
@@ -89,7 +71,6 @@ public class ModeloService {
         }
         return false;
     }
-
 
     private ModeloDTO convertirADTO(@Valid ModeloEntity entity) {
         ModeloDTO objDTO = new ModeloDTO();

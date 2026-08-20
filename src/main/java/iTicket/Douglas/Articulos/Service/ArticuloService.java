@@ -7,6 +7,7 @@ import iTicket.Douglas.Articulos.Repository.ArticuloRepository;
 import iTicket.Douglas.Articulos.Specification.ArticuloSpecifications;
 import iTicket.Douglas.Categoria.Entity.CategoriaEntity;
 import iTicket.Douglas.Categoria.Repository.CategoriaRepository;
+import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Modelos.Entity.ModeloEntity;
 import iTicket.Douglas.Modelos.Repository.ModeloRepository;
 import iTicket.Douglas.Ubicaciones.Entity.UbicacionEntity;
@@ -20,14 +21,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
-
 
 @Slf4j
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class ArticuloService {
 
@@ -36,92 +37,64 @@ public class ArticuloService {
     private final CategoriaRepository categoriaRepo;
     private final UbicacionRepository ubicacionRepo;
 
-    public ArticuloDTO nuevoArticulo (@Valid ArticuloDTO dto){
-        try {
-            Optional<CategoriaEntity> categoriaOpcional = categoriaRepo.findById(dto.getIdCategoria());
-            if (categoriaOpcional.isEmpty()){
-                log.warn("no existe la categoria con id"+ dto.getIdCategoria());
-                return null;
-            }
-            Optional<UbicacionEntity> ubicacionOpcional = ubicacionRepo.findById(dto.getIdUbicacion());
-            if (ubicacionOpcional.isEmpty()){
-                log.warn("no existe la ubicacion con id"+ dto.getIdUbicacion());
-                return null;
-            }
+    @Transactional
+    public ArticuloDTO nuevoArticulo(@Valid ArticuloDTO dto) {
+        CategoriaEntity categoria = categoriaRepo.findById(dto.getIdCategoria())
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe la categoría con id " + dto.getIdCategoria()));
 
-            ModeloEntity modelo = null;
-            if (dto.getIdModelo() != null){
-                Optional<ModeloEntity> modeloOpcional = modelorepo.findById(dto.getIdModelo());
-                if (modeloOpcional.isEmpty()){
-                    log.warn("no existe el modelo con id"+ dto.getIdModelo());
-                    return null;
-                }
-                modelo = modeloOpcional.get();
-            }
+        UbicacionEntity ubicacion = ubicacionRepo.findById(dto.getIdUbicacion())
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe la ubicación con id " + dto.getIdUbicacion()));
 
-            ArticuloEntity entity = convertirAEntity(dto, modelo, categoriaOpcional.get(), ubicacionOpcional.get());
-            ArticuloEntity entitySave = repo.save(entity);
-            log.info("Nuevo articulo registrado");
-            return convertirADTO(entitySave);
-        } catch (Exception e) {
-            log.error("Error al ingresar la informacion del articulo " + e.getMessage());
-            return null;
+        ModeloEntity modelo = null;
+        if (dto.getIdModelo() != null) {
+            modelo = modelorepo.findById(dto.getIdModelo())
+                    .orElseThrow(() -> new RecursoNoEncontradoException("No existe el modelo con id " + dto.getIdModelo()));
         }
+
+        ArticuloEntity entity = convertirAEntity(dto, modelo, categoria, ubicacion);
+        ArticuloEntity entitySave = repo.save(entity);
+        log.info("Nuevo artículo registrado: " + entitySave.getIdArticulo());
+        return convertirADTO(entitySave);
     }
 
-    public List<ArticuloDTO> obtenerTodo(){
+    public List<ArticuloDTO> obtenerTodo() {
         List<ArticuloEntity> data = repo.findAll();
         return data.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
-    public ArticuloDTO obtenerPorId (Long id){
-        Optional<ArticuloEntity> entidadOpcional = repo.findById(id);
-        return entidadOpcional.map(this::convertirADTO).orElse(null);
+    public ArticuloDTO obtenerPorId(Long id) {
+        ArticuloEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un artículo con id " + id));
+        return convertirADTO(entidad);
     }
 
-    public ArticuloDTO actualizarData(Long id,@Valid ArticuloDTO dto){
-        try {
-            Optional<ArticuloEntity> registroExistente = repo.findById(id);
-            if (registroExistente.isEmpty()){
-                return null;
-            }
-            ArticuloEntity entidad = registroExistente.get();
+    @Transactional
+    public ArticuloDTO actualizarData(Long id, @Valid ArticuloDTO dto) {
+        ArticuloEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un artículo con id " + id));
 
-            if (dto.getIdCategoria() != null){
-                Optional<CategoriaEntity> categoriaOpcional = categoriaRepo.findById(dto.getIdCategoria());
-                if (categoriaOpcional.isEmpty()){
-                    log.warn("no existe la categoria con id"+ dto.getIdCategoria());
-                    return null;
-                }
-                entidad.setCategoria(categoriaOpcional.get());
-            }
-
-            if (dto.getIdUbicacion() != null){
-                Optional<UbicacionEntity> ubicacionOpcional = ubicacionRepo.findById(dto.getIdUbicacion());
-                if (ubicacionOpcional.isEmpty()){
-                    log.warn("no existe la ubicacion con id"+ dto.getIdUbicacion());
-                    return null;
-                }
-                entidad.setUbicacion(ubicacionOpcional.get());
-            }
-
-            if (dto.getIdModelo() != null){
-                Optional<ModeloEntity> modeloOpcional = modelorepo.findById(dto.getIdModelo());
-                if (modeloOpcional.isEmpty()){
-                    log.warn("no existe el modelo con id"+ dto.getIdModelo());
-                    return null;
-                }
-                entidad.setModelo(modeloOpcional.get());
-            }
-
-            entidad.setCodigoArticulo(dto.getCodigoArticulo());
-            ArticuloEntity datosGuardados = repo.save(entidad);
-            log.info("Articulo actualizado");
-            return convertirADTO(datosGuardados);
-        } catch (Exception e) {
-            log.error("Error al actualizar la informacion del articulo " + e.getMessage());
-            return null;
+        if (dto.getIdCategoria() != null) {
+            CategoriaEntity categoria = categoriaRepo.findById(dto.getIdCategoria())
+                    .orElseThrow(() -> new RecursoNoEncontradoException("No existe la categoría con id " + dto.getIdCategoria()));
+            entidad.setCategoria(categoria);
         }
+
+        if (dto.getIdUbicacion() != null) {
+            UbicacionEntity ubicacion = ubicacionRepo.findById(dto.getIdUbicacion())
+                    .orElseThrow(() -> new RecursoNoEncontradoException("No existe la ubicación con id " + dto.getIdUbicacion()));
+            entidad.setUbicacion(ubicacion);
+        }
+
+        if (dto.getIdModelo() != null) {
+            ModeloEntity modelo = modelorepo.findById(dto.getIdModelo())
+                    .orElseThrow(() -> new RecursoNoEncontradoException("No existe el modelo con id " + dto.getIdModelo()));
+            entidad.setModelo(modelo);
+        }
+
+        entidad.setCodigoArticulo(dto.getCodigoArticulo());
+        ArticuloEntity datosGuardados = repo.save(entidad);
+        log.info("Artículo con id " + id + " actualizado");
+        return convertirADTO(datosGuardados);
     }
 
     public List<ArticuloDTO> buscarPorCodigoParcial(String fragmento) {
@@ -144,7 +117,6 @@ public class ArticuloService {
             spec = spec.and(ArticuloSpecifications.conMarca(idMarca));
         }
 
-        // pagina - 1 porque Spring Data cuenta las páginas desde 0, pero en la interfaz la primera es la 1
         Pageable pageable = PageRequest.of(pagina - 1, tamano, Sort.by("idArticulo").descending());
         Page<ArticuloEntity> resultado = repo.findAll(spec, pageable);
 
@@ -153,6 +125,7 @@ public class ArticuloService {
         return new ArticuloPaginaDTO(articulos, resultado.getTotalElements(), resultado.getTotalPages(), pagina);
     }
 
+    @Transactional
     public boolean eliminarArticulo(Long id) {
         if (repo.existsById(id)) {
             repo.deleteById(id);
