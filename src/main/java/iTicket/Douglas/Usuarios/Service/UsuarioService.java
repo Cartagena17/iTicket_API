@@ -131,7 +131,7 @@ public class UsuarioService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún departamento con id: " + idDepartamento));
 
         List<UsuarioEntity> lista = repo.findByRol_NombreRolInAndEstadoAndDepartamento_NombreDepartamentoIgnoreCase(
-                List.of("Tecnico", "Administrador"), true, departamento.getNombreDepartamento());
+                List.of("Tecnico", "Administrador"), 'T', departamento.getNombreDepartamento());
         return lista.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
