@@ -16,15 +16,34 @@ public interface BitacoraRepository extends JpaRepository<BitacoraEntity, Long> 
     List<BitacoraEntity> findByIdTicketOrderByFechaHoraAsc(Long ticket);
 
     @org.springframework.data.jpa.repository.Query("SELECT t.fechaCreacion, MIN(b.fechaHora) " +
-           "FROM iTicket.Douglas.Bitacoras.Entity.BitacoraEntity b " +
-           "JOIN iTicket.Douglas.Tickets.Entity.TicketEntity t ON t.idTicket = b.idTicket " +
-           "WHERE LOWER(b.nuevoEstado) IN ('resuelto', 'cerrado') " +
-           "AND LOWER(t.estado) IN ('resuelto', 'cerrado') " +
-           "AND b.fechaHora > t.fechaCreacion " +
-           "AND (:inicio IS NULL OR t.fechaCreacion >= :inicio) " +
-           "AND (:fin IS NULL OR t.fechaCreacion <= :fin) " +
-           "GROUP BY t.idTicket, t.fechaCreacion")
+            "FROM iTicket.Douglas.Bitacoras.Entity.BitacoraEntity b " +
+            "JOIN iTicket.Douglas.Tickets.Entity.TicketEntity t ON t.idTicket = b.idTicket " +
+            "WHERE LOWER(b.nuevoEstado) IN ('resuelto', 'cerrado') " +
+            "AND LOWER(t.estado) IN ('resuelto', 'cerrado') " +
+            "AND b.fechaHora > t.fechaCreacion " +
+            "AND (:inicio IS NULL OR t.fechaCreacion >= :inicio) " +
+            "AND (:fin IS NULL OR t.fechaCreacion <= :fin) " +
+            "GROUP BY t.idTicket, t.fechaCreacion")
     List<Object[]> obtenerTiemposResolucionReales(
+            @org.springframework.data.repository.query.Param("inicio") java.time.LocalDateTime inicio,
+            @org.springframework.data.repository.query.Param("fin") java.time.LocalDateTime fin
+    );
+
+    // Promedio de horas de resolución agrupado por día de la semana (1=Domingo...7=Sábado en Oracle)
+    // Devuelve: [díaSemanaNumero (Number), promedioHoras (Number)]
+    @org.springframework.data.jpa.repository.Query(
+            value = "SELECT TO_CHAR(b.FECHA_HORA, 'D') AS dia_semana, " +
+                    "AVG((CAST(b.FECHA_HORA AS DATE) - CAST(t.FECHA_CREACION AS DATE)) * 24) AS promedio_horas " +
+                    "FROM BITACORAS b " +
+                    "JOIN TICKETS t ON t.ID_TICKET = b.ID_TICKET " +
+                    "WHERE LOWER(b.NUEVO_ESTADO) IN ('resuelto', 'cerrado') " +
+                    "AND b.FECHA_HORA > t.FECHA_CREACION " +
+                    "AND (:inicio IS NULL OR t.FECHA_CREACION >= :inicio) " +
+                    "AND (:fin IS NULL OR t.FECHA_CREACION <= :fin) " +
+                    "GROUP BY TO_CHAR(b.FECHA_HORA, 'D') " +
+                    "ORDER BY TO_CHAR(b.FECHA_HORA, 'D')",
+            nativeQuery = true)
+    java.util.List<Object[]> obtenerTiemposResolucionPorDiaSemana(
             @org.springframework.data.repository.query.Param("inicio") java.time.LocalDateTime inicio,
             @org.springframework.data.repository.query.Param("fin") java.time.LocalDateTime fin
     );
