@@ -5,6 +5,7 @@ import iTicket.Douglas.Articulos.Repository.ArticuloRepository;
 import iTicket.Douglas.DetalleTA.DTO.DetalleTADTO;
 import iTicket.Douglas.DetalleTA.Entity.DetalleTAEntity;
 import iTicket.Douglas.DetalleTA.Repository.DetalleTARepository;
+import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
 import jakarta.validation.Valid;
@@ -15,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -31,28 +31,16 @@ public class DetalleTAService {
 
     @Transactional
     public DetalleTADTO nuevoDetalle(@Valid DetalleTADTO dto) {
-        try {
-            Optional<TicketEntity> ticketOpcional = ticketRepo.findById(dto.getIdTicket());
-            if (ticketOpcional.isEmpty()) {
-                log.warn("El ticket con id " + dto.getIdTicket() + " no existe");
-                throw new RuntimeException("El ticket con id " + dto.getIdTicket() + " no existe");
-            }
+        TicketEntity ticket = ticketRepo.findById(dto.getIdTicket())
+                .orElseThrow(() -> new RecursoNoEncontradoException("El ticket con id " + dto.getIdTicket() + " no existe"));
 
-            Optional<ArticuloEntity> articuloOpcional = articuloRepo.findById(dto.getIdArticulo());
-            if (articuloOpcional.isEmpty()) {
-                log.warn("El artículo con id " + dto.getIdArticulo() + " no existe");
-                throw new RuntimeException("El artículo con id " + dto.getIdArticulo() + " no existe");
-            }
+        ArticuloEntity articulo = articuloRepo.findById(dto.getIdArticulo())
+                .orElseThrow(() -> new RecursoNoEncontradoException("El artículo con id " + dto.getIdArticulo() + " no existe"));
 
-            DetalleTAEntity entity = convertirAEntity(ticketOpcional.get(), articuloOpcional.get());
-            DetalleTAEntity entitySave = repo.save(entity);
-            log.info("Nuevo detalle TA registrado: " + entitySave.getIdDetalleTA());
-            return convertirADTO(entitySave);
-        } catch (Exception e) {
-            log.error("Error al ingresar la información del detalle: " + e.getMessage());
-            if (e instanceof RuntimeException re) throw re;
-            throw new RuntimeException("Error al registrar el detalle de artículo", e);
-        }
+        DetalleTAEntity entity = convertirAEntity(ticket, articulo);
+        DetalleTAEntity entitySave = repo.save(entity);
+        log.info("Nuevo detalle TA registrado: " + entitySave.getIdDetalleTA());
+        return convertirADTO(entitySave);
     }
 
     public List<DetalleTADTO> obtenerTodo() {
@@ -61,44 +49,31 @@ public class DetalleTAService {
     }
 
     public DetalleTADTO obtenerPorId(Long id) {
-        Optional<DetalleTAEntity> entidadOpcional = repo.findById(id);
-        return entidadOpcional.map(this::convertirADTO).orElse(null);
+        DetalleTAEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un detalle TA con id " + id));
+        return convertirADTO(entidad);
     }
 
     @Transactional
     public DetalleTADTO actualizarData(Long id, DetalleTADTO dto) {
-        try {
-            Optional<DetalleTAEntity> registroExistente = repo.findById(id);
-            if (registroExistente.isEmpty()) {
-                return null;
-            }
-            DetalleTAEntity entidad = registroExistente.get();
+        DetalleTAEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un detalle TA con id " + id));
 
-            if (dto.getIdTicket() != null) {
-                Optional<TicketEntity> ticketOpcional = ticketRepo.findById(dto.getIdTicket());
-                if (ticketOpcional.isEmpty()) {
-                    log.warn("El ticket con id " + dto.getIdTicket() + " no existe");
-                    return null;
-                }
-                entidad.setTicket(ticketOpcional.get());
-            }
-
-            if (dto.getIdArticulo() != null) {
-                Optional<ArticuloEntity> articuloOpcional = articuloRepo.findById(dto.getIdArticulo());
-                if (articuloOpcional.isEmpty()) {
-                    log.warn("El artículo con id " + dto.getIdArticulo() + " no existe");
-                    return null;
-                }
-                entidad.setArticulo(articuloOpcional.get());
-            }
-
-            DetalleTAEntity datosGuardados = repo.save(entidad);
-            log.info("Detalle TA con id " + id + " actualizado");
-            return convertirADTO(datosGuardados);
-        } catch (Exception e) {
-            log.error("Ocurrió un error al procesar la info: " + e.getMessage());
-            return null;
+        if (dto.getIdTicket() != null) {
+            TicketEntity ticket = ticketRepo.findById(dto.getIdTicket())
+                    .orElseThrow(() -> new RecursoNoEncontradoException("El ticket con id " + dto.getIdTicket() + " no existe"));
+            entidad.setTicket(ticket);
         }
+
+        if (dto.getIdArticulo() != null) {
+            ArticuloEntity articulo = articuloRepo.findById(dto.getIdArticulo())
+                    .orElseThrow(() -> new RecursoNoEncontradoException("El artículo con id " + dto.getIdArticulo() + " no existe"));
+            entidad.setArticulo(articulo);
+        }
+
+        DetalleTAEntity datosGuardados = repo.save(entidad);
+        log.info("Detalle TA con id " + id + " actualizado");
+        return convertirADTO(datosGuardados);
     }
 
     @Transactional
@@ -132,7 +107,8 @@ public class DetalleTAService {
         repo.deleteByTicket(ticket);
 
         for (String codigo : codigosArticulos) {
-            ArticuloEntity articulo = articuloRepo.findByCodigoArticulo(codigo).orElseThrow(() -> new RuntimeException("No existe ningún artículo con código: " + codigo));
+            ArticuloEntity articulo = articuloRepo.findByCodigoArticulo(codigo)
+                    .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún artículo con código: " + codigo));
 
             DetalleTAEntity entity = new DetalleTAEntity();
             entity.setTicket(ticket);

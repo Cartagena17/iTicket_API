@@ -3,14 +3,14 @@ package iTicket.Douglas.Evidencias.Service;
 import iTicket.Douglas.Evidencias.DTO.EvidenciaDTO;
 import iTicket.Douglas.Evidencias.Entity.EvidenciaEntity;
 import iTicket.Douglas.Evidencias.Repository.EvidenciaRepository;
+import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
 import iTicket.Douglas.Utils.CloudinaryService;
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,19 +20,18 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class EvidenciaService {
 
-    //Inyectar dependencias
     private final EvidenciaRepository repo;
-    private final TicketRepository ticketsRepo; //Para buscar si el ticket existe
-    private  final CloudinaryService cloudinaryService;
+    private final TicketRepository ticketsRepo;
+    private final CloudinaryService cloudinaryService;
 
     @Transactional
     public EvidenciaDTO subirEvidencia(MultipartFile archivo, Long idTicket) {
         if (!ticketsRepo.existsById(idTicket)) {
-            throw new RuntimeException("El ticket con ID: " + idTicket + " no existe");
+            throw new RecursoNoEncontradoException("El ticket con ID: " + idTicket + " no existe");
         }
 
         String urlPublica = cloudinaryService.subirImagen(archivo, "iticket/evidencias");
@@ -44,38 +43,22 @@ public class EvidenciaService {
         return nuevaEvidencia(dto);
     }
 
-    //Método para crear evidencias
     @Transactional
-    public EvidenciaDTO nuevaEvidencia(@Valid EvidenciaDTO dto){
-        try {
-            EvidenciaEntity entity = convertirAEntity(dto);
-            //Guardar en la base
-            EvidenciaEntity entitySave = repo.save(entity);
-            //Devolver e de entitySave como DTO
-            return convertirADTO(entitySave);
-        }catch (Exception e){
-            log.error("Error al registrar la evidencia " + e.getMessage());
-            return null;
-        }
+    public EvidenciaDTO nuevaEvidencia(@Valid EvidenciaDTO dto) {
+        EvidenciaEntity entity = convertirAEntity(dto);
+        EvidenciaEntity entitySave = repo.save(entity);
+        log.info("Nueva evidencia registrada: " + entitySave.getIdEvidencia());
+        return convertirADTO(entitySave);
     }
 
-    //Método para obtener evidencias por Ticket
     public List<EvidenciaDTO> obtenerEvidenciasPorTicket(Long idTicket) {
-        //Buscar el ticket relacionado en la base
-        Optional<TicketEntity> entidadOpcional = ticketsRepo.findById(idTicket);
+        TicketEntity ticket = ticketsRepo.findById(idTicket)
+                .orElseThrow(() -> new RecursoNoEncontradoException("El ticket con ID: " + idTicket + " no existe"));
 
-        if (entidadOpcional.isEmpty()) {
-            throw new RuntimeException("El ticket con ID: " + idTicket + " no existe");
-        }
-        TicketEntity ticket = entidadOpcional.get();
-        //Buscar evidencias asociadas al objeto ticket
         List<EvidenciaEntity> data = repo.findByTicket(ticket);
-
         return data.stream().map(this::convertirADTO).collect(Collectors.toList());
-        //.map le da los atributos que vienen del entity a los atributos del DTO
     }
 
-    //Método para eliminar
     @Transactional
     public boolean eliminarData(Long id) {
         Optional<EvidenciaEntity> entidad = repo.findById(id);
@@ -88,43 +71,32 @@ public class EvidenciaService {
         return false;
     }
 
-    //Método para obtener todas las evidencias
     public List<EvidenciaDTO> obtenerTodo() {
         List<EvidenciaEntity> data = repo.findAll();
         return data.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
-    //Método para obtener evidencias por su id
     public EvidenciaDTO buscarEvidencia(Long id) {
-        Optional<EvidenciaEntity> entidadOpcional = repo.findById(id);
-        return entidadOpcional.map(this::convertirADTO).orElse(null);
+        EvidenciaEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe una evidencia con id " + id));
+        return convertirADTO(entidad);
     }
 
-    //Método para convertir los DTO a Entity
     private EvidenciaEntity convertirAEntity(@Valid EvidenciaDTO dto) {
         EvidenciaEntity objEntity = new EvidenciaEntity();
-
         objEntity.setEvidenciaUrl(dto.getEvidenciaUrl());
-
-        //getReferenceById sirve para evitar hacer un SELECT completo y retornar un proxy solo con el id
         TicketEntity ticket = ticketsRepo.getReferenceById(dto.getTicket());
-
         objEntity.setTicket(ticket);
         return objEntity;
     }
 
-    //Método para convertir Entity a DTO
     private EvidenciaDTO convertirADTO(@Valid EvidenciaEntity entity) {
         EvidenciaDTO objDTO = new EvidenciaDTO();
         objDTO.setIdEvidencia(entity.getIdEvidencia());
         objDTO.setEvidenciaUrl(entity.getEvidenciaUrl());
-
-        //Para traer el objeto ticket guardado en el entity y solo tomar el id del ticket
         if (entity.getTicket() != null) {
             objDTO.setTicket(entity.getTicket().getIdTicket());
         }
         return objDTO;
     }
-
-
 }

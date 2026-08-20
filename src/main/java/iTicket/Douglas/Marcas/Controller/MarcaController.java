@@ -14,7 +14,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping ("api/marcas")
+@RequestMapping("api/marcas")
 @RequiredArgsConstructor
 @CrossOrigin
 public class MarcaController {
@@ -22,103 +22,45 @@ public class MarcaController {
     private final MarcaService service;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<MarcaDTO>> nuevaMarca(@Valid @RequestBody MarcaDTO json){
-        try {
-            MarcaDTO dto = service.nuevaMarca(json);
-            if (dto != null){
-                log.info("Nuevo marca registrado +"+dto);
-                ApiResponse<MarcaDTO> respuestaExito = new ApiResponse<>(true, "Datos registrados exitosamente" ,dto);
-                return ResponseEntity.status(HttpStatus.CREATED).body(respuestaExito);
-            }
-            log.warn("Intento de insercion fallida "+json);
-            ApiResponse<MarcaDTO> respuestaFallida = new ApiResponse<>(false, "Intento de insercion fallida "+json);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuestaFallida);
-        }catch (Exception e){
-            log.error("El proceso presntó un fallo inesperado contacte con el administrador");
-            e.printStackTrace();
-            ApiResponse<MarcaDTO> respuestaFallida = new ApiResponse<>(false,"El proceso presntó un fallo inesperado contacte con el administrador");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaFallida);
-        }
+    public ResponseEntity<ApiResponse<MarcaDTO>> nuevaMarca(@Valid @RequestBody MarcaDTO json) {
+        MarcaDTO dto = service.nuevaMarca(json);
+        log.info("Nueva marca registrada: " + dto);
+        ApiResponse<MarcaDTO> respuesta = new ApiResponse<>(true, "Datos registrados exitosamente", dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<MarcaDTO>>> obtenerDatos(){
-        try {
-            List<MarcaDTO> listaMarcas = service.obtenerTodo();
-            if (listaMarcas != null){
-                log.info("Datos de marca consultados");
-                ApiResponse<List<MarcaDTO>> respuestaExito = new ApiResponse<>(true, "Datos de marca consultados",listaMarcas);
-                return ResponseEntity.ok(respuestaExito);
-            }
-            log.warn("Datos de marcas no encontrados");
-            ApiResponse<List<MarcaDTO>> respuestaNoEncontrada = new ApiResponse<>(false,"Datos de marcas no encontrados");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoEncontrada);
-        }catch (Exception e){
-            log.error("No se pudieron obtener los datos de las marcas");
-            e.printStackTrace();
-            ApiResponse<List<MarcaDTO>> respuestaFallida = new ApiResponse<>(false, "No se pudieron obtener los datos de las marcas");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaFallida);
-        }
+    public ResponseEntity<ApiResponse<List<MarcaDTO>>> obtenerDatos() {
+        List<MarcaDTO> listaMarcas = service.obtenerTodo();
+        ApiResponse<List<MarcaDTO>> respuesta = new ApiResponse<>(true, "Datos de marca consultados", listaMarcas);
+        return ResponseEntity.ok(respuesta);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<MarcaDTO>> obtenerPorId (@PathVariable Long id){
-        try {
-            MarcaDTO dto = service.obtenerporId(id);
-            if (dto != null){
-                log.warn("Se obtuvieron los datos de la marca con id "+id);
-                ApiResponse<MarcaDTO> respuestaExito = new ApiResponse<>(true,"Se obtuvieron los datos de la marca con id "+id, dto );
-                return ResponseEntity.ok(respuestaExito);
-            }
-            log.info("No se encontraron los datos de la marca con id "+id);
-            ApiResponse<MarcaDTO> respuestaNoEncontrada = new ApiResponse<>(false,"No se encontraron los datos de la marca con id "+id);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoEncontrada);
-        }catch (Exception e){
-            log.error("No se pudo obtener los datos de la marca con id "+id);
-            e.printStackTrace();
-            ApiResponse<MarcaDTO> respuestaFallida = new ApiResponse<>(false, "No se pudo obtener los datos de la marca con id "+id);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaFallida);
-        }
+    public ResponseEntity<ApiResponse<MarcaDTO>> obtenerPorId(@PathVariable Long id) {
+        MarcaDTO dto = service.obtenerporId(id);
+        log.info("Se obtuvieron los datos de la marca con id " + id);
+        ApiResponse<MarcaDTO> respuesta = new ApiResponse<>(true, "Se obtuvieron los datos de la marca con id " + id, dto);
+        return ResponseEntity.ok(respuesta);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> eliminar (@PathVariable Long id){
-        try {
-            boolean respuesta = service.eliminar(id);
-            if (respuesta){
-                log.info("Se logró eliminar la marca con id "+id);
-                ApiResponse<Void> respuestaExito = new ApiResponse<>(true, "Se logró eliminar la marca con id "+id);
-                return ResponseEntity.status(HttpStatus.NO_CONTENT).body(respuestaExito);
-            }
-            log.warn("la marca con id "+id+" no fue encontrada");
-            ApiResponse<Void> respuestaNoEncontrada = new ApiResponse<>(false,"la marca con id "+id+" no fue encontrada");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoEncontrada);
-        }catch (Exception e){
-            log.error("Error crítico, al eliminar la marca con id: " + id);
-            e.printStackTrace();
-            ApiResponse<Void> respuestaFallida = new ApiResponse<>(false, "Error crítico, al eliminar la marca con id: " + id);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaFallida);
+    public ResponseEntity<ApiResponse<Void>> eliminar(@PathVariable Long id) {
+        boolean eliminado = service.eliminar(id);
+        if (eliminado) {
+            log.info("Se logró eliminar la marca con id " + id);
+            ApiResponse<Void> respuesta = new ApiResponse<>(true, "Se logró eliminar la marca con id " + id);
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(respuesta);
         }
+        ApiResponse<Void> respuesta = new ApiResponse<>(false, "La marca con id " + id + " no fue encontrada");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<MarcaDTO>> actualizar (@PathVariable Long id, @Valid @RequestBody MarcaDTO dto){
-        try {
-            MarcaDTO data = service.actualizar(id,dto);
-            if (data != null){
-                log.info("Se logro actualizar la marca con id "+id);
-                ApiResponse<MarcaDTO> respuestaExito = new ApiResponse<>(true,"Se logro actualizar la marca con id "+id, data);
-                return ResponseEntity.ok(respuestaExito);
-            }
-            log.warn("No se pudo actualizar la marca con id "+id);
-            ApiResponse<MarcaDTO> respuestaNoCompletada = new ApiResponse<>(false, "No se pudo actualizar la marca con id "+id);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuestaNoCompletada);
-        }catch (Exception e){
-            log.error("Error crítico al actualizar la marca con id: " + id);
-            e.printStackTrace();
-            ApiResponse<MarcaDTO> respuestaFallida = new ApiResponse<>(false, "Error crítico al actualizar la marca con id: " + id);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaFallida);
-        }
+    public ResponseEntity<ApiResponse<MarcaDTO>> actualizar(@PathVariable Long id, @Valid @RequestBody MarcaDTO dto) {
+        MarcaDTO data = service.actualizar(id, dto);
+        log.info("Se logró actualizar la marca con id " + id);
+        ApiResponse<MarcaDTO> respuesta = new ApiResponse<>(true, "Se logró actualizar la marca con id " + id, data);
+        return ResponseEntity.ok(respuesta);
     }
-
 }

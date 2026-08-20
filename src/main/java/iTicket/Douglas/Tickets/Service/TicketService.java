@@ -19,6 +19,8 @@ import iTicket.Douglas.DetalleTS.Entity.DetalleTSEntity;
 import iTicket.Douglas.DetalleTS.Repository.DetalleTSRepository;
 import iTicket.Douglas.DetalleTS.Service.DetalleTSService;
 import iTicket.Douglas.Evidencias.Entity.EvidenciaEntity;
+import iTicket.Douglas.Exception.OperacionInvalidaException;
+import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Tickets.DTO.*;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
@@ -63,20 +65,16 @@ public class TicketService {
     private final ArticuloRepository articuloRepo;
 
     @Transactional
-    public TicketDTO nuevoTicket(@Valid TicketDTO dto){
-        try {
-            dto.setCodigo(generarCodigo());
-            dto.setEstado("Nuevo");
-            TicketEntity entity = convertirAEntity(dto);
-            TicketEntity entitySave = repo.save(entity);
+    public TicketDTO nuevoTicket(@Valid TicketDTO dto) {
+        dto.setCodigo(generarCodigo());
+        dto.setEstado("Nuevo");
+        TicketEntity entity = convertirAEntity(dto);
+        TicketEntity entitySave = repo.save(entity);
 
-            crearDetalleSegunTipo(entitySave, dto);
-            registrarBitacora(entitySave, entitySave.getCreador().getIdUsuario());
-            return convertirADTOCompleto(entitySave);
-        }catch (Exception e){
-            log.error("Error al registrar el ticket " + e.getMessage());
-            throw new RuntimeException("Error al registrar el ticket");
-        }
+        crearDetalleSegunTipo(entitySave, dto);
+        registrarBitacora(entitySave, entitySave.getCreador().getIdUsuario());
+        log.info("Nuevo ticket registrado: " + entitySave.getCodigo());
+        return convertirADTOCompleto(entitySave);
     }
 
     @Transactional
@@ -84,7 +82,7 @@ public class TicketService {
         switch (dto.getTipoTicket()) {
             case "General" -> {
                 if (dto.getDescripcionUbicacion() == null || dto.getDescripcionUbicacion().isBlank()) {
-                    throw new RuntimeException("Debe indicar la ubicación del problema.");
+                    throw new OperacionInvalidaException("Debe indicar la ubicación del problema.");
                 }
                 DetalleGDTO detalleDto = new DetalleGDTO();
                 detalleDto.setTicket(ticket.getIdTicket());
@@ -93,20 +91,20 @@ public class TicketService {
             }
             case "Articulo" -> {
                 if (dto.getCodigosArticulos() == null || dto.getCodigosArticulos().isEmpty()) {
-                    throw new RuntimeException("Debe agregar al menos un código de equipo/mobiliario.");
+                    throw new OperacionInvalidaException("Debe agregar al menos un código de equipo/mobiliario.");
                 }
 
                 List<ArticuloEntity> articulos = new ArrayList<>();
                 for (String codigo : dto.getCodigosArticulos()) {
-                    ArticuloEntity articulo = articuloRepo.findByCodigoArticulo(codigo).orElseThrow(() -> new RuntimeException("No existe ningún artículo con código: " + codigo));
+                    ArticuloEntity articulo = articuloRepo.findByCodigoArticulo(codigo)
+                            .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún artículo con código: " + codigo));
                     articulos.add(articulo);
                 }
 
-                // Validar que todos los artículos compartan la misma ubicación física
                 long ubicacionesDistintas = articulos.stream().map(a -> a.getUbicacion().getId()).distinct().count();
 
                 if (ubicacionesDistintas > 1) {
-                    throw new RuntimeException("Los artículos seleccionados deben estar en la misma ubicación. " + "No puedes reportar en un solo ticket equipos de distintos lugares.");
+                    throw new OperacionInvalidaException("Los artículos seleccionados deben estar en la misma ubicación. No puedes reportar en un solo ticket equipos de distintos lugares.");
                 }
 
                 for (ArticuloEntity articulo : articulos) {
@@ -118,14 +116,14 @@ public class TicketService {
             }
             case "Software" -> {
                 if (dto.getDetallesSoftware() == null || dto.getDetallesSoftware().isEmpty()) {
-                    throw new RuntimeException("Debe agregar al menos un software a instalar.");
+                    throw new OperacionInvalidaException("Debe agregar al menos un software a instalar.");
                 }
                 for (DetalleTSDTO sw : dto.getDetallesSoftware()) {
                     sw.setTicket(ticket.getIdTicket());
                     detalleTSService.nuevoDetalleTS(sw);
                 }
             }
-            default -> throw new RuntimeException("Tipo de ticket no reconocido: " + dto.getTipoTicket());
+            default -> throw new OperacionInvalidaException("Tipo de ticket no reconocido: " + dto.getTipoTicket());
         }
     }
 
@@ -143,11 +141,8 @@ public class TicketService {
     public String generarCodigo() {
         LocalDate hoy = LocalDate.now();
         String fecha = hoy.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-
         Long siguienteValor = repo.obtenerSiguienteCodigo();
-        //"%05d" establece que el número de dígitos mínimo es de 5, si el número es menor, lo rellena con 0
         String correlativo = String.format("%05d", siguienteValor);
-
         return "#" + fecha + "-" + correlativo;
     }
 
@@ -157,12 +152,13 @@ public class TicketService {
     }
 
     public TicketDTO buscarTicket(Long id) {
-        Optional<TicketEntity> entidadOpcional = repo.findById(id);
-        return entidadOpcional.map(this::convertirADTOCompleto).orElse(null);
+        TicketEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un ticket con id " + id));
+        return convertirADTOCompleto(entidad);
     }
 
     @Transactional
-    public boolean eliminarData(Long id, Long idUsuarioSolicitante){
+    public boolean eliminarData(Long id, Long idUsuarioSolicitante) {
         Optional<TicketEntity> entidadOpcional = repo.findById(id);
         if (entidadOpcional.isEmpty()) {
             return false;
@@ -177,105 +173,66 @@ public class TicketService {
         if (esAdmin) {
             boolean resuelto = "Resuelto".equals(ticket.getEstado());
             boolean cerrado = "Cerrado".equals(ticket.getEstado());
-
             if (resuelto || cerrado) {
-                throw new RuntimeException("No se puede eliminar un ticket ya resuelto y evaluado.");
+                throw new OperacionInvalidaException("No se puede eliminar un ticket ya resuelto y evaluado.");
             }
-
         } else if (esCreador) {
             if (!"Nuevo".equals(ticket.getEstado())) {
-                throw new RuntimeException("No puedes eliminar un ticket que ya fue asignado.");
+                throw new OperacionInvalidaException("No puedes eliminar un ticket que ya fue asignado.");
             }
-
         } else {
-            throw new RuntimeException("No tienes permisos para eliminar este ticket.");
+            throw new OperacionInvalidaException("No tienes permisos para eliminar este ticket.");
         }
 
         repo.delete(ticket);
+        log.info("Ticket con id " + id + " eliminado");
         return true;
     }
 
     @Transactional
-    public TicketDTO actualizarTicket(Long id, @Valid TicketDTO dto){
-        try {
-            Optional<TicketEntity> entidadOpcional = repo.findById(id);
-            if (entidadOpcional.isPresent()){
-                TicketEntity entidad = entidadOpcional.get();
+    public TicketDTO actualizarTicket(Long id, @Valid TicketDTO dto) {
+        TicketEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un ticket con id " + id));
 
-                entidad.setAsunto(dto.getAsunto());
-                entidad.setDescripcion(dto.getDescripcion());
-                //Busca el objeto Departamento antes de asignarlo
-                entidad.setDepartamento(buscarDepartamento(dto.getDepartamento()));
-                entidad.setDescripcionFalla(dto.getDescripcionFalla());
-                entidad.setDescripcionSolucion(dto.getDescripcionSolucion());
-                entidad.setFechaVencimiento(dto.getFechaVencimiento());
-                //Busca el objeto Usuario antes de asignarlo
-                if (dto.getTecnicoAsignado() != null) {
-                    entidad.setTecnicoAsignado(buscarUsuario(dto.getTecnicoAsignado()));
-                }
-                entidad.setPrioridad(dto.getPrioridad());
-                entidad.setTipoTicket(dto.getTipoTicket());
-                entidad.setEstado(dto.getEstado());
-
-                TicketEntity datosGuardados = repo.save(entidad);
-                return convertirADTOCompleto(datosGuardados);
-            }
-            return null;
-        }catch (Exception e){
-            log.error("Oops, ocurrió un error al procesar la información");
-            return null;
+        entidad.setAsunto(dto.getAsunto());
+        entidad.setDescripcion(dto.getDescripcion());
+        entidad.setDepartamento(buscarDepartamento(dto.getDepartamento()));
+        entidad.setDescripcionFalla(dto.getDescripcionFalla());
+        entidad.setDescripcionSolucion(dto.getDescripcionSolucion());
+        entidad.setFechaVencimiento(dto.getFechaVencimiento());
+        if (dto.getTecnicoAsignado() != null) {
+            entidad.setTecnicoAsignado(buscarUsuario(dto.getTecnicoAsignado()));
         }
+        entidad.setPrioridad(dto.getPrioridad());
+        entidad.setTipoTicket(dto.getTipoTicket());
+        entidad.setEstado(dto.getEstado());
+
+        TicketEntity datosGuardados = repo.save(entidad);
+        log.info("Ticket con id " + id + " actualizado");
+        return convertirADTOCompleto(datosGuardados);
     }
 
     public TicketDTO buscarPorCodigo(String codigo) {
-        try {
-            Optional<TicketEntity> registro = repo.findByCodigo(codigo);
-            if (registro.isPresent()){
-                return convertirADTO(registro.get());
-            }
-            log.warn("No existe ningún ticket con código: " + codigo);
-            return null;
-        }catch (Exception e){
-            log.error("Ocurrió un error durante el proceso");
-            return null;
-        }
+        TicketEntity entidad = repo.findByCodigo(codigo)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún ticket con código: " + codigo));
+        return convertirADTO(entidad);
     }
 
     public List<TicketDTO> buscarPorAsunto(String asunto) {
-        try {
-            List<TicketEntity> registros = repo.findByAsuntoContainingIgnoreCase(asunto);
-            if (!registros.isEmpty()){
-                return registros.stream().map(this::convertirADTO).collect(Collectors.toList());
-            }
-            log.warn("No existe ningún ticket con asunto: " + asunto);
-            return Collections.emptyList();
-        }catch (Exception e){
-            log.error("Ocurrió un error durante el proceso");
-            return Collections.emptyList();
-        }
+        List<TicketEntity> registros = repo.findByAsuntoContainingIgnoreCase(asunto);
+        return registros.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
-    //Método reutilizable para obtener un objeto Departamento
     private DepartamentoEntity buscarDepartamento(Long id) {
-        Optional<DepartamentoEntity> departamentoOp = departamentosRepo.findById(id);
-        if (departamentoOp.isPresent()){
-            return departamentoOp.get();
-        }
-        log.warn("No existe ningún departamento con ID: " + id);
-        throw new RuntimeException("No existe ningún departamento con ID: " + id);
+        return departamentosRepo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún departamento con ID: " + id));
     }
 
-    //Método reutilizable para obtener un objeto Usuario
     private UsuarioEntity buscarUsuario(Long id) {
-        Optional<UsuarioEntity> usuarioOp = usuariosRepo.findById(id);
-        if (usuarioOp.isPresent()){
-            return usuarioOp.get();
-        }
-        log.warn("No existe ningún usuario con ID: " + id);
-        throw new RuntimeException("No existe ningún usuario con ID: " + id);
+        return usuariosRepo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún usuario con ID: " + id));
     }
 
-    //Método para convertir DTO a Entity
     private TicketEntity convertirAEntity(@Valid TicketDTO dto) {
         TicketEntity objEntity = new TicketEntity();
         objEntity.setCodigo(dto.getCodigo());
@@ -289,14 +246,12 @@ public class TicketService {
         objEntity.setTipoTicket(dto.getTipoTicket());
         objEntity.setCreador(buscarUsuario(dto.getCreador()));
         objEntity.setEstado(dto.getEstado());
-        //Verificar si el id del tecnico viene en el dto(según la lógica, no debería venir al crearse un ticket)
         if (dto.getTecnicoAsignado() != null) {
             objEntity.setTecnicoAsignado(buscarUsuario(dto.getTecnicoAsignado()));
         }
         return objEntity;
     }
 
-    //Método para convertir Entity a DTO
     private TicketDTO convertirADTO(@Valid TicketEntity entity) {
         TicketDTO objDTO = new TicketDTO();
 
@@ -325,7 +280,6 @@ public class TicketService {
         return objDTO;
     }
 
-    //Versión completa, solo para cuando se necesita el detalle según el tipo y evidencias
     private TicketDTO convertirADTOCompleto(TicketEntity entity) {
         TicketDTO objDTO = convertirADTO(entity);
         obtenerDetallePorTipo(entity, objDTO);
@@ -335,151 +289,110 @@ public class TicketService {
     @Transactional
     public boolean asignarTicket(Long id, @Valid TicketAsignacionDTO dto, Long idUsuarioAdmin) {
         Optional<TicketEntity> entidadOpcional = repo.findById(id);
-
-        if (entidadOpcional.isPresent()){
-            TicketEntity ticket = entidadOpcional.get();
-            ticket.setFechaVencimiento(dto.getFechaVencimiento());
-            ticket.setTecnicoAsignado(buscarUsuario(dto.getTecnicoAsignado()));
-            ticket.setPrioridad(dto.getPrioridad());
-            ticket.setEstado("Asignado");
-
-            repo.save(ticket);
-            registrarBitacora(ticket, idUsuarioAdmin);
-            return true;
+        if (entidadOpcional.isEmpty()) {
+            return false;
         }
-        return false;
+
+        TicketEntity ticket = entidadOpcional.get();
+        ticket.setFechaVencimiento(dto.getFechaVencimiento());
+        ticket.setTecnicoAsignado(buscarUsuario(dto.getTecnicoAsignado()));
+        ticket.setPrioridad(dto.getPrioridad());
+        ticket.setEstado("Asignado");
+
+        repo.save(ticket);
+        registrarBitacora(ticket, idUsuarioAdmin);
+        return true;
     }
 
     @Transactional
     public boolean reporteTicket(Long id, @Valid TicketResolucionDTO dto, Long idUsuarioTecnico) {
         Optional<TicketEntity> entidadOpcional = repo.findById(id);
-
-        if (entidadOpcional.isPresent()){
-            TicketEntity ticket = entidadOpcional.get();
-
-            if (ticket.getTecnicoAsignado() == null || !ticket.getTecnicoAsignado().getIdUsuario().equals(idUsuarioTecnico)) {
-                throw new RuntimeException("Solo el usuario asignado puede hacer un reporte de este ticket");
-            }
-            if (!List.of("En proceso", "En espera", "Vencido", "Resuelto").contains(ticket.getEstado())) {
-                throw new RuntimeException("El ticket no se encuentra en un estado que permita generar el reporte");
-            }
-            ticket.setDescripcionFalla(dto.getDescripcionFalla());
-            ticket.setDescripcionSolucion(dto.getDescripcionSolucion());
-            ticket.setEstado("Resuelto");
-            repo.save(ticket);
-            registrarBitacora(ticket, idUsuarioTecnico);
-            return true;
+        if (entidadOpcional.isEmpty()) {
+            return false;
         }
-        return false;
+
+        TicketEntity ticket = entidadOpcional.get();
+
+        if (ticket.getTecnicoAsignado() == null || !ticket.getTecnicoAsignado().getIdUsuario().equals(idUsuarioTecnico)) {
+            throw new OperacionInvalidaException("Solo el usuario asignado puede hacer un reporte de este ticket");
+        }
+        if (!List.of("En proceso", "En espera", "Vencido", "Resuelto").contains(ticket.getEstado())) {
+            throw new OperacionInvalidaException("El ticket no se encuentra en un estado que permita generar el reporte");
+        }
+        ticket.setDescripcionFalla(dto.getDescripcionFalla());
+        ticket.setDescripcionSolucion(dto.getDescripcionSolucion());
+        ticket.setEstado("Resuelto");
+        repo.save(ticket);
+        registrarBitacora(ticket, idUsuarioTecnico);
+        return true;
     }
 
-    //Metodo para cargar los indicadores de numero de tickets según el estado
     public TickteIndicadoresEstadoDTO obtenerIndicadoresDepartamento(Long idUsuario) {
-        try{
-            Optional<UsuarioEntity> entidadOpcional = usuariosRepo.findById(idUsuario);
-            if (entidadOpcional.isEmpty()){
-                log.warn("No existe ningún usuario con ID: " + idUsuario);
-                return null;
-            }
-            UsuarioEntity usuario = entidadOpcional.get();
-            String departamentoAdmin = usuario.getDepartamento().getNombreDepartamento();
+        UsuarioEntity usuario = buscarUsuario(idUsuario);
+        String departamentoAdmin = usuario.getDepartamento().getNombreDepartamento();
 
-            List<Object[]> filas = repo.contarTicketsPorEstadoYDepartamento(departamentoAdmin);
-
-            Map<String, Long> conteos = new HashMap<>();
-            for (Object[] fila : filas) {
-                conteos.put((String) fila[0], (Long) fila[1]);
-            }
-
-            long resueltos = conteos.getOrDefault("Resuelto", 0L);
-            long asignados = conteos.getOrDefault("Asignado", 0L);
-            long enProgreso = conteos.getOrDefault("En proceso", 0L);
-            long enEspera = conteos.getOrDefault("En espera", 0L);
-            long cerrados = conteos.getOrDefault("Cerrado", 0L);
-            long nuevos = conteos.getOrDefault("Nuevo", 0L);
-            long vencidos = conteos.getOrDefault("Vencido", 0L);
-
-            return new TickteIndicadoresEstadoDTO(resueltos, asignados, enProgreso, enEspera, nuevos, cerrados, vencidos);
-        }catch (Exception e){
-            log.error("Ocurrió un error durante el proceso");
-            return new TickteIndicadoresEstadoDTO(0L, 0L, 0L, 0L, 0L, 0L, 0L);
-        }
+        List<Object[]> filas = repo.contarTicketsPorEstadoYDepartamento(departamentoAdmin);
+        return construirIndicadores(filas);
     }
 
-    //Metodo para cargar los indicadores de numero de tickets según el estado por idUsuario
     public TickteIndicadoresEstadoDTO obtenerIndicadoresPropios(Long idUsuario) {
-        try{
-            List<Object[]> filas = repo.contarTicketsPorEstadoUsuario(idUsuario);
+        List<Object[]> filas = repo.contarTicketsPorEstadoUsuario(idUsuario);
+        return construirIndicadores(filas);
+    }
 
-            Map<String, Long> conteos = new HashMap<>();
-            for (Object[] fila : filas) {
-                conteos.put((String) fila[0], (Long) fila[1]);
-            }
-
-            long resueltos = conteos.getOrDefault("Resuelto", 0L);
-            long asignados = conteos.getOrDefault("Asignado", 0L);
-            long enProgreso = conteos.getOrDefault("En proceso", 0L);
-            long enEspera = conteos.getOrDefault("En espera", 0L);
-            long cerrados = conteos.getOrDefault("Cerrado", 0L);
-            long nuevos = conteos.getOrDefault("Nuevo", 0L);
-            long vencidos = conteos.getOrDefault("Vencido", 0L);
-
-            return new TickteIndicadoresEstadoDTO(resueltos, asignados, enProgreso, enEspera, nuevos, cerrados, vencidos);
-        }catch (Exception e){
-            log.error("Ocurrió un error durante el proceso");
-            return new TickteIndicadoresEstadoDTO(0L, 0L, 0L, 0L, 0L, 0L, 0L);
+    private TickteIndicadoresEstadoDTO construirIndicadores(List<Object[]> filas) {
+        Map<String, Long> conteos = new HashMap<>();
+        for (Object[] fila : filas) {
+            conteos.put((String) fila[0], (Long) fila[1]);
         }
+
+        long resueltos = conteos.getOrDefault("Resuelto", 0L);
+        long asignados = conteos.getOrDefault("Asignado", 0L);
+        long enProgreso = conteos.getOrDefault("En proceso", 0L);
+        long enEspera = conteos.getOrDefault("En espera", 0L);
+        long cerrados = conteos.getOrDefault("Cerrado", 0L);
+        long nuevos = conteos.getOrDefault("Nuevo", 0L);
+        long vencidos = conteos.getOrDefault("Vencido", 0L);
+
+        return new TickteIndicadoresEstadoDTO(resueltos, asignados, enProgreso, enEspera, nuevos, cerrados, vencidos);
     }
 
     public List<TicketDTO> obtenerAprobacionesPendientes(int limite, Long idUsuarioAdmin) {
-        try{
-            UsuarioEntity admin = buscarUsuario(idUsuarioAdmin);
-            String departamentoAdmin = admin.getDepartamento().getNombreDepartamento();
+        UsuarioEntity admin = buscarUsuario(idUsuarioAdmin);
+        String departamentoAdmin = admin.getDepartamento().getNombreDepartamento();
 
-            Pageable pageable = PageRequest.of(0, limite, Sort.by("idTicket").ascending());
-            Page<TicketEntity> pagina = repo.findByEstadoAndDepartamento_NombreDepartamentoIgnoreCase("Nuevo", departamentoAdmin, pageable);
-            return pagina.getContent().stream().map(this::convertirADTO).collect(Collectors.toList());
-        }catch (Exception e){
-            log.error("Ocurrió un error durante el proceso");
-            return null;
-        }
-
+        Pageable pageable = PageRequest.of(0, limite, Sort.by("idTicket").ascending());
+        Page<TicketEntity> pagina = repo.findByEstadoAndDepartamento_NombreDepartamentoIgnoreCase("Nuevo", departamentoAdmin, pageable);
+        return pagina.getContent().stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
-    //Metodo para mostrar el detalle segun el tipo de ticket
-    private void obtenerDetallePorTipo(TicketEntity entity, TicketDTO objDTO){
+    private void obtenerDetallePorTipo(TicketEntity entity, TicketDTO objDTO) {
         objDTO.setEvidencias(entity.getEvidencias().stream().map(EvidenciaEntity::getEvidenciaUrl).collect(Collectors.toList()));
         switch (entity.getTipoTicket()) {
             case "General":
                 DetalleGEntity detalle = detalleGRepo.findByTicket_IdTicket(entity.getIdTicket())
-                        .orElseThrow(() -> new RuntimeException("Advertencia: el ticket " + entity.getCodigo() + " es de tipo General pero no tiene detalle registrado."));
+                        .orElseThrow(() -> new RecursoNoEncontradoException("El ticket " + entity.getCodigo() + " es de tipo General pero no tiene detalle registrado."));
                 objDTO.setUbicacion(detalle.getDescripcionUbicacion());
                 break;
             case "Articulo":
                 List<DetalleTAEntity> detalles = detalleTARepo.findByTicket_IdTicket(entity.getIdTicket());
-
-                if(detalles.isEmpty()){
-                    throw new RuntimeException("Advertencia: el ticket " + entity.getCodigo() + " es de tipo Articulo pero no tiene ningún detalle registrado.");
+                if (detalles.isEmpty()) {
+                    throw new RecursoNoEncontradoException("El ticket " + entity.getCodigo() + " es de tipo Articulo pero no tiene ningún detalle registrado.");
                 }
-
                 objDTO.setCodigosArticulos(detalles.stream().map(d -> d.getArticulo().getCodigoArticulo()).collect(Collectors.toList()));
-
                 detalles.stream().findFirst().ifPresent(d -> objDTO.setUbicacion(d.getArticulo().getUbicacion().getNombreUbicacion()));
                 break;
             case "Software":
                 List<DetalleTSEntity> detallesS = detalleTSRepo.findByTicket_IdTicket(entity.getIdTicket());
-
                 if (detallesS.isEmpty()) {
-                    throw new RuntimeException("Advertencia: el ticket " + entity.getCodigo() + " es de tipo Software pero no tiene ningún detalle registrado.");
+                    throw new RecursoNoEncontradoException("El ticket " + entity.getCodigo() + " es de tipo Software pero no tiene ningún detalle registrado.");
                 }
-
                 objDTO.setDetallesSoftware(detallesS.stream().map(d -> {
                     DetalleTSDTO detallesSoftware = new DetalleTSDTO();
                     detallesSoftware.setNombreSoftware(d.getNombreSoftware());
                     detallesSoftware.setVersion(d.getVersion());
-                    return detallesSoftware;}).collect(Collectors.toList())
-                );
-
+                    return detallesSoftware;
+                }).collect(Collectors.toList()));
                 detallesS.stream().findFirst().ifPresent(d -> objDTO.setUbicacion(d.getUbicacion().getNombreUbicacion()));
                 break;
         }
@@ -494,12 +407,11 @@ public class TicketService {
 
         TicketEntity ticket = entidadOpcional.get();
 
-        //El creador solo puede editar el ticket mientras el estado sea "Nuevo"
         if (!ticket.getCreador().getIdUsuario().equals(idUsuario)) {
-            throw new RuntimeException("El usuario no tiene permiso para editar este ticket");
+            throw new OperacionInvalidaException("El usuario no tiene permiso para editar este ticket");
         }
         if (!"Nuevo".equals(ticket.getEstado())) {
-            throw new RuntimeException("Solo se puede editar el ticket mientras está en estado 'Nuevo'");
+            throw new OperacionInvalidaException("Solo se puede editar el ticket mientras está en estado 'Nuevo'");
         }
 
         ticket.setAsunto(dto.getAsunto());
@@ -516,7 +428,7 @@ public class TicketService {
         switch (ticket.getTipoTicket()) {
             case "General" -> {
                 if (dto.getDescripcionUbicacion() == null || dto.getDescripcionUbicacion().isBlank()) {
-                    throw new RuntimeException("Debe indicar la ubicación del problema.");
+                    throw new OperacionInvalidaException("Debe indicar la ubicación del problema.");
                 }
                 DetalleGDTO detalleDto = new DetalleGDTO();
                 detalleDto.setTicket(ticket.getIdTicket());
@@ -525,17 +437,17 @@ public class TicketService {
             }
             case "Articulo" -> {
                 if (dto.getCodigosArticulos() == null || dto.getCodigosArticulos().isEmpty()) {
-                    throw new RuntimeException("Debe agregar al menos un código de equipo/mobiliario.");
+                    throw new OperacionInvalidaException("Debe agregar al menos un código de equipo/mobiliario.");
                 }
                 detalleTAService.reemplazarDetalles(ticket, dto.getCodigosArticulos());
             }
             case "Software" -> {
                 if (dto.getDetallesSoftware() == null || dto.getDetallesSoftware().isEmpty()) {
-                    throw new RuntimeException("Debe agregar al menos un software a instalar.");
+                    throw new OperacionInvalidaException("Debe agregar al menos un software a instalar.");
                 }
                 detalleTSService.reemplazarDetalles(ticket, dto.getDetallesSoftware());
             }
-            default -> throw new RuntimeException("Tipo de ticket no reconocido: " + ticket.getTipoTicket());
+            default -> throw new OperacionInvalidaException("Tipo de ticket no reconocido: " + ticket.getTipoTicket());
         }
     }
 
@@ -550,20 +462,19 @@ public class TicketService {
 
         List<String> estadosReasignables = List.of("Asignado", "En proceso", "En espera", "Vencido");
         if (!estadosReasignables.contains(ticket.getEstado())) {
-            throw new RuntimeException("El ticket ya no puede reasignarse en su estado actual: " + ticket.getEstado());
+            throw new OperacionInvalidaException("El ticket ya no puede reasignarse en su estado actual: " + ticket.getEstado());
         }
 
         ticket.setFechaVencimiento(dto.getFechaVencimiento());
         ticket.setPrioridad(dto.getPrioridad());
         ticket.setTecnicoAsignado(buscarUsuario(dto.getTecnicoAsignado()));
-        ticket.setEstado("Asignado"); //El ticket vuelve a ser Asignado
+        ticket.setEstado("Asignado");
 
         repo.save(ticket);
         registrarBitacora(ticket, idUsuarioAdmin);
         return true;
     }
 
-    //El estado solo puede ser seleccionado entre "En proceso" y "En espera" por el tecnico
     @Transactional
     public boolean editarEstado(Long id, @Valid TicketEstadoDTO dto, Long idUsuario) {
         Optional<TicketEntity> entidadOpcional = repo.findById(id);
@@ -574,15 +485,15 @@ public class TicketService {
         TicketEntity ticket = entidadOpcional.get();
 
         if (ticket.getTecnicoAsignado() == null || !ticket.getTecnicoAsignado().getIdUsuario().equals(idUsuario)) {
-            throw new RuntimeException("El usuario no tiene permiso para cambiar el estado de este ticket");
+            throw new OperacionInvalidaException("El usuario no tiene permiso para cambiar el estado de este ticket");
         }
 
         List<String> estadosPermitidos = List.of("En proceso", "En espera");
         if (!estadosPermitidos.contains(dto.getEstado())) {
-            throw new RuntimeException("Solo puedes mover el ticket entre 'En proceso' y 'En espera'. Para marcarlo como resuelto, crea el reporte técnico.");
+            throw new OperacionInvalidaException("Solo puedes mover el ticket entre 'En proceso' y 'En espera'. Para marcarlo como resuelto, crea el reporte técnico.");
         }
         if (!List.of("Asignado", "En proceso", "En espera").contains(ticket.getEstado())) {
-            throw new RuntimeException("El ticket no se encuentra en un estado que permita este cambio");
+            throw new OperacionInvalidaException("El ticket no se encuentra en un estado que permita este cambio");
         }
 
         ticket.setEstado(dto.getEstado());
@@ -604,73 +515,47 @@ public class TicketService {
         return true;
     }
 
-    public TicketPaginaDTO obtenerTicketsPorDepartamento(Long idUsuarioAdmin, int pagina, int tamano, String busqueda, String prioridad, String estado, LocalDate fecha){
-         UsuarioEntity admin = buscarUsuario(idUsuarioAdmin);
-         String departamentoAdmin = admin.getDepartamento().getNombreDepartamento();
+    public TicketPaginaDTO obtenerTicketsPorDepartamento(Long idUsuarioAdmin, int pagina, int tamano, String busqueda, String prioridad, String estado, LocalDate fecha) {
+        UsuarioEntity admin = buscarUsuario(idUsuarioAdmin);
+        String departamentoAdmin = admin.getDepartamento().getNombreDepartamento();
 
-         Specification<TicketEntity> spec = TicketSpecifications.conDepartamento(departamentoAdmin);
+        Specification<TicketEntity> spec = TicketSpecifications.conDepartamento(departamentoAdmin);
+        spec = aplicarFiltrosComunes(spec, busqueda, prioridad, estado, fecha);
 
-         if (busqueda != null && !busqueda.isBlank()){
-             spec = spec.and(TicketSpecifications.conBusqueda(busqueda));
-         }
-         if (prioridad != null && !prioridad.isBlank()){
-             spec = spec.and(TicketSpecifications.conPrioridad(prioridad));
-         }
-         if (estado != null && !estado.isBlank()){
-             spec = spec.and(TicketSpecifications.conEstado(estado));
-         }
-        if (fecha != null) {
-            spec = spec.and(TicketSpecifications.conFechaCreacion(fecha));
-        }
-
-        //pagina-1, Spring Data las cuenta desde 0, pero en la interfaz la primera es la 1
-        Pageable pageable = PageRequest.of(pagina - 1, tamano, Sort.by("idTicket").descending());
-        Page<TicketEntity> resultado = repo.findAll(spec, pageable);
-
-        List<TicketDTO> tickets = resultado.getContent().stream().map(this::convertirADTO).collect(Collectors.toList());
-
-        return new TicketPaginaDTO(tickets, resultado.getTotalElements(), resultado.getTotalPages(), pagina);
+        return paginarTickets(spec, pagina, tamano);
     }
 
     public TicketPaginaDTO obtenerTicketsAsignados(Long idUsuario, int pagina, int tamano, String busqueda, String prioridad, String estado, LocalDate fecha) {
         Specification<TicketEntity> spec = TicketSpecifications.conTecnico(idUsuario);
+        spec = aplicarFiltrosComunes(spec, busqueda, prioridad, estado, fecha);
 
-        if (busqueda != null && !busqueda.isBlank()){
-            spec = spec.and(TicketSpecifications.conBusqueda(busqueda));
-        }
-        if (prioridad != null && !prioridad.isBlank()){
-            spec = spec.and(TicketSpecifications.conPrioridad(prioridad));
-        }
-        if (estado != null && !estado.isBlank()){
-            spec = spec.and(TicketSpecifications.conEstado(estado));
-        }
-        if (fecha != null) {
-            spec = spec.and(TicketSpecifications.conFechaCreacion(fecha));
-        }
-
-        Pageable pageable = PageRequest.of(pagina - 1, tamano, Sort.by("idTicket").descending());
-        Page<TicketEntity> resultado = repo.findAll(spec, pageable);
-
-        List<TicketDTO> tickets = resultado.getContent().stream().map(this::convertirADTO).collect(Collectors.toList());
-        return new TicketPaginaDTO(tickets, resultado.getTotalElements(), resultado.getTotalPages(), pagina);
+        return paginarTickets(spec, pagina, tamano);
     }
 
     public TicketPaginaDTO obtenerTicketsPorUsuario(Long idUsuario, int pagina, int tamano, String busqueda, String prioridad, String estado, LocalDate fecha) {
         Specification<TicketEntity> spec = TicketSpecifications.conUsuario(idUsuario);
+        spec = aplicarFiltrosComunes(spec, busqueda, prioridad, estado, fecha);
 
-        if (busqueda != null && !busqueda.isBlank()){
+        return paginarTickets(spec, pagina, tamano);
+    }
+
+    private Specification<TicketEntity> aplicarFiltrosComunes(Specification<TicketEntity> spec, String busqueda, String prioridad, String estado, LocalDate fecha) {
+        if (busqueda != null && !busqueda.isBlank()) {
             spec = spec.and(TicketSpecifications.conBusqueda(busqueda));
         }
-        if (prioridad != null && !prioridad.isBlank()){
+        if (prioridad != null && !prioridad.isBlank()) {
             spec = spec.and(TicketSpecifications.conPrioridad(prioridad));
         }
-        if (estado != null && !estado.isBlank()){
+        if (estado != null && !estado.isBlank()) {
             spec = spec.and(TicketSpecifications.conEstado(estado));
         }
         if (fecha != null) {
             spec = spec.and(TicketSpecifications.conFechaCreacion(fecha));
         }
+        return spec;
+    }
 
+    private TicketPaginaDTO paginarTickets(Specification<TicketEntity> spec, int pagina, int tamano) {
         Pageable pageable = PageRequest.of(pagina - 1, tamano, Sort.by("idTicket").descending());
         Page<TicketEntity> resultado = repo.findAll(spec, pageable);
 
@@ -680,12 +565,9 @@ public class TicketService {
 
     @Transactional
     public boolean actualizarEstado(Long id, @Valid TicketEstadoDTO dto) {
-        Optional<TicketEntity> entidadOpcional = repo.findById(id);
-        if (entidadOpcional.isEmpty()) {
-            throw new RuntimeException("El ticket con ID: " + id + " no existe");
-        }
+        TicketEntity ticket = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("El ticket con ID: " + id + " no existe"));
 
-        TicketEntity ticket = entidadOpcional.get();
         ticket.setEstado(dto.getEstado());
         repo.save(ticket);
         return true;
@@ -694,27 +576,18 @@ public class TicketService {
     private static final List<String> diasSemana = List.of("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom");
 
     public List<TicketResumenDiaDTO> obtenerResumenSemanal(Long idUsuario) {
-        try {
-            LocalDate hoy = LocalDate.now();
-            LocalDateTime inicio = hoy.with(DayOfWeek.MONDAY).atStartOfDay();
-            LocalDateTime fin = hoy.atTime(LocalTime.MAX);
+        LocalDate hoy = LocalDate.now();
+        LocalDateTime inicio = hoy.with(DayOfWeek.MONDAY).atStartOfDay();
+        LocalDateTime fin = hoy.atTime(LocalTime.MAX);
 
-            List<TicketEntity> tickets = repo.findByCreador_IdUsuarioAndFechaCreacionBetween(idUsuario, inicio, fin);
+        List<TicketEntity> tickets = repo.findByCreador_IdUsuarioAndFechaCreacionBetween(idUsuario, inicio, fin);
 
-            Map<DayOfWeek, Long> conteosPorDia = tickets.stream().collect(Collectors.groupingBy(t -> t.getFechaCreacion().getDayOfWeek(), Collectors.counting()));
+        Map<DayOfWeek, Long> conteosPorDia = tickets.stream().collect(Collectors.groupingBy(t -> t.getFechaCreacion().getDayOfWeek(), Collectors.counting()));
 
-            List<TicketResumenDiaDTO> resumen = new ArrayList<>();
-            for (DayOfWeek dia : DayOfWeek.values()) { //ya vienen en orden Lunes a Domingo
-                resumen.add(new TicketResumenDiaDTO(diasSemana.get(dia.getValue() - 1), conteosPorDia.getOrDefault(dia, 0L)));
-            }
-            return resumen;
-        } catch (Exception e) {
-            log.error("Ocurrió un error al obtener el resumen semanal");
-            List<TicketResumenDiaDTO> resumenVacio = new ArrayList<>();
-            for (DayOfWeek dia : DayOfWeek.values()) {
-                resumenVacio.add(new TicketResumenDiaDTO(diasSemana.get(dia.getValue() - 1), 0L));
-            }
-            return resumenVacio;
+        List<TicketResumenDiaDTO> resumen = new ArrayList<>();
+        for (DayOfWeek dia : DayOfWeek.values()) {
+            resumen.add(new TicketResumenDiaDTO(diasSemana.get(dia.getValue() - 1), conteosPorDia.getOrDefault(dia, 0L)));
         }
+        return resumen;
     }
 }

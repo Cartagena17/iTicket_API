@@ -1,11 +1,9 @@
 package iTicket.Douglas.Evaluaciones.DTO;
 
 import jakarta.validation.constraints.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-
 import java.time.LocalDateTime;
 
 @Getter @Setter
@@ -19,17 +17,17 @@ public class EvaluacionesDTO {
     private Double calificacion;
 
     @NotBlank
-    @Size(max= 200, message = "Longitud Invalida en el comentario de la evaluacion [maximo 200]")
-    private  String comentario;
+    @Size(max = 200, message = "Longitud Invalida en el comentario de la evaluacion [maximo 200]")
+    private String comentario;
 
     @NotNull(message = "El ID del ticket es obligatorio")
     private Long idTicket;
 
-    //Agrego los campos requeridos para la tabla
+    // Campos requeridos para la tabla de evaluaciones en el frontend
     private String codigoTicket;
     private String asuntoTicket;
     private String nombreTecnico;
     private LocalDateTime fechaEvaluacion;
-    // la fecha viene directamente del ticket, el ticket solo se puede cerrar cuando
-    // fue evaluado, tomando esta logica la fecha de cierre de ticket también sería la fehca de evaluacion
+    // La fecha viene directamente del ticket: un ticket solo se puede cerrar cuando ya fue evaluado,
+    // así que la fecha de cierre del ticket es también la fecha de evaluación.
 }

@@ -3,6 +3,7 @@ package iTicket.Douglas.Comentarios.Service;
 import iTicket.Douglas.Comentarios.DTO.ComentarioDTO;
 import iTicket.Douglas.Comentarios.Entity.ComentarioEntity;
 import iTicket.Douglas.Comentarios.Repository.ComentarioRepository;
+import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.MultimediaComentario.Entity.MultimediaComentarioEntity;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
@@ -15,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -25,34 +25,27 @@ import java.util.stream.Collectors;
 public class ComentarioService {
 
     private final ComentarioRepository repo;
-    private final TicketRepository ticketsRepo; //Para validar que el ticket exista
-    private final UsuarioRepository usuarioRepo; //Para validar que el usuario exista
+    private final TicketRepository ticketsRepo;
+    private final UsuarioRepository usuarioRepo;
 
     @Transactional
-    public ComentarioDTO nuevoComentario(@Valid ComentarioDTO dto){
-        try{
-            if (!ticketsRepo.existsById(dto.getIdTicket())) {
-                throw new RuntimeException("El ticket con ID: " + dto.getIdTicket() + " no existe");
-            }
-            if (!usuarioRepo.existsById(dto.getIdUsuarioComentario())) {
-                throw new RuntimeException("El usuario con ID: " + dto.getIdUsuarioComentario() + " no existe");
-            }
-
-            ComentarioEntity entity = convertirAEntity(dto);
-            ComentarioEntity entitySave = repo.save(entity);
-            return convertirADTO(entitySave);
-        }catch (Exception e){
-            log.error("Error al ingresar el comentario: " + e.getMessage());
-            if (e instanceof RuntimeException re) throw re;
-            return null;
+    public ComentarioDTO nuevoComentario(@Valid ComentarioDTO dto) {
+        if (!ticketsRepo.existsById(dto.getIdTicket())) {
+            throw new RecursoNoEncontradoException("El ticket con ID: " + dto.getIdTicket() + " no existe");
         }
+        if (!usuarioRepo.existsById(dto.getIdUsuarioComentario())) {
+            throw new RecursoNoEncontradoException("El usuario con ID: " + dto.getIdUsuarioComentario() + " no existe");
+        }
+
+        ComentarioEntity entity = convertirAEntity(dto);
+        ComentarioEntity entitySave = repo.save(entity);
+        log.info("Nuevo comentario registrado: " + entitySave.getId());
+        return convertirADTO(entitySave);
     }
 
-    private ComentarioEntity convertirAEntity(@Valid ComentarioDTO dto){
+    private ComentarioEntity convertirAEntity(@Valid ComentarioDTO dto) {
         ComentarioEntity objEntity = new ComentarioEntity();
-
         objEntity.setComentario(dto.getComentario());
-        //fechaHora se genera automaticamente (@CreationTimestamp), no se recibe del cliente
 
         TicketEntity ticket = new TicketEntity();
         ticket.setIdTicket(dto.getIdTicket());
@@ -65,7 +58,7 @@ public class ComentarioService {
         return objEntity;
     }
 
-    private ComentarioDTO convertirADTO(@Valid ComentarioEntity entity){
+    private ComentarioDTO convertirADTO(@Valid ComentarioEntity entity) {
         ComentarioDTO objDTO = new ComentarioDTO();
 
         objDTO.setId(entity.getId());
@@ -84,28 +77,28 @@ public class ComentarioService {
         return objDTO;
     }
 
-    public List<ComentarioDTO> obtenerTodo(){
+    public List<ComentarioDTO> obtenerTodo() {
         List<ComentarioEntity> data = repo.findAll();
         return data.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
-    //Metodo para obtener los comentarios de un ticket, del mas antiguo al mas reciente
     public List<ComentarioDTO> obtenerComentariosPorTicket(Long idTicket) {
         if (!ticketsRepo.existsById(idTicket)) {
-            throw new RuntimeException("El ticket con ID: " + idTicket + " no existe");
+            throw new RecursoNoEncontradoException("El ticket con ID: " + idTicket + " no existe");
         }
         List<ComentarioEntity> data = repo.findByTicket_IdTicketOrderByFechaHoraAsc(idTicket);
         return data.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
-    public ComentarioDTO buscarComentarioPorId(Long id){
-        Optional<ComentarioEntity> entidadOpcional = repo.findById(id);
-        return entidadOpcional.map(this::convertirADTO).orElse(null);
+    public ComentarioDTO buscarComentarioPorId(Long id) {
+        ComentarioEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un comentario con id " + id));
+        return convertirADTO(entidad);
     }
 
     @Transactional
-    public boolean eliminarData(Long id){
-        if(repo.existsById(id)){
+    public boolean eliminarData(Long id) {
+        if (repo.existsById(id)) {
             repo.deleteById(id);
             return true;
         }
@@ -113,34 +106,22 @@ public class ComentarioService {
     }
 
     @Transactional
-    public ComentarioDTO actualizar(Long id, @Valid ComentarioDTO dto){
-        try{
-            Optional<ComentarioEntity> registroExiste = repo.findById(id);
+    public ComentarioDTO actualizar(Long id, @Valid ComentarioDTO dto) {
+        ComentarioEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un comentario con id " + id));
 
-            if(registroExiste.isPresent()){
+        entidad.setComentario(dto.getComentario());
 
-                ComentarioEntity entidad = registroExiste.get();
+        TicketEntity ticket = new TicketEntity();
+        ticket.setIdTicket(dto.getIdTicket());
+        entidad.setTicket(ticket);
 
-                entidad.setComentario(dto.getComentario());
+        UsuarioEntity usuario = new UsuarioEntity();
+        usuario.setIdUsuario(dto.getIdUsuarioComentario());
+        entidad.setUsuario(usuario);
 
-                TicketEntity ticket = new TicketEntity();
-                ticket.setIdTicket(dto.getIdTicket());
-                entidad.setTicket(ticket);
-
-                UsuarioEntity usuario = new UsuarioEntity();
-                usuario.setIdUsuario(dto.getIdUsuarioComentario());
-                entidad.setUsuario(usuario);
-
-                ComentarioEntity datosGuardados = repo.save(entidad);
-
-                return convertirADTO(datosGuardados);
-            }
-
-            return null;
-
-        }catch (Exception e){
-            log.error("Oops ocurrio un error al procesar la informacion");
-            return null;
-        }
+        ComentarioEntity datosGuardados = repo.save(entidad);
+        log.info("Comentario con id " + id + " actualizado");
+        return convertirADTO(datosGuardados);
     }
 }

@@ -1,5 +1,6 @@
 package iTicket.Douglas.Ubicaciones.Service;
 
+import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.TipoUbicacion.Entity.TipoUbicacionEntity;
 import iTicket.Douglas.TipoUbicacion.Repository.TipoUbicacionRepository;
 import iTicket.Douglas.Ubicaciones.DTO.UbicacionDTO;
@@ -9,34 +10,71 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class UbicacionService {
 
     private final UbicacionRepository repo;
     private final TipoUbicacionRepository tipoUbicacionRepo;
 
+    @Transactional
     public UbicacionDTO nuevaUbicacion(@Valid UbicacionDTO dto) {
-        try {
-            Optional<TipoUbicacionEntity> tipoOpcional = tipoUbicacionRepo.findById(dto.getIdTipoUbicacion());
-            if (tipoOpcional.isEmpty()) {
-                log.warn("No existe el tipo de ubicación con id " + dto.getIdTipoUbicacion());
-                return null;
-            }
+        TipoUbicacionEntity tipo = tipoUbicacionRepo.findById(dto.getIdTipoUbicacion())
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe el tipo de ubicación con id " + dto.getIdTipoUbicacion()));
 
-            UbicacionEntity entity = convertirAEntity(dto, tipoOpcional.get());
-            UbicacionEntity entitySave = repo.save(entity);
-            return convertirADTO(entitySave);
-        } catch (Exception e) {
-            log.error("Error al ingresar los datos de la Ubicacion: " + e.getMessage());
-            return null;
+        UbicacionEntity entity = convertirAEntity(dto, tipo);
+        UbicacionEntity entitySave = repo.save(entity);
+        log.info("Nueva ubicación registrada: " + entitySave.getId());
+        return convertirADTO(entitySave);
+    }
+
+    public List<UbicacionDTO> obtenerTodo() {
+        List<UbicacionEntity> data = repo.findAll();
+        return data.stream().map(this::convertirADTO).collect(Collectors.toList());
+    }
+
+    public UbicacionDTO buscarUbicacionPorId(Long id) {
+        UbicacionEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe una ubicación con id " + id));
+        return convertirADTO(entidad);
+    }
+
+    @Transactional
+    public boolean eliminarData(Long id) {
+        if (repo.existsById(id)) {
+            repo.deleteById(id);
+            return true;
         }
+        return false;
+    }
+
+    @Transactional
+    public UbicacionDTO actualizar(Long id, @Valid UbicacionDTO dto) {
+        UbicacionEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe una ubicación con id " + id));
+
+        TipoUbicacionEntity tipo = tipoUbicacionRepo.findById(dto.getIdTipoUbicacion())
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe el tipo de ubicación con id " + dto.getIdTipoUbicacion()));
+
+        entidad.setNombreUbicacion(dto.getNombreUbicacion());
+        entidad.setTipoUbicacion(tipo);
+
+        UbicacionEntity datosGuardados = repo.save(entidad);
+        log.info("Ubicación con id " + id + " actualizada");
+        return convertirADTO(datosGuardados);
+    }
+
+    public UbicacionDTO buscarUbicacionPorNombre(String nombreUbicacion) {
+        UbicacionEntity entidad = repo.findByNombreUbicacion(nombreUbicacion)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ninguna ubicación con nombre: " + nombreUbicacion));
+        return convertirADTO(entidad);
     }
 
     private UbicacionEntity convertirAEntity(@Valid UbicacionDTO dto, TipoUbicacionEntity tipo) {
@@ -53,62 +91,5 @@ public class UbicacionService {
         objDTO.setIdTipoUbicacion(entity.getTipoUbicacion().getId());
         objDTO.setNombreTipoUbicacion(entity.getTipoUbicacion().getNombreTipoUbicacion());
         return objDTO;
-    }
-
-    public List<UbicacionDTO> obtenerTodo() {
-        List<UbicacionEntity> data = repo.findAll();
-        return data.stream().map(this::convertirADTO).collect(Collectors.toList());
-    }
-
-    public UbicacionDTO buscarUbicacionPorId(Long id) {
-        Optional<UbicacionEntity> entidadOpcional = repo.findById(id);
-        return entidadOpcional.map(this::convertirADTO).orElse(null);
-    }
-
-    public boolean eliminarData(Long id) {
-        if (repo.existsById(id)) {
-            repo.deleteById(id);
-            return true;
-        }
-        return false;
-    }
-
-    public UbicacionDTO actualizar(Long id, @Valid UbicacionDTO dto) {
-        try {
-            Optional<UbicacionEntity> registroExiste = repo.findById(id);
-            if (registroExiste.isEmpty()) {
-                return null;
-            }
-
-            Optional<TipoUbicacionEntity> tipoOpcional = tipoUbicacionRepo.findById(dto.getIdTipoUbicacion());
-            if (tipoOpcional.isEmpty()) {
-                log.warn("No existe el tipo de ubicación con id " + dto.getIdTipoUbicacion());
-                return null;
-            }
-
-            UbicacionEntity entidad = registroExiste.get();
-            entidad.setNombreUbicacion(dto.getNombreUbicacion());
-            entidad.setTipoUbicacion(tipoOpcional.get());
-
-            UbicacionEntity datosGuardados = repo.save(entidad);
-            return convertirADTO(datosGuardados);
-        } catch (Exception e) {
-            log.error("Oops ocurrio un error al procesar la informacion");
-            return null;
-        }
-    }
-
-    public UbicacionDTO buscarUbicacionPorNombre(String nombreUbicacion) {
-        try {
-            Optional<UbicacionEntity> registro = repo.findByNombreUbicacion(nombreUbicacion);
-            if (registro.isPresent()) {
-                return convertirADTO(registro.get());
-            }
-            log.warn("No existe ninguna Ubicacion con el nombre: " + nombreUbicacion);
-            return null;
-        } catch (Exception e) {
-            log.error("Ocurrio un error durante el proceso");
-            return null;
-        }
     }
 }
