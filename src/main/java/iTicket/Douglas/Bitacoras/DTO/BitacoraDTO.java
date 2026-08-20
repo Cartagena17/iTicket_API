@@ -28,6 +28,7 @@ public class BitacoraDTO {
     @Positive
     private Long usuario;
     private String nombreUsuario;
+    private String correoUsuario;
 
     @NotBlank(message = "El nuevo estado es obligatorio.")
     @Size(max = 10, message = "El nuevo estado no puede exceder los 10 caracteres.")

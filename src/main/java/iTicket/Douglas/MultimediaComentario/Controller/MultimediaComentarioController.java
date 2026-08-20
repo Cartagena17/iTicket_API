@@ -8,11 +8,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 @Slf4j
 @RestController
+@CrossOrigin
 @RequestMapping("/api/multimediaComentarios")
 public class MultimediaComentarioController {
 
@@ -40,6 +42,21 @@ public class MultimediaComentarioController {
             e.printStackTrace();
             ApiResponse<MultimediaComentarioDTO> respuesta = new ApiResponse<>(false, "El proceso no se pudo completar", json);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuesta);
+        }
+    }
+
+    @PostMapping(value = "/subir", consumes = "multipart/form-data")
+    public ResponseEntity<ApiResponse<MultimediaComentarioDTO>> subirMultimedia(@RequestParam("archivo") MultipartFile archivo, @RequestParam("idComentario") Long idComentario) {
+        try {
+            MultimediaComentarioDTO dto = service.subirMultimedia(archivo, idComentario);
+            log.info("Multimedia subida y registrada para el comentario: " + idComentario);
+            ApiResponse<MultimediaComentarioDTO> respuestaExito = new ApiResponse<>(true, "Multimedia subida correctamente", dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(respuestaExito);
+        } catch (Exception e) {
+            log.error("Error al subir multimedia para el comentario " + idComentario);
+            e.printStackTrace();
+            ApiResponse<MultimediaComentarioDTO> respuestaError = new ApiResponse<>(false, "No se pudo subir la multimedia");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
         }
     }
 

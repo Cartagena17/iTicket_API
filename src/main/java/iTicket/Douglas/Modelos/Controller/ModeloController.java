@@ -16,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/modelos")
 @RequiredArgsConstructor
+@CrossOrigin
 public class ModeloController {
 
 

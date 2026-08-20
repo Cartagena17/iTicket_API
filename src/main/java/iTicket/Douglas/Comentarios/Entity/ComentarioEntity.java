@@ -6,6 +6,7 @@ import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,6 +33,7 @@ public class ComentarioEntity {
     @OneToMany(mappedBy = "comentario")
     private List<MultimediaComentarioEntity> multimediaComentarios;
 
+    @CreationTimestamp
     @Column(name = "fecha_hora")
     private LocalDateTime fechaHora;
 

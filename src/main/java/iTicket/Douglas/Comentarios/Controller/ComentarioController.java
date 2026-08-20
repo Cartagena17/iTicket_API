@@ -15,6 +15,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
+@CrossOrigin
 @RequestMapping("/api/comentarios")
 public class ComentarioController {
 
@@ -85,6 +86,26 @@ public class ComentarioController {
             e.printStackTrace(); // Muestra el lugar exacto de donde ocurrio el error en la ejecución
             ApiResponse<ComentarioDTO> respuesta = new ApiResponse<>(false, "Error al obtener el Comentario con ID: " + id);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body((respuesta));
+        }
+    }
+
+    //Metodo para obtener comentarios por id de ticket
+    @GetMapping("/ticket/{idTicket}")
+    public ResponseEntity<ApiResponse<List<ComentarioDTO>>> obtenerComentariosPorTicket(@PathVariable Long idTicket){
+        try {
+            List<ComentarioDTO> lista = service.obtenerComentariosPorTicket(idTicket);
+            log.info("Comentarios consultados para el ticket: " + idTicket);
+            ApiResponse<List<ComentarioDTO>> respuestaExito = new ApiResponse<>(true, "Comentarios encontrados", lista);
+            return ResponseEntity.ok(respuestaExito);
+        } catch (RuntimeException e) {
+            log.warn("Ticket no encontrado: " + e.getMessage());
+            ApiResponse<List<ComentarioDTO>> respuestaTicketNoExiste = new ApiResponse<>(false, e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaTicketNoExiste);
+        } catch (Exception e) {
+            log.error("Error al obtener los comentarios del ticket: " + idTicket);
+            e.printStackTrace();
+            ApiResponse<List<ComentarioDTO>> respuestaError = new ApiResponse<>(false, "No se pudieron obtener los comentarios");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
         }
     }
 

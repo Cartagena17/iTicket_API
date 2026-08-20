@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,4 +39,6 @@ public interface TicketRepository extends JpaRepository<TicketEntity, Long>, Jpa
 
     //Metodo para obtener un numero limitado de tickets "Nuevos" segun el departamento
     Page<TicketEntity> findByEstadoAndDepartamento_NombreDepartamentoIgnoreCase(String estado, String nombreDepartamento, Pageable pageable);
+
+    List<TicketEntity> findByCreador_IdUsuarioAndFechaCreacionBetween(Long idUsuario, LocalDateTime inicio, LocalDateTime fin);
 }

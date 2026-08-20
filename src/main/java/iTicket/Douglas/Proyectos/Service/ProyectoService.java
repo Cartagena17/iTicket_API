@@ -1,12 +1,17 @@
 package iTicket.Douglas.Proyectos.Service;
 
 import iTicket.Douglas.Proyectos.DTO.ProyectoDTO;
+import iTicket.Douglas.Proyectos.DTO.ProyectoPaginaDTO;
 import iTicket.Douglas.Proyectos.Entity.ProyectoEntity;
 import iTicket.Douglas.Proyectos.Repository.ProyectoRepository;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -40,6 +45,17 @@ public class ProyectoService {
     public List<ProyectoDTO> obtenerTodo(){
         List<ProyectoEntity> data = repo.findAll();
         return data.stream().map(this::convertirADTO).collect(Collectors.toList());
+    }
+
+    //Obtiene los proyectos de forma paginada, para que la interfaz no tenga que cargarlos todos de una sola vez
+    public ProyectoPaginaDTO obtenerPaginado(int pagina, int tamano) {
+        //pagina-1, Spring Data las cuenta desde 0, pero en la interfaz la primera es la 1
+        Pageable pageable = PageRequest.of(pagina - 1, tamano, Sort.by("idProyecto").descending());
+        Page<ProyectoEntity> resultado = repo.findAll(pageable);
+
+        List<ProyectoDTO> proyectos = resultado.getContent().stream().map(this::convertirADTO).collect(Collectors.toList());
+
+        return new ProyectoPaginaDTO(proyectos, resultado.getTotalElements(), resultado.getTotalPages(), pagina);
     }
 
     public ProyectoDTO obtenerPorId(Long id){
