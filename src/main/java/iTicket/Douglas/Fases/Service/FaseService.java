@@ -103,10 +103,12 @@ public class FaseService {
                 entidad.setFechaInicioEstimada(dto.getFechaInicioEstimada());
                 entidad.setFechaInicioReal(dto.getFechaInicioReal());
                 entidad.setFechaFinalEstimada(dto.getFechaFinalEstimada());
+                entidad.setFechaFinalReal(dto.getFechaFinalReal());
                 entidad.setNombreProveedor(dto.getNombreProveedor());
                 entidad.setPresupuestoEstimado(dto.getPresupuestoEstimado());
                 entidad.setGastoTotal(dto.getGastoTotal());
                 entidad.setFinalizado(dto.getFinalizado());
+                entidad.setDepartamentoEncargado(dto.getDepartamentoEncargado());
                 //Quitar comentario al unir las demas partes
                 entidad.setProyecto(buscarProyecto(dto.getProyecto()));
 
