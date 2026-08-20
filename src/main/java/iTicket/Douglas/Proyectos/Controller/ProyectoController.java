@@ -1,6 +1,7 @@
 package iTicket.Douglas.Proyectos.Controller;
 
 import iTicket.Douglas.Proyectos.DTO.ProyectoDTO;
+import iTicket.Douglas.Proyectos.DTO.ProyectoPaginaDTO;
 import iTicket.Douglas.Proyectos.Service.ProyectoService;
 import iTicket.Douglas.Response.ApiResponse;
 import jakarta.validation.Valid;
@@ -59,6 +60,24 @@ public class ProyectoController {
             log.error("El proceso presentó un fallo inesperado. Consulta con el administrador");
             e.printStackTrace();
             ApiResponse<List<ProyectoDTO>> respuestaError = new ApiResponse<>(false, "El proceso no se pudo completar");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
+        }
+    }
+
+    //Listado paginado de proyectos, para que la interfaz los cargue bajo demanda en vez de traerlos todos de una sola vez
+    @GetMapping("/pagina")
+    public ResponseEntity<ApiResponse<ProyectoPaginaDTO>> obtenerProyectosPaginados(
+            @RequestParam(defaultValue = "1") int pagina,
+            @RequestParam(defaultValue = "10") int tamano){
+        try {
+            ProyectoPaginaDTO resultado = service.obtenerPaginado(pagina, tamano);
+            log.info("Proyectos paginados consultados (página " + pagina + ")");
+            ApiResponse<ProyectoPaginaDTO> respuestaExito = new ApiResponse<>(true, "Proyectos obtenidos", resultado);
+            return ResponseEntity.ok(respuestaExito);
+        } catch (Exception e) {
+            log.error("Error al obtener los proyectos paginados");
+            e.printStackTrace();
+            ApiResponse<ProyectoPaginaDTO> respuestaError = new ApiResponse<>(false, "No se pudieron obtener los proyectos");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
         }
     }
