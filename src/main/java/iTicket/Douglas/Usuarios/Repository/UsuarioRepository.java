@@ -10,5 +10,5 @@ import java.util.List;
 public interface UsuarioRepository extends JpaRepository<UsuarioEntity, Long> {
 
     //Metodo para buscar usuarios por rol y estado, según el departamento
-    List<UsuarioEntity> findByRol_NombreRolInAndEstadoAndDepartamento_NombreDepartamentoIgnoreCase(List<String> roles, Boolean estado, String nombreDepartamento);
+    List<UsuarioEntity> findByRol_NombreRolInAndEstadoAndDepartamento_NombreDepartamentoIgnoreCase(List<String> roles, Character estado, String nombreDepartamento);
 }
