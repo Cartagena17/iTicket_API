@@ -166,6 +166,7 @@ public class UsuarioService {
         objEntity.setImagenUrl(dto.getImagenUrl());
         objEntity.setRol(rol);
         objEntity.setDepartamento(departamento);
+        objEntity.setEstado(dto.getEstado());
         return objEntity;
     }
 
@@ -179,6 +180,7 @@ public class UsuarioService {
         objDTO.setNombreRol(entity.getRol().getNombreRol());
         objDTO.setIdDepartamento(entity.getDepartamento().getIdDepartamento());
         objDTO.setNombreDepartamento(entity.getDepartamento().getNombreDepartamento());
+        objDTO.setEstado(entity.getEstado());
         return objDTO;
     }
 
