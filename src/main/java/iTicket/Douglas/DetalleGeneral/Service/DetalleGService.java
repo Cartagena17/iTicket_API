@@ -3,7 +3,7 @@ package iTicket.Douglas.DetalleGeneral.Service;
 import iTicket.Douglas.DetalleGeneral.DTO.DetalleGDTO;
 import iTicket.Douglas.DetalleGeneral.Entity.DetalleGEntity;
 import iTicket.Douglas.DetalleGeneral.Repository.DetalleGRepository;
-import iTicket.Douglas.DetalleTS.Entity.DetalleTSEntity;
+import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
 import jakarta.validation.Valid;
@@ -38,7 +38,6 @@ public class DetalleGService {
         DetalleGDTO dto = new DetalleGDTO();
         dto.setIdDetalleGeneral(entity.getIdDetalleGeneral());
         dto.setDescripcionUbicacion(entity.getDescripcionUbicacion());
-        //Quitar comentario al unir las demas partes
         dto.setTicket(entity.getTicket().getIdTicket());
         dto.setAsunto(entity.getTicket().getAsunto());
         return dto;
@@ -46,15 +45,10 @@ public class DetalleGService {
 
     @Transactional
     public DetalleGDTO nuevoDetalleG(@Valid DetalleGDTO dto) {
-        try {
-            DetalleGEntity entity = convertirAEntity(dto);
-            DetalleGEntity entitySave = repo.save(entity);
-            return convertirADTO(entitySave);
-        } catch (Exception e) {
-            log.error("Error al ingresar el detalle del ticket" + e.getMessage());
-            if (e instanceof RuntimeException re) throw re;
-            throw new RuntimeException("Error al registrar el detalle general", e);
-        }
+        DetalleGEntity entity = convertirAEntity(dto);
+        DetalleGEntity entitySave = repo.save(entity);
+        log.info("Nuevo detalle general registrado: " + entitySave.getIdDetalleGeneral());
+        return convertirADTO(entitySave);
     }
 
     public List<DetalleGDTO> obtenerDetallesG() {
@@ -64,21 +58,14 @@ public class DetalleGService {
 
     @Transactional
     public DetalleGDTO actualizarDetalleG(Long id, @Valid DetalleGDTO dto) {
-        try {
-            Optional<DetalleGEntity> entidadOpcional = repo.findById(id);
-            if (entidadOpcional.isPresent()) {
-                DetalleGEntity entidad = entidadOpcional.get();
-                entidad.setDescripcionUbicacion(dto.getDescripcionUbicacion());
-                //Quitar comentario al unir las demas partes
-                entidad.setTicket(buscarTicket(dto.getTicket()));
-                DetalleGEntity datosGuardados = repo.save(entidad);
-                return convertirADTO(datosGuardados);
-            }
-            return null;
-        } catch (Exception e) {
-            log.error("Error al procesar la informacion");
-            return null;
-        }
+        DetalleGEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un detalle general con id " + id));
+
+        entidad.setDescripcionUbicacion(dto.getDescripcionUbicacion());
+        entidad.setTicket(buscarTicket(dto.getTicket()));
+        DetalleGEntity datosGuardados = repo.save(entidad);
+        log.info("Detalle general con id " + id + " actualizado");
+        return convertirADTO(datosGuardados);
     }
 
     @Transactional
@@ -90,28 +77,15 @@ public class DetalleGService {
         return false;
     }
 
-    //Metodo para obtener detalle de ticket general por id de ticket, quitar comentario cuando se unan las demas partes
-    public DetalleGDTO obtenerDetallesIdTicket (Long idTicket){
-        try {
-            Optional<DetalleGEntity> registro = repo.findByTicket_IdTicket(idTicket);
-            if (registro.isPresent()) {
-                return convertirADTO(registro.get());
-            }
-            log.warn("No existe ningun detalle general de ticket: " + idTicket);
-            return null;
-        } catch (Exception e) {
-            log.error("Ocurrio un error en el proceso de obtencion");
-            return null;
-        }
+    public DetalleGDTO obtenerDetallesIdTicket(Long idTicket) {
+        DetalleGEntity entidad = repo.findByTicket_IdTicket(idTicket)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún detalle general para el ticket: " + idTicket));
+        return convertirADTO(entidad);
     }
 
-    private TicketEntity buscarTicket(Long id){
-        Optional<TicketEntity> ticket = ticketRepo.findById(id);
-        if (ticket.isPresent()){
-            return ticket.get();
-        }
-        log.warn("No existe ningun ticket con id: " + id);
-        throw new RuntimeException("No existe ningun ticket con id: " + id);
+    private TicketEntity buscarTicket(Long id) {
+        return ticketRepo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún ticket con id: " + id));
     }
 
     @Transactional
@@ -124,8 +98,7 @@ public class DetalleGService {
         entity.setTicket(ticket);
 
         DetalleGEntity entitySave = repo.save(entity);
-
+        log.info("Detalle general actualizado/creado para ticket: " + ticket.getIdTicket());
         return convertirADTO(entitySave);
     }
 }
-

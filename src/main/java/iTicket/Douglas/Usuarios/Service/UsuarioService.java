@@ -2,6 +2,7 @@ package iTicket.Douglas.Usuarios.Service;
 
 import iTicket.Douglas.Departamentos.Entity.DepartamentoEntity;
 import iTicket.Douglas.Departamentos.Repository.DepartamentoRepository;
+import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Roles.Entity.RolEntity;
 import iTicket.Douglas.Roles.Repository.RolRepository;
 import iTicket.Douglas.Usuarios.DTO.UsuarioDTO;
@@ -14,13 +15,14 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class UsuarioService {
 
@@ -29,29 +31,18 @@ public class UsuarioService {
     private final DepartamentoRepository departamentoRepo;
     private final PasswordUtil passwordUtil;
 
+    @Transactional
     public UsuarioDTO nuevoUsuario(@Valid UsuarioDTO dto) {
-        try {
-            Optional<RolEntity> rolOpcional = rolRepo.findById(dto.getIdRol());
-            if (rolOpcional.isEmpty()) {
-                log.warn("El rol con id " + dto.getIdRol() + " no existe");
-                return null;
-            }
+        RolEntity rol = rolRepo.findById(dto.getIdRol())
+                .orElseThrow(() -> new RecursoNoEncontradoException("El rol con id " + dto.getIdRol() + " no existe"));
 
-            Optional<DepartamentoEntity> depaOpcional = departamentoRepo.findById(dto.getIdDepartamento());
-            if (depaOpcional.isEmpty()) {
-                log.warn("El departamento con id " + dto.getIdDepartamento() + " no existe");
-                return null;
-            }
+        DepartamentoEntity departamento = departamentoRepo.findById(dto.getIdDepartamento())
+                .orElseThrow(() -> new RecursoNoEncontradoException("El departamento con id " + dto.getIdDepartamento() + " no existe"));
 
-
-            UsuarioEntity entity = convertirAEntity(dto, rolOpcional.get(), depaOpcional.get());
-            UsuarioEntity entitySave = repo.save(entity);
-            log.info("Nuevo usuario registrado: " + entitySave.getIdUsuario());
-            return convertirADTO(entitySave);
-        }catch (Exception e) {
-            log.error("Error al ingresar la información del usuario: " + e.getMessage());
-            return null;
-        }
+        UsuarioEntity entity = convertirAEntity(dto, rol, departamento);
+        UsuarioEntity entitySave = repo.save(entity);
+        log.info("Nuevo usuario registrado: " + entitySave.getIdUsuario());
+        return convertirADTO(entitySave);
     }
 
     public List<UsuarioDTO> obtenerTodo() {
@@ -60,95 +51,73 @@ public class UsuarioService {
     }
 
     public UsuarioDTO obtenerPorId(Long id) {
-        Optional<UsuarioEntity> entidadOpcional = repo.findById(id);
-        return entidadOpcional.map(this::convertirADTO).orElse(null);
+        UsuarioEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un usuario con id " + id));
+        return convertirADTO(entidad);
     }
 
-    public UsuarioDTO actualizarData(Long id,@Valid UsuarioUpdateDTO dto) {
-        try {
-            Optional<UsuarioEntity> registroExistente = repo.findById(id);
-            if (registroExistente.isEmpty()) {
-                return null;
-            }
-            UsuarioEntity entidad = registroExistente.get();
+    @Transactional
+    public UsuarioDTO actualizarData(Long id, @Valid UsuarioUpdateDTO dto) {
+        UsuarioEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un usuario con id " + id));
 
-            Optional<RolEntity> rolOpcional = rolRepo.findById(dto.getIdRol());
-            if (rolOpcional.isEmpty()) {
-                log.warn("El rol con id " + dto.getIdRol() + " no existe");
-                return null;
-            }
+        RolEntity rol = rolRepo.findById(dto.getIdRol())
+                .orElseThrow(() -> new RecursoNoEncontradoException("El rol con id " + dto.getIdRol() + " no existe"));
 
-            Optional<DepartamentoEntity> depaOpcional = departamentoRepo.findById(dto.getIdDepartamento());
-            if (depaOpcional.isEmpty()) {
-                log.warn("El departamento con id " + dto.getIdDepartamento() + " no existe");
-                return null;
-            }
+        DepartamentoEntity departamento = departamentoRepo.findById(dto.getIdDepartamento())
+                .orElseThrow(() -> new RecursoNoEncontradoException("El departamento con id " + dto.getIdDepartamento() + " no existe"));
 
+        entidad.setNombreUsuario(dto.getNombreUsuario());
+        entidad.setCorreo(dto.getCorreo());
+        entidad.setImagenUrl(dto.getImagenUrl());
+        entidad.setRol(rol);
+        entidad.setDepartamento(departamento);
+
+        if (dto.getClave() != null && !dto.getClave().isBlank()) {
+            entidad.setClave(passwordUtil.encriptar(dto.getClave()));
+        }
+
+        UsuarioEntity datosGuardados = repo.save(entidad);
+        log.info("Usuario con id " + id + " actualizado");
+        return convertirADTO(datosGuardados);
+    }
+
+    @Transactional
+    public UsuarioDTO actualizarParcial(Long id, UsuarioPatchDTO dto) {
+        // Bug corregido: antes decía "if (registroExistente != null)", que siempre es true
+        // (un Optional nunca es null), así que el .get() de abajo podía explotar sin control.
+        UsuarioEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un usuario con id " + id));
+
+        if (dto.getNombreUsuario() != null && !dto.getNombreUsuario().isBlank()) {
             entidad.setNombreUsuario(dto.getNombreUsuario());
-            entidad.setCorreo(dto.getCorreo());
-            entidad.setImagenUrl(dto.getImagenUrl());
-            entidad.setRol(rolOpcional.get());
-            entidad.setDepartamento(depaOpcional.get());
-
-            if (dto.getClave() != null && !dto.getClave().isBlank()) {
-                entidad.setClave(passwordUtil.encriptar(dto.getClave()));
-            }
-
-            UsuarioEntity datosGuardados = repo.save(entidad);
-            log.info("Usuario con id " + id + " actualizado");
-            return convertirADTO(datosGuardados);
-        } catch (Exception e) {
-            log.error("Ocurrió un error al procesar la info " + e.getMessage());
-            return null;
         }
+        if (dto.getCorreo() != null && !dto.getCorreo().isBlank()) {
+            entidad.setCorreo(dto.getCorreo());
+        }
+        if (dto.getClave() != null && !dto.getClave().isBlank()) {
+            entidad.setClave(passwordUtil.encriptar(dto.getClave()));
+        }
+        if (dto.getImagenUrl() != null && !dto.getImagenUrl().isBlank()) {
+            entidad.setImagenUrl(dto.getImagenUrl());
+        }
+        if (dto.getIdRol() != null) {
+            RolEntity rol = rolRepo.findById(dto.getIdRol())
+                    .orElseThrow(() -> new RecursoNoEncontradoException("El rol con id " + dto.getIdRol() + " no existe"));
+            entidad.setRol(rol);
+        }
+        if (dto.getIdDepartamento() != null) {
+            DepartamentoEntity departamento = departamentoRepo.findById(dto.getIdDepartamento())
+                    .orElseThrow(() -> new RecursoNoEncontradoException("El departamento con id " + dto.getIdDepartamento() + " no existe"));
+            entidad.setDepartamento(departamento);
+        }
+
+        UsuarioEntity datosGuardados = repo.save(entidad);
+        log.info("Usuario con id " + id + " actualizado parcialmente");
+        return convertirADTO(datosGuardados);
     }
 
-    public UsuarioDTO actualizarParcial (Long id, UsuarioPatchDTO dto) {
-        try {
-            Optional<UsuarioEntity> registroExistente = repo.findById(id);
-            if (registroExistente != null){
-                return null;
-            }
-            UsuarioEntity entidad = registroExistente.get();
-
-            if (dto.getNombreUsuario() != null && !dto.getNombreUsuario().isBlank()) {
-                entidad.setNombreUsuario(dto.getNombreUsuario());
-            }
-            if (dto.getCorreo() != null && !dto.getCorreo().isBlank()) {
-                entidad.setCorreo(dto.getCorreo());
-            }
-            if (dto.getClave() != null && !dto.getClave().isBlank()) {
-                entidad.setClave(passwordUtil.encriptar(dto.getClave()));
-            }
-            if (dto.getImagenUrl() != null && !dto.getImagenUrl().isBlank()) {
-                entidad.setImagenUrl(dto.getImagenUrl());
-            }
-            if (dto.getIdRol() != null) {
-                Optional<RolEntity> rolOpcional = rolRepo.findById(dto.getIdRol());
-                if (rolOpcional.isEmpty()) {
-                    log.warn("El rol con id " + dto.getIdRol() + " no existe");
-                    return null;
-                }
-                entidad.setRol(rolOpcional.get());
-            }
-            if (dto.getIdDepartamento() != null) {
-                Optional<DepartamentoEntity> depaOpcional = departamentoRepo.findById(dto.getIdDepartamento());
-                if (depaOpcional.isEmpty()) {
-                    log.warn("El departamento con id " + dto.getIdDepartamento() + " no existe");
-                    return null;
-                }
-                entidad.setDepartamento(depaOpcional.get());
-            }
-
-            UsuarioEntity datosGuardados = repo.save(entidad);
-            log.info("Usuario con id " + id + " actualizado parcialmente");
-            return convertirADTO(datosGuardados);
-        } catch (Exception e) {
-            log.error("Ocurrió un error al procesar la info: " + e.getMessage());
-            return null;
-        }
-        }
-
+    @Transactional
     public boolean eliminarUsuario(Long id) {
         if (repo.existsById(id)) {
             repo.deleteById(id);
@@ -157,15 +126,24 @@ public class UsuarioService {
         return false;
     }
 
+    public List<UsuarioDTO> obtenerTecnicosPorDepartamento(Long idDepartamento) {
+        DepartamentoEntity departamento = departamentoRepo.findById(idDepartamento)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún departamento con id: " + idDepartamento));
+
+        List<UsuarioEntity> lista = repo.findByRol_NombreRolInAndEstadoAndDepartamento_NombreDepartamentoIgnoreCase(
+                List.of("Tecnico", "Administrador"), true, departamento.getNombreDepartamento());
+        return lista.stream().map(this::convertirADTO).collect(Collectors.toList());
+    }
 
     private UsuarioEntity convertirAEntity(UsuarioDTO dto, RolEntity rol, DepartamentoEntity departamento) {
         UsuarioEntity objEntity = new UsuarioEntity();
         objEntity.setNombreUsuario(dto.getNombreUsuario());
         objEntity.setCorreo(dto.getCorreo());
-        objEntity.setClave(passwordUtil.encriptar(dto.getClave())); // ← se encripta aquí, nunca antes
+        objEntity.setClave(passwordUtil.encriptar(dto.getClave()));
         objEntity.setImagenUrl(dto.getImagenUrl());
         objEntity.setRol(rol);
         objEntity.setDepartamento(departamento);
+        objEntity.setEstado(dto.getEstado());
         return objEntity;
     }
 
@@ -179,17 +157,7 @@ public class UsuarioService {
         objDTO.setNombreRol(entity.getRol().getNombreRol());
         objDTO.setIdDepartamento(entity.getDepartamento().getIdDepartamento());
         objDTO.setNombreDepartamento(entity.getDepartamento().getNombreDepartamento());
+        objDTO.setEstado(entity.getEstado());
         return objDTO;
-    }
-
-    public List<UsuarioDTO> obtenerTecnicosPorDepartamento(Long idDepartamento) {
-        Optional<DepartamentoEntity> departamento = departamentoRepo.findById(idDepartamento);
-        if (departamento.isEmpty()){
-            log.warn("No existe ningún departamento con id: " + idDepartamento);
-            throw new RuntimeException("No existe ningún departamento con id: " + idDepartamento);
-        }
-
-        List<UsuarioEntity> lista = repo.findByRol_NombreRolInAndEstadoAndDepartamento_NombreDepartamentoIgnoreCase(List.of("Tecnico", "Administrador"), true, departamento.get().getNombreDepartamento());
-        return lista.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 }

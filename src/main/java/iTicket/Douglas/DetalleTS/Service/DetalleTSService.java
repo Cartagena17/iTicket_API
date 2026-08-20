@@ -3,6 +3,7 @@ package iTicket.Douglas.DetalleTS.Service;
 import iTicket.Douglas.DetalleTS.DTO.DetalleTSDTO;
 import iTicket.Douglas.DetalleTS.Entity.DetalleTSEntity;
 import iTicket.Douglas.DetalleTS.Repository.DetalleTSRepository;
+import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
 import iTicket.Douglas.Ubicaciones.Entity.UbicacionEntity;
@@ -15,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -31,21 +31,13 @@ public class DetalleTSService {
 
     @Transactional
     public DetalleTSDTO nuevoDetalleTS(@Valid DetalleTSDTO dto) {
-        try{
-            //convertir a entity
-            DetalleTSEntity entity = convertirAEntity(dto);
-            //Guardar en la base de datos
-            DetalleTSEntity entitySave = repo.save(entity);
-            //Devolver una respuesta
-            return  convertirADTO(entitySave);
-        }
-        catch (Exception e){
-            log.error("Error al ingresar los datos del detalle" + e.getMessage());
-            if (e instanceof RuntimeException re) throw re;
-            throw new RuntimeException("Error al registrar el detalle del software", e);        }
+        DetalleTSEntity entity = convertirAEntity(dto);
+        DetalleTSEntity entitySave = repo.save(entity);
+        log.info("Nuevo detalle TS registrado: " + entitySave.getIdDetalleTS());
+        return convertirADTO(entitySave);
     }
 
-    private DetalleTSEntity convertirAEntity(@Valid DetalleTSDTO dto){
+    private DetalleTSEntity convertirAEntity(@Valid DetalleTSDTO dto) {
         DetalleTSEntity entity = new DetalleTSEntity();
         entity.setNombreSoftware(dto.getNombreSoftware());
         entity.setVersion(dto.getVersion());
@@ -67,68 +59,45 @@ public class DetalleTSService {
 
     public List<DetalleTSDTO> obtenerTodos() {
         List<DetalleTSEntity> datos = repo.findAll();
-        return  datos.stream().map(this::convertirADTO).collect(Collectors.toList());
+        return datos.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
     @Transactional
     public DetalleTSDTO actualizarDetalleTS(Long id, @Valid DetalleTSDTO dto) {
-        try {
-            Optional<DetalleTSEntity> entidadOpcional = repo.findById(id);
-            if (entidadOpcional.isPresent()){
-                DetalleTSEntity entidad = entidadOpcional.get();
-                //Convertir y asignar los nuevos valores
-                entidad.setNombreSoftware(dto.getNombreSoftware());
-                entidad.setVersion(dto.getVersion());
-                entidad.setUbicacion(buscarUbicacion(dto.getUbicacion()));
-                entidad.setTicket(buscarTicket(dto.getTicket()));
-                DetalleTSEntity datosGuardados = repo.save(entidad);
-                return  convertirADTO(datosGuardados);
-            }
-            return null;
-        }
-        catch (Exception e){
-            log.error("Error al procesar la informacion");
-            return null;
-        }
+        DetalleTSEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un detalle TS con id " + id));
+
+        entidad.setNombreSoftware(dto.getNombreSoftware());
+        entidad.setVersion(dto.getVersion());
+        entidad.setUbicacion(buscarUbicacion(dto.getUbicacion()));
+        entidad.setTicket(buscarTicket(dto.getTicket()));
+        DetalleTSEntity datosGuardados = repo.save(entidad);
+        log.info("Detalle TS con id " + id + " actualizado");
+        return convertirADTO(datosGuardados);
     }
 
     @Transactional
     public boolean eliminarDetalleTS(Long id) {
-        if (repo.existsById(id)){
+        if (repo.existsById(id)) {
             repo.deleteById(id);
             return true;
         }
         return false;
     }
 
-    //Metodo para obtener detalle por id de ticket
     public List<DetalleTSDTO> obtenerDetalleTSIdTicket(Long idTicket) {
-        try {
-            List<DetalleTSEntity> registros = repo.findByTicket_IdTicket(idTicket);
-            return registros.stream().map(this::convertirADTO).collect(Collectors.toList());
-        }
-        catch (Exception e){
-            log.error("Ocurrio un error en el proceso de obtención del detalle");
-            return null;
-        }
+        List<DetalleTSEntity> registros = repo.findByTicket_IdTicket(idTicket);
+        return registros.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
-    private TicketEntity buscarTicket(Long id){
-        Optional<TicketEntity> ticket = ticketRepo.findById(id);
-        if (ticket.isPresent()){
-            return ticket.get();
-        }
-        log.warn("No existe ningun ticket con id: " + id);
-        throw new RuntimeException("No existe ningun ticket con id: " + id);
+    private TicketEntity buscarTicket(Long id) {
+        return ticketRepo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún ticket con id: " + id));
     }
 
-    private UbicacionEntity buscarUbicacion(Long id){
-        Optional<UbicacionEntity> ubicacion = ubicacionRepo.findById(id);
-        if (ubicacion.isPresent()){
-            return ubicacion.get();
-        }
-        log.warn("No existe ninguna ubicación con id: " + id);
-        throw new RuntimeException("No existe ninguna ubicación con id: " + id);
+    private UbicacionEntity buscarUbicacion(Long id) {
+        return ubicacionRepo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ninguna ubicación con id: " + id));
     }
 
     @Transactional

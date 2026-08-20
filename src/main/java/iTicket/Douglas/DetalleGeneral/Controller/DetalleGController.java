@@ -1,11 +1,10 @@
 package iTicket.Douglas.DetalleGeneral.Controller;
 
-
 import iTicket.Douglas.DetalleGeneral.DTO.DetalleGDTO;
 import iTicket.Douglas.DetalleGeneral.Service.DetalleGService;
 import iTicket.Douglas.Response.ApiResponse;
-import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,121 +14,54 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping ("/api/detalleG")
+@CrossOrigin
+@RequestMapping("/api/detalleG")
+@RequiredArgsConstructor
 public class DetalleGController {
 
     private final DetalleGService service;
 
-    public DetalleGController(DetalleGService service) {
-        this.service = service;
-    }
-
-    //Crear
     @PostMapping
-    public ResponseEntity<ApiResponse<DetalleGDTO>> nuevoDetalleG(@Valid @RequestBody DetalleGDTO json){
-        try {
-            DetalleGDTO dto = service.nuevoDetalleG(json);
-            if (dto != null){
-                log.info("Nuevo detalle ingresado: " + dto);
-                ApiResponse<DetalleGDTO> exito = new ApiResponse<>(true, "Datos ingresados exitosamente", dto   );
-                return ResponseEntity.status(HttpStatus.CREATED).body(exito);
-            }
-            log.warn("Intento de insercion fallido: " + json);
-            ApiResponse<DetalleGDTO> respuesta = new ApiResponse<>(false, "Intento de insercion fallido");
-            return ResponseEntity.ok(respuesta);
-        }
-        catch (Exception e){
-            log.error("Error al ingresar el detalle del ticket");
-            e.printStackTrace();
-            ApiResponse<DetalleGDTO> error = new ApiResponse<>(false, "Error en el proceso de insercion" + json);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-        }
+    public ResponseEntity<ApiResponse<DetalleGDTO>> nuevoDetalleG(@Valid @RequestBody DetalleGDTO json) {
+        DetalleGDTO dto = service.nuevoDetalleG(json);
+        log.info("Nuevo detalle ingresado: " + dto);
+        ApiResponse<DetalleGDTO> respuesta = new ApiResponse<>(true, "Datos ingresados exitosamente", dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
     }
 
-    //Obtener todos
     @GetMapping
-    public ResponseEntity<ApiResponse<List<DetalleGDTO>>> obtenerDetallesG(){
-        try {
-            List<DetalleGDTO> lista = service.obtenerDetallesG();
-            if (lista != null){
-                log.info("Se obtuvieron con exito los detalles");
-                ApiResponse<List<DetalleGDTO>> exito = new ApiResponse<>(true, "Detalles encontrados: ", lista);
-                return ResponseEntity.ok(exito);
-            }
-            log.warn("No se encontraron los detalles");
-            ApiResponse<List<DetalleGDTO>> respuesta = new ApiResponse<>(false, "No se encontraron los detalles");
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(respuesta);
-        }
-        catch (Exception e){
-            log.error("No se pudieron obtener los detalles");
-            e.printStackTrace();
-            ApiResponse<List<DetalleGDTO>> error = new ApiResponse<>(false, "No se pudieron obtener los datos");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-        }
+    public ResponseEntity<ApiResponse<List<DetalleGDTO>>> obtenerDetallesG() {
+        List<DetalleGDTO> lista = service.obtenerDetallesG();
+        log.info("Se obtuvieron con éxito los detalles");
+        ApiResponse<List<DetalleGDTO>> respuesta = new ApiResponse<>(true, "Detalles encontrados", lista);
+        return ResponseEntity.ok(respuesta);
     }
 
-    //Metodo para obtener detalle de ticket general por id de ticket, quitar comentario cuando se unan las demas partes
-    @GetMapping ("/detalleGIdTicket/{idTicket}")
-    public ResponseEntity<ApiResponse<DetalleGDTO>> buscarDetalleGIdTicket(@PathVariable Long idTicket){
-        try{
-            DetalleGDTO datos = service.obtenerDetallesIdTicket(idTicket);
-            if (datos != null){
-                log.info("Se obtuvo con exito el detalle del ticket: " + idTicket);
-                ApiResponse<DetalleGDTO> exito = new ApiResponse<>(true, "Se obtuvo con exito el detalle del ticket: " + idTicket);
-                return  ResponseEntity.ok(exito);
-            }
-            log.warn("No se pudo encontrar el detalle del ticket: " + idTicket);
-            ApiResponse<DetalleGDTO> respuesta = new ApiResponse<>(false, "No se pudo encontrar el detalle del ticket: " + idTicket);
-            return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
-        }
-        catch (Exception e){
-            log.error("Error al obtener el detalle del ticket: " + idTicket);
-            e.printStackTrace();
-            ApiResponse<DetalleGDTO> error = new ApiResponse<>(false, "Error al obtener el detalle del ticket: " + idTicket);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-        }
+    @GetMapping("/detalleGIdTicket/{idTicket}")
+    public ResponseEntity<ApiResponse<DetalleGDTO>> buscarDetalleGIdTicket(@PathVariable Long idTicket) {
+        DetalleGDTO datos = service.obtenerDetallesIdTicket(idTicket);
+        log.info("Se obtuvo con éxito el detalle del ticket: " + idTicket);
+        ApiResponse<DetalleGDTO> respuesta = new ApiResponse<>(true, "Se obtuvo con éxito el detalle del ticket: " + idTicket, datos);
+        return ResponseEntity.ok(respuesta);
     }
 
-    //Editar
     @PutMapping("/{id}")
-    public  ResponseEntity<ApiResponse<DetalleGDTO>> actualizarDetalleG(@PathVariable Long id, @Valid @RequestBody DetalleGDTO dto){
-        try{
-            DetalleGDTO datos = service.actualizarDetalleG(id, dto);
-            if (datos != null){
-                log.info("Detalle de ticket: " + id + ", ha sido actualizado");
-                ApiResponse<DetalleGDTO> exito = new ApiResponse<>(true, "Detalle de ticket: " + id + ", ha sido actualizado", dto);
-                return  ResponseEntity.ok(exito);
-            }
-            log.warn("No se pudo actualizar el detalle del ticket: " + id);
-            ApiResponse<DetalleGDTO> respuesta = new ApiResponse<>(false, "No se pudo actualizar el detalle del ticket: " + id);
-            return  ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuesta);
-        }
-        catch (Exception e){
-            log.error("Error al actualizar el detalle del ticket: " + id);
-            e.printStackTrace();
-            ApiResponse<DetalleGDTO> error = new ApiResponse<>(false, "Error al actualizar el detalle del ticket: " + id);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-        }
+    public ResponseEntity<ApiResponse<DetalleGDTO>> actualizarDetalleG(@PathVariable Long id, @Valid @RequestBody DetalleGDTO dto) {
+        DetalleGDTO datos = service.actualizarDetalleG(id, dto);
+        log.info("Detalle de ticket: " + id + ", ha sido actualizado");
+        ApiResponse<DetalleGDTO> respuesta = new ApiResponse<>(true, "Detalle de ticket: " + id + ", ha sido actualizado", datos);
+        return ResponseEntity.ok(respuesta);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> eliminarDetalleG(@PathVariable Long id){
-        try{
-            boolean respuesta = service.eliminarDetalleG(id);
-            if (respuesta){
-                log.info("Detalle de ticket: " + id + ", eliminado");
-                ApiResponse<Void> exito = new ApiResponse<>(true, "Detalle de ticket: " + id + ", eliminado");
-                return  ResponseEntity.status(HttpStatus.NO_CONTENT).body(exito);
-            }
-            log.warn("Detalle de ticket: " + id + ", no fue encontrado");
-            ApiResponse<Void> respuestaNoEncontrada = new ApiResponse<>(false, "Detalle de ticket: " + id + ", no fue encontrado");
-            return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuestaNoEncontrada);
+    public ResponseEntity<ApiResponse<Void>> eliminarDetalleG(@PathVariable Long id) {
+        boolean eliminado = service.eliminarDetalleG(id);
+        if (eliminado) {
+            log.info("Detalle de ticket: " + id + ", eliminado");
+            ApiResponse<Void> respuesta = new ApiResponse<>(true, "Detalle de ticket: " + id + ", eliminado");
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(respuesta);
         }
-        catch (Exception e){
-            log.error("Error al eliminar el detalle del ticket: " + id);
-            e.printStackTrace();
-            ApiResponse<Void> error = new ApiResponse<>(false, "Error al eliminar el detalle del ticket: " + id);
-            return  ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-        }
+        ApiResponse<Void> respuesta = new ApiResponse<>(false, "Detalle de ticket: " + id + ", no fue encontrado");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
     }
 }

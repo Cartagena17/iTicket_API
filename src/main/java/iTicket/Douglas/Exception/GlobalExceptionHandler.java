@@ -66,6 +66,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(respuesta);
     }
 
+    @ExceptionHandler(OperacionInvalidaException.class)
+    public ResponseEntity<ApiResponse<Object>> manejarOperacionInvalida(OperacionInvalidaException e) {
+        log.warn("Operación inválida: " + e.getMessage());
+        ApiResponse<Object> respuesta = new ApiResponse<>(false, e.getMessage(), null);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuesta);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> manejarGeneral(Exception e) {
         log.error("Error inesperado: ", e);

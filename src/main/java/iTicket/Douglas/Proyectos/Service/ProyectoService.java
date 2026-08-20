@@ -1,5 +1,6 @@
 package iTicket.Douglas.Proyectos.Service;
 
+import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Proyectos.DTO.ProyectoDTO;
 import iTicket.Douglas.Proyectos.DTO.ProyectoPaginaDTO;
 import iTicket.Douglas.Proyectos.Entity.ProyectoEntity;
@@ -7,49 +8,41 @@ import iTicket.Douglas.Proyectos.Repository.ProyectoRepository;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ProyectoService {
 
     private final ProyectoRepository repo;
     private final UsuarioRepository repoUsuario;
 
-    public ProyectoService(ProyectoRepository repo, UsuarioRepository repoUsuario) {
-        this.repo = repo;
-        this.repoUsuario = repoUsuario;
+    @Transactional
+    public ProyectoDTO crearProyecto(@Valid ProyectoDTO dto) {
+        ProyectoEntity entity = convertirAEntity(dto);
+        ProyectoEntity entitySave = repo.save(entity);
+        log.info("Nuevo proyecto registrado: " + entitySave.getIdProyecto());
+        return convertirADTO(entitySave);
     }
 
-    public ProyectoDTO crearProyecto(@Valid ProyectoDTO dto){
-        try {
-            ProyectoEntity entity = convertirAEntity(dto);
-            ProyectoEntity entitySave = repo.save(entity);
-            return convertirADTO(entitySave);
-        } catch (Exception e) {
-            log.error("Error al registrar el proyecto " + e.getMessage());
-            throw new RuntimeException("No se pudo crear el proyecto");
-        }
-    }
-
-    public List<ProyectoDTO> obtenerTodo(){
+    public List<ProyectoDTO> obtenerTodo() {
         List<ProyectoEntity> data = repo.findAll();
         return data.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
-    //Obtiene los proyectos de forma paginada, para que la interfaz no tenga que cargarlos todos de una sola vez
     public ProyectoPaginaDTO obtenerPaginado(int pagina, int tamano) {
-        //pagina-1, Spring Data las cuenta desde 0, pero en la interfaz la primera es la 1
         Pageable pageable = PageRequest.of(pagina - 1, tamano, Sort.by("idProyecto").descending());
         Page<ProyectoEntity> resultado = repo.findAll(pageable);
 
@@ -58,64 +51,49 @@ public class ProyectoService {
         return new ProyectoPaginaDTO(proyectos, resultado.getTotalElements(), resultado.getTotalPages(), pagina);
     }
 
-    public ProyectoDTO obtenerPorId(Long id){
-        Optional<ProyectoEntity> entidadOpcional = repo.findById(id);
-        return entidadOpcional.map(this::convertirADTO).orElse(null);
+    public ProyectoDTO obtenerPorId(Long id) {
+        ProyectoEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un proyecto con id " + id));
+        return convertirADTO(entidad);
     }
 
     public List<ProyectoDTO> buscarPorNombre(String nombre) {
-        try {
-            List<ProyectoEntity> registros = repo.findByNombreProyectoContainingIgnoreCase(nombre);
-            if (!registros.isEmpty()){
-                return registros.stream().map(this::convertirADTO).collect(Collectors.toList());
-            }
-            log.warn("No existe ningún proyecto con nombre: " + nombre);
-            return Collections.emptyList();
-        }catch (Exception e){
-            log.error("Ocurrió un error durante el proceso");
-            return Collections.emptyList();
-        }
+        List<ProyectoEntity> registros = repo.findByNombreProyectoContainingIgnoreCase(nombre);
+        return registros.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
     public List<ProyectoDTO> buscarPorTipo(String tipo) {
-        try {
-            List<ProyectoEntity> registros = repo.findByTipoProyecto(tipo);
-            if (!registros.isEmpty()){
-                return registros.stream().map(this::convertirADTO).collect(Collectors.toList());
-            }
-            log.warn("No existe ningún proyecto del tipo: " + tipo);
-            return Collections.emptyList();
-        }catch (Exception e){
-            log.error("Ocurrió un error durante el proceso");
-            return Collections.emptyList();
-        }
+        List<ProyectoEntity> registros = repo.findByTipoProyecto(tipo);
+        return registros.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
-    public boolean eliminarProyecto(Long id){
-        if (repo.existsById(id)){
+    @Transactional
+    public boolean eliminarProyecto(Long id) {
+        if (repo.existsById(id)) {
             repo.deleteById(id);
             return true;
         }
         return false;
     }
 
-    public ProyectoDTO actualizarProyecto(Long id, @Valid ProyectoDTO dto){
-        Optional<ProyectoEntity> entidadOpcional = repo.findById(id);
-        if (entidadOpcional.isPresent()){
-            ProyectoEntity entidad = entidadOpcional.get();
-            entidad.setNombreProyecto(dto.getNombreProyecto());
-            entidad.setTipoProyecto(dto.getTipoProyecto());
-            entidad.setUbicacion(dto.getUbicacion());
-            entidad.setDescripcionProyecto(dto.getDescripcionProyecto());
-            entidad.setPresupuestoEstimado(dto.getPresupuestoEstimado());
-            entidad.setCoordinador(buscarUsuario(dto.getCoordinador()));
-            entidad.setSupervisor(buscarUsuario(dto.getSupervisor()));
-            entidad.setFinalizado(dto.getFinalizado());
-            entidad.setGastoTotal(dto.getGastoTotal());
-            ProyectoEntity datosGuardados = repo.save(entidad);
-            return convertirADTO(datosGuardados);
-        }
-        return null;
+    @Transactional
+    public ProyectoDTO actualizarProyecto(Long id, @Valid ProyectoDTO dto) {
+        ProyectoEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un proyecto con id " + id));
+
+        entidad.setNombreProyecto(dto.getNombreProyecto());
+        entidad.setTipoProyecto(dto.getTipoProyecto());
+        entidad.setUbicacion(dto.getUbicacion());
+        entidad.setDescripcionProyecto(dto.getDescripcionProyecto());
+        entidad.setPresupuestoEstimado(dto.getPresupuestoEstimado());
+        entidad.setCoordinador(buscarUsuario(dto.getCoordinador()));
+        entidad.setSupervisor(buscarUsuario(dto.getSupervisor()));
+        entidad.setFinalizado(dto.getFinalizado());
+        entidad.setGastoTotal(dto.getGastoTotal());
+
+        ProyectoEntity datosGuardados = repo.save(entidad);
+        log.info("Proyecto con id " + id + " actualizado");
+        return convertirADTO(datosGuardados);
     }
 
     private ProyectoDTO convertirADTO(@Valid ProyectoEntity entity) {
@@ -136,7 +114,7 @@ public class ProyectoService {
     }
 
     private ProyectoEntity convertirAEntity(@Valid ProyectoDTO dto) {
-        ProyectoEntity objEntity =  new ProyectoEntity();
+        ProyectoEntity objEntity = new ProyectoEntity();
         objEntity.setNombreProyecto(dto.getNombreProyecto());
         objEntity.setTipoProyecto(dto.getTipoProyecto());
         objEntity.setUbicacion(dto.getUbicacion());
@@ -149,12 +127,7 @@ public class ProyectoService {
     }
 
     private UsuarioEntity buscarUsuario(Long id) {
-        Optional<UsuarioEntity> usuarioOpcional = repoUsuario.findById(id);
-        if (usuarioOpcional.isPresent()){
-            return usuarioOpcional.get();
-        }
-        log.warn("No existe ningún usuario con ID: " + id);
-        throw new RuntimeException("No existe ningún usuario con ID: " + id);
+        return repoUsuario.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún usuario con ID: " + id));
     }
-
 }
