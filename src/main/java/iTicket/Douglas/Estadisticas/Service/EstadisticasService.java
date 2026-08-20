@@ -273,4 +273,109 @@ public class EstadisticasService {
 
         return metricas;
     }
+
+    // ================================================================
+    // ENDPOINTS DEDICADOS PARA LAS TABLAS DEL DASHBOARD
+    // ================================================================
+
+    /**
+     * Endpoint dedicado: GET /api/evaluaciones/alertas
+     * Devuelve la lista de evaluaciones con calificación <= umbral
+     */
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public List<AlertaInsatisfaccionDTO> obtenerAlertasInsatisfaccion(
+            LocalDateTime inicio, LocalDateTime fin, Integer umbral) {
+
+        // Valores por defecto si vienen nulos
+        if (inicio == null) {
+            inicio = LocalDateTime.of(2020, 1, 1, 0, 0);
+        }
+        if (fin == null) {
+            fin = LocalDateTime.now();
+        }
+        if (umbral == null) {
+            umbral = 2;
+        }
+
+        List<EvaluacionesEntity> alertas =
+                evaluacionesRepository.obtenerAlertasConDetalle(umbral, inicio, fin);
+
+        List<AlertaInsatisfaccionDTO> resultado = new ArrayList<>();
+        for (EvaluacionesEntity ev : alertas) {
+            AlertaInsatisfaccionDTO dto = new AlertaInsatisfaccionDTO();
+            dto.setCalificacion(ev.getCalificacion());
+            dto.setComentario(ev.getComentario());
+
+            if (ev.getTicket() != null) {
+                dto.setCodigoTicket(ev.getTicket().getCodigo());
+                dto.setAsunto(ev.getTicket().getAsunto());
+                dto.setFechaEvaluacion(ev.getTicket().getFechaCreacion());
+
+                if (ev.getTicket().getCreador() != null) {
+                    dto.setUsuario(ev.getTicket().getCreador().getNombreUsuario());
+                } else {
+                    dto.setUsuario("Sin usuario");
+                }
+                if (ev.getTicket().getTecnicoAsignado() != null) {
+                    dto.setTecnico(ev.getTicket().getTecnicoAsignado().getNombreUsuario());
+                } else {
+                    dto.setTecnico("Sin técnico");
+                }
+            } else {
+                dto.setCodigoTicket("N/A");
+                dto.setAsunto("N/A");
+                dto.setUsuario("Sin usuario");
+                dto.setTecnico("Sin técnico");
+            }
+
+            resultado.add(dto);
+        }
+        return resultado;
+    }
+
+    /**
+     * Endpoint dedicado: GET /api/articulos/mas_reportados
+     * Devuelve la lista de artículos/equipos más reportados con detalle completo
+     */
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public List<iTicket.Douglas.Articulos.DTO.ReportadosDTO> obtenerArticulosMasReportados(
+            LocalDateTime inicio, LocalDateTime fin) {
+
+        // Valores por defecto si vienen nulos
+        if (inicio == null) {
+            inicio = LocalDateTime.of(2020, 1, 1, 0, 0);
+        }
+        if (fin == null) {
+            fin = LocalDateTime.now();
+        }
+
+        List<Object[]> data = ticketRepository.obtenerArticulosReportadosCompleto(inicio, fin);
+
+        List<iTicket.Douglas.Articulos.DTO.ReportadosDTO> resultado = new ArrayList<>();
+        for (Object[] row : data) {
+            if (row != null && row.length >= 5) {
+                iTicket.Douglas.Articulos.DTO.ReportadosDTO dto =
+                        new iTicket.Douglas.Articulos.DTO.ReportadosDTO();
+
+                dto.setCodigoEquipo(row[0] != null ? (String) row[0] : "N/A");
+                dto.setUbicacion(row[1] != null ? (String) row[1] : "Sin ubicación");
+                dto.setModeloMarca(row[2] != null ? (String) row[2] : "Sin modelo");
+                dto.setCategoria(row[3] != null ? (String) row[3] : "Sin categoría");
+                dto.setNumeroTickets(row[4] != null ? ((Number) row[4]).longValue() : 0L);
+
+                // Clasificación automática del estado según cantidad de reportes
+                long tickets = dto.getNumeroTickets();
+                if (tickets >= 10) {
+                    dto.setEstadoGeneral("Crítico");
+                } else if (tickets >= 5) {
+                    dto.setEstadoGeneral("Atención");
+                } else {
+                    dto.setEstadoGeneral("Normal");
+                }
+
+                resultado.add(dto);
+            }
+        }
+        return resultado;
+    }
 }

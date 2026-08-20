@@ -76,4 +76,20 @@ public interface EvaluacionesRepository extends JpaRepository<EvaluacionesEntity
            "GROUP BY e.ticket.tecnicoAsignado.nombreUsuario " +
            "ORDER BY AVG(e.calificacion) DESC")
     java.util.List<Object[]> obtenerPromedioSatisfaccionPorTecnico(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+
+    // Consulta dedicada para el endpoint /api/evaluaciones/alertas
+    // JOIN FETCH para pre-cargar ticket, creador y técnico y evitar LazyInitializationException
+    @Query("SELECT e FROM EvaluacionesEntity e " +
+           "JOIN FETCH e.ticket t " +
+           "LEFT JOIN FETCH t.creador " +
+           "LEFT JOIN FETCH t.tecnicoAsignado " +
+           "WHERE e.calificacion <= :umbral " +
+           "AND (:inicio IS NULL OR t.fechaCreacion >= :inicio) " +
+           "AND (:fin IS NULL OR t.fechaCreacion <= :fin) " +
+           "ORDER BY t.fechaCreacion DESC")
+    java.util.List<EvaluacionesEntity> obtenerAlertasConDetalle(
+            @Param("umbral") Integer umbral,
+            @Param("inicio") LocalDateTime inicio,
+            @Param("fin") LocalDateTime fin
+    );
 }

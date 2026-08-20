@@ -79,4 +79,21 @@ public interface TicketRepository extends JpaRepository<TicketEntity, Long>, Jpa
            "(:inicio IS NULL OR d.ticket.fechaCreacion >= :inicio) AND " +
            "(:fin IS NULL OR d.ticket.fechaCreacion <= :fin)")
     Page<Object[]> obtenerArticulosMasReportadosRangoFechas(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin, Pageable pageable);
+
+    // Consulta completa para el endpoint dedicado /api/articulos/mas_reportados
+    // Trae: codigoArticulo, ubicacion, modelo + marca, categoria, cantidadTickets
+    @Query("SELECT d.articulo.codigoArticulo, " +
+           "d.articulo.ubicacion.nombreUbicacion, " +
+           "CONCAT(d.articulo.modelo.marca.nombreMarca, ' ', d.articulo.modelo.nombreModelo), " +
+           "d.articulo.categoria.nombreCategoria, " +
+           "COUNT(d.ticket) " +
+           "FROM iTicket.Douglas.DetalleTA.Entity.DetalleTAEntity d WHERE " +
+           "(:inicio IS NULL OR d.ticket.fechaCreacion >= :inicio) AND " +
+           "(:fin IS NULL OR d.ticket.fechaCreacion <= :fin) " +
+           "GROUP BY d.articulo.codigoArticulo, " +
+           "d.articulo.ubicacion.nombreUbicacion, " +
+           "d.articulo.modelo.marca.nombreMarca, d.articulo.modelo.nombreModelo, " +
+           "d.articulo.categoria.nombreCategoria " +
+           "ORDER BY COUNT(d.ticket) DESC")
+    List<Object[]> obtenerArticulosReportadosCompleto(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
 }
