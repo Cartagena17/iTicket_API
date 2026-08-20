@@ -35,6 +35,7 @@ public class EstadisticasService {
         this.bitacoraRepository = bitacoraRepository;
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public MetricasResponseDTO obtenerMetricas(LocalDate fechaInicio, LocalDate fechaFin,
                                                Pageable pageableAlertas, Pageable pageableEquipos) {
         LocalDateTime inicio = fechaInicio != null ? fechaInicio.atStartOfDay() : null;

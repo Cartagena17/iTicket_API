@@ -41,4 +41,42 @@ public interface TicketRepository extends JpaRepository<TicketEntity, Long>, Jpa
     Page<TicketEntity> findByEstadoAndDepartamento_NombreDepartamentoIgnoreCase(String estado, String nombreDepartamento, Pageable pageable);
 
     List<TicketEntity> findByCreador_IdUsuarioAndFechaCreacionBetween(Long idUsuario, LocalDateTime inicio, LocalDateTime fin);
+
+// ==========================================
+// MÉTODOS PARA EL DASHBOARD DE ESTADÍSTICAS
+// ==========================================
+
+    @Query("SELECT COUNT(t) FROM TicketEntity t WHERE " +
+           "(:inicio IS NULL OR t.fechaCreacion >= :inicio) AND " +
+           "(:fin IS NULL OR t.fechaCreacion <= :fin)")
+    Long contarTicketsTotalesRangoFechas(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+
+    @Query("SELECT t.estado, COUNT(t) FROM TicketEntity t WHERE " +
+           "(:inicio IS NULL OR t.fechaCreacion >= :inicio) AND " +
+           "(:fin IS NULL OR t.fechaCreacion <= :fin) " +
+           "GROUP BY t.estado")
+    List<Object[]> contarTicketsPorEstadoRangoFechas(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+
+    @Query("SELECT t.prioridad, COUNT(t) FROM TicketEntity t WHERE " +
+           "(:inicio IS NULL OR t.fechaCreacion >= :inicio) AND " +
+           "(:fin IS NULL OR t.fechaCreacion <= :fin) " +
+           "GROUP BY t.prioridad")
+    List<Object[]> contarTicketsPorPrioridadRangoFechas(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+
+    @Query("SELECT COUNT(t) FROM TicketEntity t WHERE " +
+           "t.fechaVencimiento < CURRENT_TIMESTAMP AND LOWER(t.estado) NOT IN ('resuelto', 'cerrado', 'cancelado') " +
+           "AND (:inicio IS NULL OR t.fechaCreacion >= :inicio) " +
+           "AND (:fin IS NULL OR t.fechaCreacion <= :fin)")
+    Long contarTicketsVencidosRangoFechas(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+
+    @Query(value = "SELECT d.articulo.codigoArticulo, d.articulo.modelo.nombreModelo, COUNT(d.ticket) " +
+           "FROM iTicket.Douglas.DetalleTA.Entity.DetalleTAEntity d WHERE " +
+           "(:inicio IS NULL OR d.ticket.fechaCreacion >= :inicio) AND " +
+           "(:fin IS NULL OR d.ticket.fechaCreacion <= :fin) " +
+           "GROUP BY d.articulo.codigoArticulo, d.articulo.modelo.nombreModelo " +
+           "ORDER BY COUNT(d.ticket) DESC",
+           countQuery = "SELECT COUNT(DISTINCT d.articulo.idArticulo) FROM iTicket.Douglas.DetalleTA.Entity.DetalleTAEntity d WHERE " +
+           "(:inicio IS NULL OR d.ticket.fechaCreacion >= :inicio) AND " +
+           "(:fin IS NULL OR d.ticket.fechaCreacion <= :fin)")
+    Page<Object[]> obtenerArticulosMasReportadosRangoFechas(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin, Pageable pageable);
 }
