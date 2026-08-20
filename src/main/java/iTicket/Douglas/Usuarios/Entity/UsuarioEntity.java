@@ -41,7 +41,7 @@ public class UsuarioEntity {
     @OneToMany(mappedBy = "usuario")
     private List<ComentarioEntity> comentarios;
 
-    @Convert(converter = BooleanToCharConverter.class)//Se aplica el BooleanToCharConverter para traducir el boolean a String
+   // @Convert(converter = BooleanToCharConverter.class)//Se aplica el BooleanToCharConverter para traducir el boolean a String
     @Column(name = "ESTADO")
-    private Boolean estado;
+    private Character estado;
 }
