@@ -16,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping ("api/marcas")
 @RequiredArgsConstructor
+@CrossOrigin
 public class MarcaController {
 
     private final MarcaService service;

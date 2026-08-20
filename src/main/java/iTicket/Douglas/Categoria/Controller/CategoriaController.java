@@ -15,6 +15,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping ("/api/categorias")
+@CrossOrigin
 public class CategoriaController {
 
     private final CategoriaSevice service;
