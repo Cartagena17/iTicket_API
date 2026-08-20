@@ -1,6 +1,7 @@
 package iTicket.Douglas.Articulos.Controller;
 
 import iTicket.Douglas.Articulos.DTO.ArticuloDTO;
+import iTicket.Douglas.Articulos.DTO.ArticuloPaginaDTO;
 import iTicket.Douglas.Articulos.Service.ArticuloService;
 import iTicket.Douglas.Response.ApiResponse;
 import jakarta.validation.Valid;
@@ -14,9 +15,9 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@CrossOrigin
 @RequestMapping("/api/articulos")
 @RequiredArgsConstructor
+@CrossOrigin
 public class ArticuloController {
 
     private final ArticuloService service;
@@ -84,6 +85,39 @@ public class ArticuloController {
     }
 
 
+    @GetMapping("/paginado")
+    public ResponseEntity<ApiResponse<ArticuloPaginaDTO>> obtenerPaginado(
+            @RequestParam(defaultValue = "1") int pagina,
+            @RequestParam(defaultValue = "10") int tamano,
+            @RequestParam(required = false) String busqueda,
+            @RequestParam(required = false) Long idCategoria,
+            @RequestParam(required = false) Long idUbicacion,
+            @RequestParam(required = false) Long idMarca) {
+        try {
+            ArticuloPaginaDTO resultado = service.obtenerPaginado(pagina, tamano, busqueda, idCategoria, idUbicacion, idMarca);
+            log.info("Artículos paginados consultados (página " + pagina + ")");
+            ApiResponse<ArticuloPaginaDTO> respuesta = new ApiResponse<>(true, "Artículos obtenidos", resultado);
+            return ResponseEntity.ok(respuesta);
+        } catch (Exception e) {
+            log.error("Error al obtener los artículos paginados", e);
+            ApiResponse<ArticuloPaginaDTO> respuestaError = new ApiResponse<>(false, "No se pudieron obtener los artículos");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
+        }
+    }
+
+    @GetMapping("/buscar")
+    public ResponseEntity<ApiResponse<List<ArticuloDTO>>> buscarPorCodigo(@RequestParam String codigo) {
+        try {
+            List<ArticuloDTO> lista = service.buscarPorCodigoParcial(codigo);
+            ApiResponse<List<ArticuloDTO>> respuesta = new ApiResponse<>(true, "Búsqueda completada", lista);
+            return ResponseEntity.ok(respuesta);
+        } catch (Exception e) {
+            log.error("Error al buscar artículos por código", e);
+            ApiResponse<List<ArticuloDTO>> respuestaError = new ApiResponse<>(false, "No se pudo completar la búsqueda");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
+        }
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<ArticuloDTO>> actualizarArticulo(@PathVariable Long id, @Valid @RequestBody ArticuloDTO dto) {
         try {
@@ -119,20 +153,6 @@ public class ArticuloController {
         } catch (Exception e) {
             log.error("Error crítico en la eliminación del artículo con id "+ id);
             ApiResponse<Void> respuestaError = new ApiResponse<>(false, "No se pudo eliminar el artículo seleccionado");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
-        }
-    }
-
-    @GetMapping("/buscar")
-    public ResponseEntity<ApiResponse<List<ArticuloDTO>>> buscarPorCodigoParcial(@RequestParam String codigo){
-        try{
-            List<ArticuloDTO> lista = service.buscarPorCodigoParcial(codigo);
-            log.info("Búsqueda de artículos por fragmento de código: "+ codigo);
-            ApiResponse<List<ArticuloDTO>> respuestaExito = new ApiResponse<>(true, "Artículos encontrados", lista);
-            return ResponseEntity.ok(respuestaExito);
-        }catch (Exception e){
-            log.error("Error al buscar artículos con fragmento: "+ codigo);
-            ApiResponse<List<ArticuloDTO>> respuestaError = new ApiResponse<>(false, "No se pudieron buscar los artículos.");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuestaError);
         }
     }
