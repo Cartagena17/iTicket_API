@@ -99,4 +99,24 @@ public class EstadisticasController {
 
         return ResponseEntity.ok(new ApiResponse<>(true, "Equipos más reportados obtenidos con éxito", equipos));
     }
+
+    // ================================================================
+    // GRÁFICA: TIEMPO DE RESOLUCIÓN POR DÍA DE SEMANA
+    // GET /api/estadisticas/resolucion-por-dia
+    // ================================================================
+    @GetMapping("/resolucion-por-dia")
+    public ResponseEntity<ApiResponse<List<Object[]>>> obtenerResolucionPorDia(
+            @RequestParam(value = "fechaInicio", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+
+            @RequestParam(value = "fechaFin", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin) {
+
+        LocalDateTime inicio = fechaInicio != null ? fechaInicio.atStartOfDay() : null;
+        LocalDateTime fin = fechaFin != null ? fechaFin.atTime(LocalTime.MAX) : null;
+
+        List<Object[]> data = estadisticasService.obtenerResolucionPorDiaSemana(inicio, fin);
+
+        return ResponseEntity.ok(new ApiResponse<>(true, "Resolución por día obtenida con éxito", data));
+    }
 }

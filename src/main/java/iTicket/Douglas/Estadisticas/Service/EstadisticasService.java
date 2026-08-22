@@ -378,4 +378,13 @@ public class EstadisticasService {
         }
         return resultado;
     }
+
+    /**
+     * Tiempo de resolución promedio agrupado por día de la semana.
+     * Para la gráfica de barras del Dashboard principal.
+     */
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public List<Object[]> obtenerResolucionPorDiaSemana(LocalDateTime inicio, LocalDateTime fin) {
+        return bitacoraRepository.obtenerTiemposResolucionPorDiaSemana(inicio, fin);
+    }
 }
