@@ -37,5 +37,5 @@ public class UsuarioDTO {
     private String nombreDepartamento;
 
     @NotNull(message = "Debe indicar el estado del usuario")
-    private Character estado;
+    private Boolean estado;
 }
