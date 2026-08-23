@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.stream.Collectors;
 
@@ -71,6 +72,14 @@ public class GlobalExceptionHandler {
         log.warn("Operación inválida: " + e.getMessage());
         ApiResponse<Object> respuesta = new ApiResponse<>(false, e.getMessage(), null);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuesta);
+    }
+
+    // Una URL que no existe es un 404, no un fallo del servidor: sin esto caía en el catch general
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Object>> manejarRutaInexistente(NoResourceFoundException e) {
+        log.warn("Ruta inexistente: " + e.getResourcePath());
+        ApiResponse<Object> respuesta = new ApiResponse<>(false, "La ruta solicitada no existe", null);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
     }
 
     @ExceptionHandler(Exception.class)
