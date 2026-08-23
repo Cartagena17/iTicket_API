@@ -18,6 +18,10 @@ public class DepartamentoEntity {
     @Column(name = "nombre_departamento")
     private String nombreDepartamento;
 
+    //Funcion del departamento: 'IT', 'Mantenimiento' u 'Otro'. 'Otro' no recibe tickets
+    @Column(name = "tipo_departamento", nullable = false, length = 15)
+    private String tipoDepartamento;
+
     @ManyToOne
     @JoinColumn(name = "id_area", nullable = false)
     private AreaEntity area;

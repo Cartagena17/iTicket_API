@@ -27,8 +27,11 @@ public interface TicketRepository extends JpaRepository<TicketEntity, Long>, Jpa
     //Metodo personalizado para buscar tickets por prioridad
     List<TicketEntity> findByPrioridad(String prioridad);
 
-    @Query("SELECT t.estado, COUNT(t) FROM TicketEntity t WHERE LOWER(t.departamento.nombreDepartamento) = LOWER(:nombreDepartamento) GROUP BY t.estado")
-    List<Object[]> contarTicketsPorEstadoYDepartamento(@Param("nombreDepartamento") String nombreDepartamento);
+    //Indicadores del departamento del admin. Agrupa por TIPO, no por nombre, para
+    //que el admin de IT vea sus tickets de todas las areas aunque el departamento
+    //se llame distinto en cada una.
+    @Query("SELECT t.estado, COUNT(t) FROM TicketEntity t WHERE t.departamento.tipoDepartamento = :tipoDepartamento GROUP BY t.estado")
+    List<Object[]> contarTicketsPorEstadoYDepartamento(@Param("tipoDepartamento") String tipoDepartamento);
 
     @Query("SELECT t.estado, COUNT(t) FROM TicketEntity t WHERE t.creador.idUsuario = :idUsuario GROUP BY t.estado")
     List<Object[]> contarTicketsPorEstadoUsuario(@Param("idUsuario") Long idUsuario);
@@ -37,8 +40,10 @@ public interface TicketRepository extends JpaRepository<TicketEntity, Long>, Jpa
     @Query(value = "SELECT Seq_codigo_ticket_diario.NEXTVAL FROM dual", nativeQuery = true)
     Long obtenerSiguienteCodigo();
 
-    //Metodo para obtener un numero limitado de tickets "Nuevos" segun el departamento
-    Page<TicketEntity> findByEstadoAndDepartamento_NombreDepartamentoIgnoreCase(String estado, String nombreDepartamento, Pageable pageable);
+    //Tickets "Nuevos" pendientes de aprobacion para un tipo de departamento.
+    //El admin de IT aprueba solo tickets de IT, pero de TODAS las areas: por eso
+    //filtra por tipo y no por area ni por nombre.
+    Page<TicketEntity> findByEstadoAndDepartamento_TipoDepartamento(String estado, String tipoDepartamento, Pageable pageable);
 
     List<TicketEntity> findByCreador_IdUsuarioAndFechaCreacionBetween(Long idUsuario, LocalDateTime inicio, LocalDateTime fin);
 

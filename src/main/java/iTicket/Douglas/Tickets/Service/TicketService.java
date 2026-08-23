@@ -3,6 +3,7 @@ package iTicket.Douglas.Tickets.Service;
 import iTicket.Douglas.Articulos.Entity.ArticuloEntity;
 import iTicket.Douglas.Articulos.Repository.ArticuloRepository;
 import iTicket.Douglas.Bitacoras.DTO.BitacoraDTO;
+import iTicket.Douglas.Bitacoras.Repository.BitacoraRepository;
 import iTicket.Douglas.Bitacoras.Service.BitacoraService;
 import iTicket.Douglas.Departamentos.Entity.DepartamentoEntity;
 import iTicket.Douglas.Departamentos.Repository.DepartamentoRepository;
@@ -62,6 +63,7 @@ public class TicketService {
     private final DetalleTSService detalleTSService;
     private final DetalleTSRepository detalleTSRepo;
     private final BitacoraService bitacoraService;
+    private final BitacoraRepository bitacoraRepo;
     private final ArticuloRepository articuloRepo;
 
     @Transactional
@@ -329,9 +331,12 @@ public class TicketService {
 
     public TickteIndicadoresEstadoDTO obtenerIndicadoresDepartamento(Long idUsuario) {
         UsuarioEntity usuario = buscarUsuario(idUsuario);
-        String departamentoAdmin = usuario.getDepartamento().getNombreDepartamento();
+        String tipoAdmin = usuario.getDepartamento().getTipoDepartamento();
 
-        List<Object[]> filas = repo.contarTicketsPorEstadoYDepartamento(departamentoAdmin);
+        // 'Otro' no atiende tickets: sus indicadores van en cero.
+        List<Object[]> filas = (tipoAdmin == null || "Otro".equalsIgnoreCase(tipoAdmin))
+                ? List.of()
+                : repo.contarTicketsPorEstadoYDepartamento(tipoAdmin);
         return construirIndicadores(filas);
     }
 
@@ -359,10 +364,15 @@ public class TicketService {
 
     public List<TicketDTO> obtenerAprobacionesPendientes(int limite, Long idUsuarioAdmin) {
         UsuarioEntity admin = buscarUsuario(idUsuarioAdmin);
-        String departamentoAdmin = admin.getDepartamento().getNombreDepartamento();
+        String tipoAdmin = admin.getDepartamento().getTipoDepartamento();
+
+        // Un admin de un departamento 'Otro' no atiende tickets, no tiene nada que aprobar
+        if (tipoAdmin == null || "Otro".equalsIgnoreCase(tipoAdmin)) {
+            return List.of();
+        }
 
         Pageable pageable = PageRequest.of(0, limite, Sort.by("idTicket").ascending());
-        Page<TicketEntity> pagina = repo.findByEstadoAndDepartamento_NombreDepartamentoIgnoreCase("Nuevo", departamentoAdmin, pageable);
+        Page<TicketEntity> pagina = repo.findByEstadoAndDepartamento_TipoDepartamento("Nuevo", tipoAdmin, pageable);
         return pagina.getContent().stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
@@ -517,9 +527,9 @@ public class TicketService {
 
     public TicketPaginaDTO obtenerTicketsPorDepartamento(Long idUsuarioAdmin, int pagina, int tamano, String busqueda, String prioridad, String estado, LocalDate fecha) {
         UsuarioEntity admin = buscarUsuario(idUsuarioAdmin);
-        String departamentoAdmin = admin.getDepartamento().getNombreDepartamento();
+        String tipoAdmin = admin.getDepartamento().getTipoDepartamento();
 
-        Specification<TicketEntity> spec = TicketSpecifications.conDepartamento(departamentoAdmin);
+        Specification<TicketEntity> spec = TicketSpecifications.conTipoDepartamento(tipoAdmin);
         spec = aplicarFiltrosComunes(spec, busqueda, prioridad, estado, fecha);
 
         return paginarTickets(spec, pagina, tamano);
@@ -588,6 +598,48 @@ public class TicketService {
         for (DayOfWeek dia : DayOfWeek.values()) {
             resumen.add(new TicketResumenDiaDTO(diasSemana.get(dia.getValue() - 1), conteosPorDia.getOrDefault(dia, 0L)));
         }
+        return resumen;
+    }
+
+    public Map<String, Long> obtenerResumenMensual(LocalDate fechaInicio, LocalDate fechaFin) {
+        // Si no se pasan fechas usamos el mes actual, que es lo que promete
+        // el titulo de la tarjeta del dashboard ("Durante este mes").
+        if (fechaInicio == null) {
+            fechaInicio = LocalDate.now().withDayOfMonth(1);
+        }
+        // El cierre se deriva del mes de fechaInicio, no del mes actual: si
+        // llega solo fechaInicio, cerrar contra hoy daria un rango incoherente.
+        if (fechaFin == null) {
+            fechaFin = fechaInicio.withDayOfMonth(fechaInicio.lengthOfMonth());
+        }
+
+        if (fechaFin.isBefore(fechaInicio)) {
+            LocalDate temp = fechaInicio;
+            fechaInicio = fechaFin;
+            fechaFin = temp;
+            log.warn("Fechas invertidas, se corrigieron automáticamente.");
+        }
+
+        LocalDateTime inicio = fechaInicio.atStartOfDay();
+        LocalDateTime fin = fechaFin.atTime(LocalTime.MAX);
+
+        // Las dos cifras son de FLUJO: cuanto entro y cuanto salio durante el
+        // periodo. Agrupar TICKETS.ESTADO sobre FECHA_CREACION responde algo
+        // distinto ("de lo creado este mes, cuanto esta cerrado hoy").
+
+        // Entradas: tickets creados dentro del periodo (tabla TICKETS).
+        Long abiertos = repo.contarTicketsTotalesRangoFechas(inicio, fin);
+
+        // Salidas: tickets que pasaron a Resuelto/Cerrado dentro del periodo.
+        // Sale de BITACORAS porque TICKETS no guarda la fecha de cierre.
+        Long cerrados = bitacoraRepo.contarTicketsCerradosEnRango(inicio, fin);
+
+        Map<String, Long> resumen = new HashMap<>();
+        resumen.put("ticketsAbiertos", abiertos != null ? abiertos : 0L);
+        resumen.put("ticketsCerrados", cerrados != null ? cerrados : 0L);
+
+        log.info("Resumen {} a {}: {} abiertos, {} cerrados",
+                fechaInicio, fechaFin, resumen.get("ticketsAbiertos"), resumen.get("ticketsCerrados"));
         return resumen;
     }
 }

@@ -15,6 +15,18 @@ public interface BitacoraRepository extends JpaRepository<BitacoraEntity, Long> 
     //Metodo para obtener bitacora por id de ticket
     List<BitacoraEntity> findByIdTicketOrderByFechaHoraAsc(Long ticket);
 
+    //Cuenta los tickets cerrados dentro del rango. Sale de aqui porque TICKETS no guarda la fecha de cierre
+    //El DISTINCT evita contar dos veces un ticket que paso por Resuelto y luego por Cerrado en el mismo periodo
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(DISTINCT b.idTicket) " +
+            "FROM BitacoraEntity b " +
+            "WHERE LOWER(b.nuevoEstado) IN ('resuelto', 'cerrado') " +
+            "AND (:inicio IS NULL OR b.fechaHora >= :inicio) " +
+            "AND (:fin IS NULL OR b.fechaHora <= :fin)")
+    Long contarTicketsCerradosEnRango(
+            @org.springframework.data.repository.query.Param("inicio") java.time.LocalDateTime inicio,
+            @org.springframework.data.repository.query.Param("fin") java.time.LocalDateTime fin
+    );
+
     @org.springframework.data.jpa.repository.Query("SELECT t.fechaCreacion, MIN(b.fechaHora) " +
             "FROM iTicket.Douglas.Bitacoras.Entity.BitacoraEntity b " +
             "JOIN iTicket.Douglas.Tickets.Entity.TicketEntity t ON t.idTicket = b.idTicket " +

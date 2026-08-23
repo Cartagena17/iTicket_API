@@ -12,10 +12,7 @@ import java.util.List;
 @Repository
 public interface DepartamentoRepository extends JpaRepository<DepartamentoEntity, Long>{
 
-    //Trae solo los departamentos asignables a tickets (IT y Mantenimiento) de una área específica
-    //Se usa UPPER() para no depender de mayúsculas/minúsculas exactas guardadas en BD
-    @Query("SELECT d FROM DepartamentoEntity d " +
-            "WHERE UPPER(d.nombreDepartamento) IN ('IT', 'MANTENIMIENTO') " +
-            "AND d.area.idArea = :idArea")
-    List<DepartamentoEntity> findAsignablesPorArea(@Param("idArea") Long idArea);
+    //Departamentos que reciben tickets, sin filtrar por area: IT y Mantenimiento estan en Ricaldone y atienden tambien a CFP
+    @Query("SELECT d FROM DepartamentoEntity d WHERE d.tipoDepartamento <> 'Otro'")
+    List<DepartamentoEntity> findAsignables();
 }

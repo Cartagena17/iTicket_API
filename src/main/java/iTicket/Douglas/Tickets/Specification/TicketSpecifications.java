@@ -8,8 +8,12 @@ import java.time.LocalDateTime;
 
 public class TicketSpecifications {
 
-    public static Specification<TicketEntity> conDepartamento(String nombreDepartamento){
-        return (root, query, cb) -> cb.equal(cb.upper(root.get("departamento").get("nombreDepartamento")), nombreDepartamento.toUpperCase());
+    //Filtra por tipo y no por nombre, para que el admin vea sus tickets de todas las areas. 'Otro' no trae nada
+    public static Specification<TicketEntity> conTipoDepartamento(String tipoDepartamento){
+        if (tipoDepartamento == null || "Otro".equalsIgnoreCase(tipoDepartamento)) {
+            return (root, query, cb) -> cb.disjunction();
+        }
+        return (root, query, cb) -> cb.equal(root.get("departamento").get("tipoDepartamento"), tipoDepartamento);
     }
 
     public static Specification<TicketEntity> conTecnico(Long idUsuario){

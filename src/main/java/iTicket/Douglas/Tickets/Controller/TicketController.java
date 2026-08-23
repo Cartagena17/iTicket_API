@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -128,6 +129,16 @@ public class TicketController {
         List<TicketResumenDiaDTO> resumen = service.obtenerResumenSemanal(idUsuario);
         log.info("Resumen semanal de tickets consultado");
         ApiResponse<List<TicketResumenDiaDTO>> respuesta = new ApiResponse<>(true, "Resumen semanal obtenido", resumen);
+        return ResponseEntity.ok(respuesta);
+    }
+
+    @GetMapping("/resumen-mensual")
+    public ResponseEntity<ApiResponse<Map<String, Long>>> obtenerResumenMensual(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin) {
+        Map<String, Long> resumen = service.obtenerResumenMensual(fechaInicio, fechaFin);
+        log.info("Resumen mensual de tickets consultado");
+        ApiResponse<Map<String, Long>> respuesta = new ApiResponse<>(true, "Resumen mensual obtenido", resumen);
         return ResponseEntity.ok(respuesta);
     }
 

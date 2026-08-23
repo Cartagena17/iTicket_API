@@ -2,6 +2,7 @@ package iTicket.Douglas.Usuarios.Service;
 
 import iTicket.Douglas.Departamentos.Entity.DepartamentoEntity;
 import iTicket.Douglas.Departamentos.Repository.DepartamentoRepository;
+import iTicket.Douglas.Exception.OperacionInvalidaException;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Roles.Entity.RolEntity;
 import iTicket.Douglas.Roles.Repository.RolRepository;
@@ -39,6 +40,8 @@ public class UsuarioService {
         DepartamentoEntity departamento = departamentoRepo.findById(dto.getIdDepartamento())
                 .orElseThrow(() -> new RecursoNoEncontradoException("El departamento con id " + dto.getIdDepartamento() + " no existe"));
 
+        validarDepartamentoSegunRol(rol, departamento);
+
         UsuarioEntity entity = convertirAEntity(dto, rol, departamento);
         UsuarioEntity entitySave = repo.save(entity);
         log.info("Nuevo usuario registrado: " + entitySave.getIdUsuario());
@@ -66,6 +69,8 @@ public class UsuarioService {
 
         DepartamentoEntity departamento = departamentoRepo.findById(dto.getIdDepartamento())
                 .orElseThrow(() -> new RecursoNoEncontradoException("El departamento con id " + dto.getIdDepartamento() + " no existe"));
+
+        validarDepartamentoSegunRol(rol, departamento);
 
         entidad.setNombreUsuario(dto.getNombreUsuario());
         entidad.setCorreo(dto.getCorreo());
@@ -112,6 +117,9 @@ public class UsuarioService {
             entidad.setDepartamento(departamento);
         }
 
+        //Se valida el resultado final: el PATCH puede cambiar rol y departamento por separado
+        validarDepartamentoSegunRol(entidad.getRol(), entidad.getDepartamento());
+
         UsuarioEntity datosGuardados = repo.save(entidad);
         log.info("Usuario con id " + id + " actualizado parcialmente");
         return convertirADTO(datosGuardados);
@@ -130,9 +138,26 @@ public class UsuarioService {
         DepartamentoEntity departamento = departamentoRepo.findById(idDepartamento)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún departamento con id: " + idDepartamento));
 
-        List<UsuarioEntity> lista = repo.findByRol_NombreRolInAndEstadoAndDepartamento_NombreDepartamentoIgnoreCase(
-                List.of("Tecnico", "Administrador"), 'T', departamento.getNombreDepartamento());
+        // Un departamento 'Otro' no atiende tickets, no tiene tecnicos que asignar
+        String tipo = departamento.getTipoDepartamento();
+        if (tipo == null || "Otro".equalsIgnoreCase(tipo)) {
+            return List.of();
+        }
+
+        List<UsuarioEntity> lista = repo.findByRol_NombreRolInAndEstadoAndDepartamento_TipoDepartamento(
+                List.of("Tecnico", "Administrador"), 'T', departamento.getTipoDepartamento());
         return lista.stream().map(this::convertirADTO).collect(Collectors.toList());
+    }
+
+    //Un tecnico o administrador atiende tickets, asi que no puede estar en un departamento 'Otro'
+    private void validarDepartamentoSegunRol(RolEntity rol, DepartamentoEntity departamento) {
+        boolean atiendeTickets = "Tecnico".equalsIgnoreCase(rol.getNombreRol())
+                || "Administrador".equalsIgnoreCase(rol.getNombreRol());
+
+        if (atiendeTickets && "Otro".equalsIgnoreCase(departamento.getTipoDepartamento())) {
+            throw new OperacionInvalidaException("Un " + rol.getNombreRol() + " no puede pertenecer a "
+                    + departamento.getNombreDepartamento() + ", porque ese departamento no atiende tickets.");
+        }
     }
 
     private UsuarioEntity convertirAEntity(UsuarioDTO dto, RolEntity rol, DepartamentoEntity departamento) {

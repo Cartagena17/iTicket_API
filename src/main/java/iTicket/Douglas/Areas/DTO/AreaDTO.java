@@ -8,6 +8,6 @@ import lombok.Data;
 public class AreaDTO {
 
     private Long idArea;
-    @NotBlank @Size(max = 20, message = "El nombre no puede exceder los 20 caracteres")
+    @NotBlank @Size(max = 50, message = "El nombre no puede exceder los 50 caracteres")
     private String nombreArea;
 }
