@@ -13,11 +13,11 @@ public class UsuarioDTO {
 
     private Long idUsuario;
 
-    @NotBlank @Size(max = 20, message = "El nombre de usuario no debe sobrepasar los 20 caracteres" )
+    @NotBlank @Size(max = 30, message = "El nombre de usuario no debe sobrepasar los 30 caracteres" )
     String nombreUsuario;
 
     @NotBlank @Email(message = "El correo no tiene un formato válido")
-    @Size(max = 30, message = "El correo no puede exceder los 30 caracteres")
+    @Size(max = 100, message = "El correo no puede exceder los 100 caracteres")
     private String correo;
 
     @NotBlank @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
@@ -25,7 +25,7 @@ public class UsuarioDTO {
     private String clave;
 
     @URL(message = "La URL de la imagen no es válida")
-    @Size(max = 300, message = "La URL no puede exceder los 300 caracteres")
+    @Size(max = 2050, message = "La URL no puede exceder los 2050 caracteres")
     private String imagenUrl;
 
     @NotNull(message = "Debe indicar el rol del usuario")

@@ -77,6 +77,7 @@ public class UsuarioService {
         entidad.setImagenUrl(dto.getImagenUrl());
         entidad.setRol(rol);
         entidad.setDepartamento(departamento);
+        entidad.setEstado(dto.getEstado());
 
         if (dto.getClave() != null && !dto.getClave().isBlank()) {
             entidad.setClave(passwordUtil.encriptar(dto.getClave()));
@@ -145,7 +146,7 @@ public class UsuarioService {
         }
 
         List<UsuarioEntity> lista = repo.findByRol_NombreRolInAndEstadoAndDepartamento_TipoDepartamento(
-                List.of("Tecnico", "Administrador"), 'T', departamento.getTipoDepartamento());
+                List.of("Tecnico", "Administrador"), true, departamento.getTipoDepartamento());
         return lista.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 

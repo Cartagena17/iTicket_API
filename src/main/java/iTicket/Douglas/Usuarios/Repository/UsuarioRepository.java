@@ -12,5 +12,5 @@ public interface UsuarioRepository extends JpaRepository<UsuarioEntity, Long> {
     //Busca usuarios por rol y estado, según la FUNCION de su departamento.
     //Por tipo y no por nombre: el personal de IT es el mismo para todas las areas,
     //así que un técnico de IT de Ricaldone también atiende tickets de IT de CFP.
-    List<UsuarioEntity> findByRol_NombreRolInAndEstadoAndDepartamento_TipoDepartamento(List<String> roles, Character estado, String tipoDepartamento);
+    List<UsuarioEntity> findByRol_NombreRolInAndEstadoAndDepartamento_TipoDepartamento(List<String> roles, Boolean estado, String tipoDepartamento);
 }
