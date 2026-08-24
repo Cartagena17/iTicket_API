@@ -10,11 +10,11 @@ import org.hibernate.validator.constraints.URL;
 @Data
 public class UsuarioPatchDTO {
 
-    @Size(max = 20, message = "El nombre no puede exceder los 20 caracteres")
+    @Size(max = 30, message = "El nombre no puede exceder los 30 caracteres")
     private String nombreUsuario;
 
     @Email(message = "El correo no tiene un formato válido")
-    @Size(max = 30, message = "El correo no puede exceder los 20 caracteres")
+    @Size(max = 100, message = "El correo no puede exceder los 100 caracteres")
     private String correo;
 
     @Size
@@ -22,7 +22,7 @@ public class UsuarioPatchDTO {
     private String clave;
 
     @URL(message = "La url de la imagen no es válida")
-    @Size(max = 300, message = "La url  no puede exceder los 300 caracteres")
+    @Size(max = 2050, message = "La url  no puede exceder los 2050 caracteres")
     private String imagenUrl;
 
     private Long idRol;
