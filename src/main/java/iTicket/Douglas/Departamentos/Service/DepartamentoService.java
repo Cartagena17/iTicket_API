@@ -74,19 +74,16 @@ public class DepartamentoService {
         return false;
     }
 
-    public List<DepartamentoDTO> obtenerDepartamentosAsignables(Long idUsuarioCreador) {
-        UsuarioEntity usuario = usuarioRepo.findById(idUsuarioCreador)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún usuario con id: " + idUsuarioCreador));
-
-        Long idArea = usuario.getDepartamento().getArea().getIdArea();
-        List<DepartamentoEntity> data = repo.findAsignablesPorArea(idArea);
-
+    //La lista es la misma para todos, ya no depende del area del usuario
+    public List<DepartamentoDTO> obtenerDepartamentosAsignables() {
+        List<DepartamentoEntity> data = repo.findAsignables();
         return data.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
     private DepartamentoEntity convertirAEntity(@Valid DepartamentoDTO dto, AreaEntity area) {
         DepartamentoEntity objEntity = new DepartamentoEntity();
         objEntity.setNombreDepartamento(dto.getNombreDepartamento());
+        objEntity.setTipoDepartamento(dto.getTipoDepartamento());
         objEntity.setArea(area);
         return objEntity;
     }
@@ -95,6 +92,7 @@ public class DepartamentoService {
         DepartamentoDTO objDTO = new DepartamentoDTO();
         objDTO.setIdDepartamento(entity.getIdDepartamento());
         objDTO.setNombreDepartamento(entity.getNombreDepartamento());
+        objDTO.setTipoDepartamento(entity.getTipoDepartamento());
         objDTO.setIdArea(entity.getArea().getIdArea());
         objDTO.setNombreArea(entity.getArea().getNombreArea());
         return objDTO;

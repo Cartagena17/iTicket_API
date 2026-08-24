@@ -63,10 +63,10 @@ public class DepartamentoController {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
     }
 
-    @GetMapping("/asignables/{idUsuario}")
-    public ResponseEntity<ApiResponse<List<DepartamentoDTO>>> obtenerAsignables(@PathVariable Long idUsuario) {
-        List<DepartamentoDTO> lista = service.obtenerDepartamentosAsignables(idUsuario);
-        log.info("Departamentos asignables consultados para usuario: " + idUsuario);
+    @GetMapping("/asignables")
+    public ResponseEntity<ApiResponse<List<DepartamentoDTO>>> obtenerAsignables() {
+        List<DepartamentoDTO> lista = service.obtenerDepartamentosAsignables();
+        log.info("Departamentos asignables consultados");
         ApiResponse<List<DepartamentoDTO>> respuesta = new ApiResponse<>(true, "Departamentos asignables encontrados", lista);
         return ResponseEntity.ok(respuesta);
     }
