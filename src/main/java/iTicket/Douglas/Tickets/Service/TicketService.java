@@ -401,9 +401,10 @@ public class TicketService {
                     DetalleTSDTO detallesSoftware = new DetalleTSDTO();
                     detallesSoftware.setNombreSoftware(d.getNombreSoftware());
                     detallesSoftware.setVersion(d.getVersion());
+                    detallesSoftware.setDescripcionUbicaciones(d.getDescripcionUbicaciones());
                     return detallesSoftware;
                 }).collect(Collectors.toList()));
-                detallesS.stream().findFirst().ifPresent(d -> objDTO.setUbicacion(d.getUbicacion().getNombreUbicacion()));
+                detallesS.stream().findFirst().ifPresent(d -> objDTO.setUbicacion(d.getDescripcionUbicaciones()));
                 break;
         }
     }
