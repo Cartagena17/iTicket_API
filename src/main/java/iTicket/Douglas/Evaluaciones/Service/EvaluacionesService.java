@@ -11,6 +11,7 @@ import iTicket.Douglas.Tickets.DTO.TicketEstadoDTO;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
 import iTicket.Douglas.Tickets.Service.TicketService;
+import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,13 @@ public class EvaluacionesService {
     private final EvaluacionesRepository repo;
     private final TicketRepository ticketRepository;
     private final TicketService ticketService;
+    private final UsuarioRepository usuarioRepository;
+
+    private String resolverTipoDepartamento(Long idUsuarioAdmin) {
+        return usuarioRepository.findById(idUsuarioAdmin)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún usuario con id: " + idUsuarioAdmin))
+                .getDepartamento().getTipoDepartamento();
+    }
 
     @Transactional
     public EvaluacionesDTO nuevaEvaluacion(@Valid EvaluacionesDTO dto) {
@@ -110,25 +118,27 @@ public class EvaluacionesService {
         return repo.countEvaluaciones();
     }
 
-    public Page<EvaluacionesDTO> obtenerEvaluacionesPaginadas(String busqueda, Double calificacion, LocalDate fecha, Pageable pageable) {
+    public Page<EvaluacionesDTO> obtenerEvaluacionesPaginadas(Long idUsuarioAdmin, String busqueda, Double calificacion, LocalDate fecha, Pageable pageable) {
+        String tipoDepartamento = resolverTipoDepartamento(idUsuarioAdmin);
         String filtroBusqueda = (busqueda != null && !busqueda.trim().isEmpty()) ? busqueda.trim() : null;
         Double filtroCalificacion = (calificacion != null && calificacion > 0) ? calificacion : null;
 
         LocalDateTime fechaInicio = (fecha != null) ? fecha.atStartOfDay() : null;
         LocalDateTime fechaFin = (fecha != null) ? fecha.atTime(LocalTime.MAX) : null;
 
-        Page<EvaluacionesEntity> paginaEntities = repo.buscarPorFiltrosPaginado(filtroBusqueda, filtroCalificacion, fechaInicio, fechaFin, pageable);
+        Page<EvaluacionesEntity> paginaEntities = repo.buscarPorFiltrosPaginado(tipoDepartamento, filtroBusqueda, filtroCalificacion, fechaInicio, fechaFin, pageable);
         return paginaEntities.map(this::convertirADTO);
     }
 
-    public MetricasDTO obtenerMetricas(String busqueda, Double calificacion, LocalDate fecha) {
+    public MetricasDTO obtenerMetricas(Long idUsuarioAdmin, String busqueda, Double calificacion, LocalDate fecha) {
+        String tipoDepartamento = resolverTipoDepartamento(idUsuarioAdmin);
         String filtroBusqueda = (busqueda != null && !busqueda.trim().isEmpty()) ? busqueda.trim() : null;
         Double filtroCalificacion = (calificacion != null && calificacion > 0) ? calificacion : null;
 
         LocalDateTime fechaInicio = (fecha != null) ? fecha.atStartOfDay() : null;
         LocalDateTime fechaFin = (fecha != null) ? fecha.atTime(LocalTime.MAX) : null;
 
-        Object[] res = repo.obtenerMetricasRaw(filtroBusqueda, filtroCalificacion, fechaInicio, fechaFin);
+        Object[] res = repo.obtenerMetricasRaw(tipoDepartamento, filtroBusqueda, filtroCalificacion, fechaInicio, fechaFin);
 
         if (res == null || res.length == 0 || res[0] == null) {
             return new MetricasDTO(0L, 0.0, 0L, 0L);
@@ -143,6 +153,30 @@ public class EvaluacionesService {
         Long negativas = (fila.length > 3 && fila[3] != null) ? ((Number) fila[3]).longValue() : 0L;
 
         return new MetricasDTO(total, promedio, positivas, negativas);
+    }
+
+    public List<Long> obtenerDistribucionCalificacionesPorTecnico(Long idUsuarioTecnico) {
+        Object[] res = repo.obtenerDistribucionCalificacionesPorTecnico(idUsuarioTecnico);
+        Object[] fila = (res != null && res.length > 0 && res[0] instanceof Object[]) ? (Object[]) res[0] : res;
+
+        List<Long> distribucion = new java.util.ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            Object valor = (fila != null && fila.length > i) ? fila[i] : null;
+            distribucion.add(valor != null ? ((Number) valor).longValue() : 0L);
+        }
+        return distribucion;
+    }
+
+    public List<Long> obtenerDistribucionCalificacionesPorUsuario(Long idUsuarioCreador) {
+        Object[] res = repo.obtenerDistribucionCalificacionesPorUsuario(idUsuarioCreador);
+        Object[] fila = (res != null && res.length > 0 && res[0] instanceof Object[]) ? (Object[]) res[0] : res;
+
+        List<Long> distribucion = new java.util.ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            Object valor = (fila != null && fila.length > i) ? fila[i] : null;
+            distribucion.add(valor != null ? ((Number) valor).longValue() : 0L);
+        }
+        return distribucion;
     }
 
     private EvaluacionesEntity convertirAEntity(EvaluacionesDTO dto, TicketEntity ticket) {

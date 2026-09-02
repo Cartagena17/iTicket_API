@@ -41,6 +41,23 @@ public class TicketSpecifications {
         return (root, query, cb) -> cb.equal(root.get("estado"), estado);
     }
 
+    //Para el panel "Mi resumen" del dashboard admin, tickets activos (no finalizados, no vencidos aun)
+    public static Specification<TicketEntity> conEstadosActivos(java.util.List<String> estados) {
+        return (root, query, cb) -> root.get("estado").in(estados);
+    }
+
+    //Tickets cuya fecha de vencimiento cae dentro del dia de hoy
+    public static Specification<TicketEntity> conVenceHoy() {
+        return (root, query, cb) -> {
+            LocalDateTime inicioHoy = LocalDate.now().atStartOfDay();
+            LocalDateTime finHoy = LocalDate.now().plusDays(1).atStartOfDay();
+            return cb.and(
+                    cb.greaterThanOrEqualTo(root.get("fechaVencimiento"), inicioHoy),
+                    cb.lessThan(root.get("fechaVencimiento"), finHoy)
+            );
+        };
+    }
+
     public static Specification<TicketEntity> conFechaCreacion(LocalDate fecha) {
         return (root, query, cb) -> {
             LocalDateTime inicioDia = fecha.atStartOfDay();

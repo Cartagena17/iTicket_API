@@ -27,9 +27,7 @@ public interface TicketRepository extends JpaRepository<TicketEntity, Long>, Jpa
     //Metodo personalizado para buscar tickets por prioridad
     List<TicketEntity> findByPrioridad(String prioridad);
 
-    //Indicadores del departamento del admin. Agrupa por TIPO, no por nombre, para
-    //que el admin de IT vea sus tickets de todas las areas aunque el departamento
-    //se llame distinto en cada una.
+    //Indicadores del departamento del admin. Agrupa por TIPO, no por nombre
     @Query("SELECT t.estado, COUNT(t) FROM TicketEntity t WHERE t.departamento.tipoDepartamento = :tipoDepartamento GROUP BY t.estado")
     List<Object[]> contarTicketsPorEstadoYDepartamento(@Param("tipoDepartamento") String tipoDepartamento);
 
@@ -41,15 +39,11 @@ public interface TicketRepository extends JpaRepository<TicketEntity, Long>, Jpa
     Long obtenerSiguienteCodigo();
 
     //Tickets "Nuevos" pendientes de aprobacion para un tipo de departamento.
-    //El admin de IT aprueba solo tickets de IT, pero de TODAS las areas: por eso
-    //filtra por tipo y no por area ni por nombre.
     Page<TicketEntity> findByEstadoAndDepartamento_TipoDepartamento(String estado, String tipoDepartamento, Pageable pageable);
 
     List<TicketEntity> findByCreador_IdUsuarioAndFechaCreacionBetween(Long idUsuario, LocalDateTime inicio, LocalDateTime fin);
 
-// ==========================================
 // MÉTODOS PARA EL DASHBOARD DE ESTADÍSTICAS
-// ==========================================
 
     @Query("SELECT COUNT(t) FROM TicketEntity t WHERE " +
            "(:inicio IS NULL OR t.fechaCreacion >= :inicio) AND " +
@@ -57,48 +51,76 @@ public interface TicketRepository extends JpaRepository<TicketEntity, Long>, Jpa
     Long contarTicketsTotalesRangoFechas(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
 
     @Query("SELECT t.estado, COUNT(t) FROM TicketEntity t WHERE " +
+           "t.departamento.tipoDepartamento = :tipoDepartamento AND " +
            "(:inicio IS NULL OR t.fechaCreacion >= :inicio) AND " +
            "(:fin IS NULL OR t.fechaCreacion <= :fin) " +
            "GROUP BY t.estado")
-    List<Object[]> contarTicketsPorEstadoRangoFechas(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+    List<Object[]> contarTicketsPorEstadoRangoFechas(@Param("tipoDepartamento") String tipoDepartamento, @Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
 
     @Query("SELECT t.prioridad, COUNT(t) FROM TicketEntity t WHERE " +
+           "t.departamento.tipoDepartamento = :tipoDepartamento AND " +
            "(:inicio IS NULL OR t.fechaCreacion >= :inicio) AND " +
            "(:fin IS NULL OR t.fechaCreacion <= :fin) " +
            "GROUP BY t.prioridad")
-    List<Object[]> contarTicketsPorPrioridadRangoFechas(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+    List<Object[]> contarTicketsPorPrioridadRangoFechas(@Param("tipoDepartamento") String tipoDepartamento, @Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
 
     @Query("SELECT COUNT(t) FROM TicketEntity t WHERE " +
+           "t.departamento.tipoDepartamento = :tipoDepartamento AND " +
            "t.fechaVencimiento < CURRENT_TIMESTAMP AND LOWER(t.estado) NOT IN ('resuelto', 'cerrado', 'cancelado') " +
            "AND (:inicio IS NULL OR t.fechaCreacion >= :inicio) " +
            "AND (:fin IS NULL OR t.fechaCreacion <= :fin)")
-    Long contarTicketsVencidosRangoFechas(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+    Long contarTicketsVencidosRangoFechas(@Param("tipoDepartamento") String tipoDepartamento, @Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
 
-    @Query(value = "SELECT d.articulo.codigoArticulo, d.articulo.modelo.nombreModelo, COUNT(d.ticket) " +
-           "FROM iTicket.Douglas.DetalleTA.Entity.DetalleTAEntity d WHERE " +
+    // LEFT JOIN en modelo: un articulo sin modelo no debe desaparecer del ranking solo porque no tiene marca/modelo asignado.
+    @Query(value = "SELECT a.codigoArticulo, m.nombreModelo, COUNT(d.ticket) " +
+           "FROM iTicket.Douglas.DetalleTA.Entity.DetalleTAEntity d " +
+           "JOIN d.articulo a " +
+           "LEFT JOIN a.modelo m " +
+           "WHERE d.ticket.departamento.tipoDepartamento = :tipoDepartamento AND " +
            "(:inicio IS NULL OR d.ticket.fechaCreacion >= :inicio) AND " +
            "(:fin IS NULL OR d.ticket.fechaCreacion <= :fin) " +
-           "GROUP BY d.articulo.codigoArticulo, d.articulo.modelo.nombreModelo " +
+           "GROUP BY a.codigoArticulo, m.nombreModelo " +
            "ORDER BY COUNT(d.ticket) DESC",
            countQuery = "SELECT COUNT(DISTINCT d.articulo.idArticulo) FROM iTicket.Douglas.DetalleTA.Entity.DetalleTAEntity d WHERE " +
+           "d.ticket.departamento.tipoDepartamento = :tipoDepartamento AND " +
            "(:inicio IS NULL OR d.ticket.fechaCreacion >= :inicio) AND " +
            "(:fin IS NULL OR d.ticket.fechaCreacion <= :fin)")
-    Page<Object[]> obtenerArticulosMasReportadosRangoFechas(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin, Pageable pageable);
+    Page<Object[]> obtenerArticulosMasReportadosRangoFechas(@Param("tipoDepartamento") String tipoDepartamento, @Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin, Pageable pageable);
 
-    // Consulta completa para el endpoint dedicado /api/articulos/mas_reportados
+    // Consulta paginada de verdad para el endpoint dedicado /api/estadisticas/equipos-reportados
+    // (antes era una lista completa y el frontend paginaba en JS, mandando siempre el payload entero).
     // Trae: codigoArticulo, ubicacion, modelo + marca, categoria, cantidadTickets
-    @Query("SELECT d.articulo.codigoArticulo, " +
-           "d.articulo.ubicacion.nombreUbicacion, " +
-           "CONCAT(d.articulo.modelo.marca.nombreMarca, ' ', d.articulo.modelo.nombreModelo), " +
-           "d.articulo.categoria.nombreCategoria, " +
+    // Igual que arriba: LEFT JOIN en modelo/marca para no perder articulos sin modelo asignado.
+    @Query(value = "SELECT a.codigoArticulo, " +
+           "u.nombreUbicacion, " +
+           "CASE WHEN m IS NULL THEN NULL ELSE CONCAT(COALESCE(ma.nombreMarca, ''), ' ', m.nombreModelo) END, " +
+           "c.nombreCategoria, " +
            "COUNT(d.ticket) " +
-           "FROM iTicket.Douglas.DetalleTA.Entity.DetalleTAEntity d WHERE " +
+           "FROM iTicket.Douglas.DetalleTA.Entity.DetalleTAEntity d " +
+           "JOIN d.articulo a " +
+           "JOIN a.ubicacion u " +
+           "JOIN a.categoria c " +
+           "LEFT JOIN a.modelo m " +
+           "LEFT JOIN m.marca ma " +
+           "WHERE d.ticket.departamento.tipoDepartamento = :tipoDepartamento AND " +
            "(:inicio IS NULL OR d.ticket.fechaCreacion >= :inicio) AND " +
            "(:fin IS NULL OR d.ticket.fechaCreacion <= :fin) " +
-           "GROUP BY d.articulo.codigoArticulo, " +
-           "d.articulo.ubicacion.nombreUbicacion, " +
-           "d.articulo.modelo.marca.nombreMarca, d.articulo.modelo.nombreModelo, " +
-           "d.articulo.categoria.nombreCategoria " +
-           "ORDER BY COUNT(d.ticket) DESC")
-    List<Object[]> obtenerArticulosReportadosCompleto(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+           "GROUP BY a.codigoArticulo, " +
+           "u.nombreUbicacion, " +
+           "m, ma.nombreMarca, m.nombreModelo, " +
+           "c.nombreCategoria " +
+           "ORDER BY COUNT(d.ticket) DESC",
+           countQuery = "SELECT COUNT(DISTINCT d.articulo.idArticulo) FROM iTicket.Douglas.DetalleTA.Entity.DetalleTAEntity d WHERE " +
+           "d.ticket.departamento.tipoDepartamento = :tipoDepartamento AND " +
+           "(:inicio IS NULL OR d.ticket.fechaCreacion >= :inicio) AND " +
+           "(:fin IS NULL OR d.ticket.fechaCreacion <= :fin)")
+    Page<Object[]> obtenerArticulosReportadosCompleto(@Param("tipoDepartamento") String tipoDepartamento, @Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin, Pageable pageable);
+
+    //Tickets que ya vencieron y siguen en un estado activo
+    List<TicketEntity> findByEstadoInAndFechaVencimientoBefore(List<String> estados, LocalDateTime fecha);
+
+    //Version por departamento del resumen mensual, para el panel del dashboard admin
+    @Query("SELECT COUNT(t) FROM TicketEntity t WHERE t.departamento.tipoDepartamento = :tipoDepartamento AND " + "(:inicio IS NULL OR t.fechaCreacion >= :inicio) AND " + "(:fin IS NULL OR t.fechaCreacion <= :fin)")
+    Long contarTicketsTotalesRangoFechasPorDepartamento(@Param("tipoDepartamento") String tipoDepartamento, @Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+
 }

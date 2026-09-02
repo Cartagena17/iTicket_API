@@ -1,6 +1,7 @@
 package iTicket.Douglas.Proyectos.Service;
 
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
+import iTicket.Douglas.Notificaciones.Event.ProyectoCreadoEvent;
 import iTicket.Douglas.Proyectos.DTO.ProyectoDTO;
 import iTicket.Douglas.Proyectos.DTO.ProyectoPaginaDTO;
 import iTicket.Douglas.Proyectos.Entity.ProyectoEntity;
@@ -10,6 +11,7 @@ import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,12 +30,14 @@ public class ProyectoService {
 
     private final ProyectoRepository repo;
     private final UsuarioRepository repoUsuario;
+    private final ApplicationEventPublisher eventos;
 
     @Transactional
     public ProyectoDTO crearProyecto(@Valid ProyectoDTO dto) {
         ProyectoEntity entity = convertirAEntity(dto);
         ProyectoEntity entitySave = repo.save(entity);
         log.info("Nuevo proyecto registrado: " + entitySave.getIdProyecto());
+        eventos.publishEvent(new ProyectoCreadoEvent(entitySave.getIdProyecto(), entitySave.getCoordinador().getIdUsuario(), entitySave.getSupervisor().getIdUsuario()));
         return convertirADTO(entitySave);
     }
 

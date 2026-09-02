@@ -5,11 +5,15 @@ import iTicket.Douglas.Fases.DTO.FaseDTO;
 import iTicket.Douglas.Fases.DTO.PatchFaseDTO;
 import iTicket.Douglas.Fases.Entity.FaseEntity;
 import iTicket.Douglas.Fases.Repository.FaseRepository;
+import iTicket.Douglas.Notificaciones.Event.FaseCreadaEvent;
 import iTicket.Douglas.Proyectos.Entity.ProyectoEntity;
 import iTicket.Douglas.Proyectos.Repository.ProyectoRepository;
+import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
+import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +28,8 @@ public class FaseService {
 
     private final FaseRepository repo;
     private final ProyectoRepository proyectoRepo;
+    private final ApplicationEventPublisher eventos;
+    private final UsuarioRepository usuarioRepo;
 
     private FaseEntity convertirAEntity(@Valid FaseDTO dto) {
         FaseEntity entity = new FaseEntity();
@@ -70,7 +76,24 @@ public class FaseService {
         FaseEntity entity = convertirAEntity(dto);
         FaseEntity entitySave = repo.save(entity);
         log.info("Nueva fase registrada: " + entitySave.getIdFase());
+
+        //Para generar notificación
+        List<Long> idsDestino = resolverUsuariosDepartamento(entitySave.getDepartamentoEncargado());
+        eventos.publishEvent(new FaseCreadaEvent(entitySave.getIdFase(), entitySave.getProyecto().getIdProyecto(), idsDestino));
+
         return convertirADTO(entitySave);
+    }
+
+    private List<Long> resolverUsuariosDepartamento(String departamentoEncargado) {
+        List<String> tipos = switch (departamentoEncargado) {
+            case "IT" -> List.of("IT");
+            case "Mantenimiento" -> List.of("Mantenimiento");
+            case "Ambos" -> List.of("IT", "Mantenimiento");
+            default -> List.of(); // "Externo" u otro valor: no se notifica a nadie
+        };
+        if (tipos.isEmpty()) return List.of();
+
+        return usuarioRepo.findByDepartamento_TipoDepartamentoIn(tipos).stream().map(UsuarioEntity::getIdUsuario).collect(Collectors.toList());
     }
 
     public List<FaseDTO> obtenerFases() {
