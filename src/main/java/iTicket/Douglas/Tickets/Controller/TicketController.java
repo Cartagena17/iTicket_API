@@ -135,10 +135,55 @@ public class TicketController {
     @GetMapping("/resumen-mensual")
     public ResponseEntity<ApiResponse<Map<String, Long>>> obtenerResumenMensual(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin) {
-        Map<String, Long> resumen = service.obtenerResumenMensual(fechaInicio, fechaFin);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
+            @RequestParam(required = false) Long idUsuarioAdmin) {
+        Map<String, Long> resumen = service.obtenerResumenMensual(fechaInicio, fechaFin, idUsuarioAdmin);
         log.info("Resumen mensual de tickets consultado");
         ApiResponse<Map<String, Long>> respuesta = new ApiResponse<>(true, "Resumen mensual obtenido", resumen);
+        return ResponseEntity.ok(respuesta);
+    }
+
+    //Panel "Mi resumen" del dashboard admin: paginado y filtrado por el departamento del admin.
+    @GetMapping("/resumen-panel-admin")
+    public ResponseEntity<ApiResponse<TicketPaginaDTO>> obtenerResumenPanelAdmin(
+            @RequestParam Long idUsuarioAdmin,
+            @RequestParam(defaultValue = "pendientes") String categoria,
+            @RequestParam(defaultValue = "1") int pagina,
+            @RequestParam(defaultValue = "5") int tamano) {
+        TicketPaginaDTO resultado = service.obtenerResumenPanelAdmin(idUsuarioAdmin, categoria, pagina, tamano);
+        log.info("Resumen del panel admin consultado, categoría: " + categoria);
+        ApiResponse<TicketPaginaDTO> respuesta = new ApiResponse<>(true, "Resumen obtenido", resultado);
+        return ResponseEntity.ok(respuesta);
+    }
+
+    //Contadores (sin paginar) para las tarjetas Pendientes/Vencidos/Vencen hoy del mismo panel
+    @GetMapping("/resumen-panel-admin/contadores")
+    public ResponseEntity<ApiResponse<Map<String, Long>>> obtenerContadoresPanelAdmin(@RequestParam Long idUsuarioAdmin) {
+        Map<String, Long> resultado = service.obtenerContadoresPanelAdmin(idUsuarioAdmin);
+        log.info("Contadores del panel admin consultados");
+        ApiResponse<Map<String, Long>> respuesta = new ApiResponse<>(true, "Contadores obtenidos", resultado);
+        return ResponseEntity.ok(respuesta);
+    }
+
+    //Panel "Asignaciones" del dashboard técnico: paginado y filtrado por los tickets asignados al técnico.
+    @GetMapping("/resumen-panel-tecnico")
+    public ResponseEntity<ApiResponse<TicketPaginaDTO>> obtenerResumenPanelTecnico(
+            @RequestParam Long idUsuario,
+            @RequestParam(defaultValue = "pendientes") String categoria,
+            @RequestParam(defaultValue = "1") int pagina,
+            @RequestParam(defaultValue = "5") int tamano) {
+        TicketPaginaDTO resultado = service.obtenerResumenPanelTecnico(idUsuario, categoria, pagina, tamano);
+        log.info("Resumen del panel técnico consultado, categoría: " + categoria);
+        ApiResponse<TicketPaginaDTO> respuesta = new ApiResponse<>(true, "Resumen obtenido", resultado);
+        return ResponseEntity.ok(respuesta);
+    }
+
+    //Contadores (sin paginar) para las tarjetas Pendientes/Vencidos/Vencen hoy del mismo panel
+    @GetMapping("/resumen-panel-tecnico/contadores")
+    public ResponseEntity<ApiResponse<Map<String, Long>>> obtenerContadoresPanelTecnico(@RequestParam Long idUsuario) {
+        Map<String, Long> resultado = service.obtenerContadoresPanelTecnico(idUsuario);
+        log.info("Contadores del panel técnico consultados");
+        ApiResponse<Map<String, Long>> respuesta = new ApiResponse<>(true, "Contadores obtenidos", resultado);
         return ResponseEntity.ok(respuesta);
     }
 

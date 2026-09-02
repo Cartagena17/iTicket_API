@@ -11,12 +11,14 @@ import iTicket.Douglas.Usuarios.DTO.UsuarioPatchDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioUpdateDTO;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
+import iTicket.Douglas.Utils.CloudinaryService;
 import iTicket.Douglas.Utils.PasswordUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,6 +33,7 @@ public class UsuarioService {
     private final RolRepository rolRepo;
     private final DepartamentoRepository departamentoRepo;
     private final PasswordUtil passwordUtil;
+    private final CloudinaryService cloudinaryService;
 
     @Transactional
     public UsuarioDTO nuevoUsuario(@Valid UsuarioDTO dto) {
@@ -185,5 +188,18 @@ public class UsuarioService {
         objDTO.setNombreDepartamento(entity.getDepartamento().getNombreDepartamento());
         objDTO.setEstado(entity.getEstado());
         return objDTO;
+    }
+
+    @Transactional
+    public UsuarioDTO actualizarImagen(Long id, MultipartFile archivo) {
+        UsuarioEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un usuario con id " + id));
+
+        String urlPublica = cloudinaryService.subirImagen(archivo, "iticket/usuarios");
+        entidad.setImagenUrl(urlPublica);
+
+        UsuarioEntity guardado = repo.save(entidad);
+        log.info("Imagen actualizada para el usuario con id " + id);
+        return convertirADTO(guardado);
     }
 }

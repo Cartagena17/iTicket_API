@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -62,8 +63,9 @@ public class BitacoraService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún usuario con id: " + id));
     }
 
-    public List<BitacoraDTO> obtenerBitacoras() {
-        List<BitacoraEntity> lista = bitacoraRepo.findAll();
+    public List<BitacoraDTO> obtenerBitacoras(Long idUsuarioAdmin) {
+        String tipoDepartamento = buscarUsuario(idUsuarioAdmin).getDepartamento().getTipoDepartamento();
+        List<BitacoraEntity> lista = bitacoraRepo.obtenerBitacorasPorDepartamento(tipoDepartamento);
         List<BitacoraDTO> dto = new ArrayList<>();
         for (BitacoraEntity entity : lista) {
             dto.add(convertirADTO(entity));
@@ -74,5 +76,16 @@ public class BitacoraService {
     public List<BitacoraDTO> obtenerBitacorasIdTicket(Long idTicket) {
         List<BitacoraEntity> lista = bitacoraRepo.findByIdTicketOrderByFechaHoraAsc(idTicket);
         return lista.stream().map(this::convertirADTO).collect(Collectors.toList());
+    }
+
+    public List<Object[]> obtenerResolucionPorDiaSemanaTecnico(Long idUsuario) {
+        LocalDateTime fin = LocalDateTime.now();
+        LocalDateTime inicio = fin.minusWeeks(1);
+        return bitacoraRepo.obtenerTiemposResolucionPorDiaSemanaTecnico(idUsuario, inicio, fin);
+    }
+
+    public double obtenerTiempoPromedioResolucionPorUsuario(Long idUsuario) {
+        Double promedio = bitacoraRepo.obtenerTiempoPromedioResolucionPorUsuario(idUsuario);
+        return promedio != null ? Math.round(promedio * 10) / 10.0 : 0.0;
     }
 }

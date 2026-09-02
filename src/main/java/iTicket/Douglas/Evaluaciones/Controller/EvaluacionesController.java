@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -79,22 +80,40 @@ public class EvaluacionesController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<EvaluacionesDTO>>> obtenerTodas(
+            @RequestParam Long idUsuarioAdmin,
             @RequestParam(required = false) String busqueda,
             @RequestParam(required = false) Double calificacion,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
             @PageableDefault(page = 0, size = 10) Pageable pageable) {
-        Page<EvaluacionesDTO> pagina = service.obtenerEvaluacionesPaginadas(busqueda, calificacion, fecha, pageable);
+        Page<EvaluacionesDTO> pagina = service.obtenerEvaluacionesPaginadas(idUsuarioAdmin, busqueda, calificacion, fecha, pageable);
         log.info("Consulta paginada de evaluaciones realizada exitosamente");
         ApiResponse<Page<EvaluacionesDTO>> respuesta = new ApiResponse<>(true, "Evaluaciones consultadas correctamente", pagina);
         return ResponseEntity.ok(respuesta);
     }
 
+    @GetMapping("/tecnico/calificaciones")
+    public ResponseEntity<ApiResponse<List<Long>>> obtenerCalificacionesPorTecnico(@RequestParam Long idUsuario) {
+        List<Long> distribucion = service.obtenerDistribucionCalificacionesPorTecnico(idUsuario);
+        log.info("Distribución de calificaciones consultada para el técnico con ID: " + idUsuario);
+        ApiResponse<List<Long>> respuesta = new ApiResponse<>(true, "Distribución de calificaciones obtenida", distribucion);
+        return ResponseEntity.ok(respuesta);
+    }
+
+    @GetMapping("/usuario/calificaciones")
+    public ResponseEntity<ApiResponse<List<Long>>> obtenerCalificacionesPorUsuario(@RequestParam Long idUsuario) {
+        List<Long> distribucion = service.obtenerDistribucionCalificacionesPorUsuario(idUsuario);
+        log.info("Distribución de calificaciones consultada para el usuario con ID: " + idUsuario);
+        ApiResponse<List<Long>> respuesta = new ApiResponse<>(true, "Distribución de calificaciones obtenida", distribucion);
+        return ResponseEntity.ok(respuesta);
+    }
+
     @GetMapping("/metricas")
     public ResponseEntity<ApiResponse<MetricasDTO>> obtenerMetricas(
+            @RequestParam Long idUsuarioAdmin,
             @RequestParam(required = false) String busqueda,
             @RequestParam(required = false) Double calificacion,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
-        MetricasDTO metricas = service.obtenerMetricas(busqueda, calificacion, fecha);
+        MetricasDTO metricas = service.obtenerMetricas(idUsuarioAdmin, busqueda, calificacion, fecha);
         log.info("Consulta de métricas globales realizada exitosamente");
         ApiResponse<MetricasDTO> respuesta = new ApiResponse<>(true, "Métricas consultadas correctamente", metricas);
         return ResponseEntity.ok(respuesta);

@@ -22,12 +22,14 @@ import iTicket.Douglas.DetalleTS.Service.DetalleTSService;
 import iTicket.Douglas.Evidencias.Entity.EvidenciaEntity;
 import iTicket.Douglas.Exception.OperacionInvalidaException;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
+import iTicket.Douglas.Notificaciones.Event.*;
 import iTicket.Douglas.Tickets.DTO.*;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
 import iTicket.Douglas.Tickets.Specification.TicketSpecifications;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -65,6 +67,7 @@ public class TicketService {
     private final BitacoraService bitacoraService;
     private final BitacoraRepository bitacoraRepo;
     private final ArticuloRepository articuloRepo;
+    private final ApplicationEventPublisher eventos;
 
     @Transactional
     public TicketDTO nuevoTicket(@Valid TicketDTO dto) {
@@ -75,6 +78,7 @@ public class TicketService {
 
         crearDetalleSegunTipo(entitySave, dto);
         registrarBitacora(entitySave, entitySave.getCreador().getIdUsuario());
+        eventos.publishEvent(new TicketCreadoEvent(entitySave.getIdTicket(), entitySave.getDepartamento().getIdDepartamento()));
         log.info("Nuevo ticket registrado: " + entitySave.getCodigo());
         return convertirADTOCompleto(entitySave);
     }
@@ -186,6 +190,9 @@ public class TicketService {
             throw new OperacionInvalidaException("No tienes permisos para eliminar este ticket.");
         }
 
+        ticket.setEstado("Eliminado");
+        registrarBitacora(ticket, idUsuarioSolicitante);
+        eventos.publishEvent(new TicketEliminadoEvent(ticket.getIdTicket(), ticket.getDepartamento().getIdDepartamento(), ticket.getCreador().getIdUsuario(), idUsuarioSolicitante));
         repo.delete(ticket);
         log.info("Ticket con id " + id + " eliminado");
         return true;
@@ -303,6 +310,7 @@ public class TicketService {
 
         repo.save(ticket);
         registrarBitacora(ticket, idUsuarioAdmin);
+        eventos.publishEvent(new TicketAsignadoEvent(ticket.getIdTicket(), ticket.getTecnicoAsignado().getIdUsuario(), ticket.getCreador().getIdUsuario()));
         return true;
     }
 
@@ -326,6 +334,7 @@ public class TicketService {
         ticket.setEstado("Resuelto");
         repo.save(ticket);
         registrarBitacora(ticket, idUsuarioTecnico);
+        eventos.publishEvent(new TicketResueltoEvent(ticket.getIdTicket(), ticket.getCreador().getIdUsuario()));
         return true;
     }
 
@@ -483,6 +492,7 @@ public class TicketService {
 
         repo.save(ticket);
         registrarBitacora(ticket, idUsuarioAdmin);
+        eventos.publishEvent(new TicketAsignadoEvent(ticket.getIdTicket(), ticket.getTecnicoAsignado().getIdUsuario(), ticket.getCreador().getIdUsuario()));
         return true;
     }
 
@@ -602,7 +612,9 @@ public class TicketService {
         return resumen;
     }
 
-    public Map<String, Long> obtenerResumenMensual(LocalDate fechaInicio, LocalDate fechaFin) {
+    //idUsuarioAdmin es opcional: si viene, el resumen se filtra al departamento (tipo) de ese admin.
+    //Sin el, el resumen es global (se deja asi por compatibilidad, pero el dashboard admin SIEMPRE debe mandarlo).
+    public Map<String, Long> obtenerResumenMensual(LocalDate fechaInicio, LocalDate fechaFin, Long idUsuarioAdmin) {
         // Si no se pasan fechas usamos el mes actual, que es lo que promete
         // el titulo de la tarjeta del dashboard ("Durante este mes").
         if (fechaInicio == null) {
@@ -624,16 +636,23 @@ public class TicketService {
         LocalDateTime inicio = fechaInicio.atStartOfDay();
         LocalDateTime fin = fechaFin.atTime(LocalTime.MAX);
 
+        String tipoAdmin = null;
+        if (idUsuarioAdmin != null) {
+            UsuarioEntity admin = buscarUsuario(idUsuarioAdmin);
+            tipoAdmin = admin.getDepartamento().getTipoDepartamento();
+        }
+
         // Las dos cifras son de FLUJO: cuanto entro y cuanto salio durante el
-        // periodo. Agrupar TICKETS.ESTADO sobre FECHA_CREACION responde algo
-        // distinto ("de lo creado este mes, cuanto esta cerrado hoy").
 
         // Entradas: tickets creados dentro del periodo (tabla TICKETS).
-        Long abiertos = repo.contarTicketsTotalesRangoFechas(inicio, fin);
+        Long abiertos = tipoAdmin != null
+                ? repo.contarTicketsTotalesRangoFechasPorDepartamento(tipoAdmin, inicio, fin)
+                : repo.contarTicketsTotalesRangoFechas(inicio, fin);
 
-        // Salidas: tickets que pasaron a Resuelto/Cerrado dentro del periodo.
         // Sale de BITACORAS porque TICKETS no guarda la fecha de cierre.
-        Long cerrados = bitacoraRepo.contarTicketsCerradosEnRango(inicio, fin);
+        Long cerrados = tipoAdmin != null
+                ? bitacoraRepo.contarTicketsCerradosEnRangoPorDepartamento(tipoAdmin, inicio, fin)
+                : bitacoraRepo.contarTicketsCerradosEnRango(inicio, fin);
 
         Map<String, Long> resumen = new HashMap<>();
         resumen.put("ticketsAbiertos", abiertos != null ? abiertos : 0L);
@@ -642,5 +661,89 @@ public class TicketService {
         log.info("Resumen {} a {}: {} abiertos, {} cerrados",
                 fechaInicio, fechaFin, resumen.get("ticketsAbiertos"), resumen.get("ticketsCerrados"));
         return resumen;
+    }
+
+    private static final List<String> ESTADOS_ACTIVOS_PANEL = List.of("Asignado", "En proceso", "En espera");
+
+    public TicketPaginaDTO obtenerResumenPanelAdmin(Long idUsuarioAdmin, String categoria, int pagina, int tamano) {
+        UsuarioEntity admin = buscarUsuario(idUsuarioAdmin);
+        String tipoAdmin = admin.getDepartamento().getTipoDepartamento();
+
+        Specification<TicketEntity> spec = TicketSpecifications.conTipoDepartamento(tipoAdmin);
+
+        switch (categoria == null ? "" : categoria) {
+            case "vencidos" -> spec = spec.and(TicketSpecifications.conEstado("Vencido"));
+            case "hoy" -> spec = spec.and(TicketSpecifications.conEstadosActivos(ESTADOS_ACTIVOS_PANEL))
+                    .and(TicketSpecifications.conVenceHoy());
+            default -> spec = spec.and(TicketSpecifications.conEstadosActivos(ESTADOS_ACTIVOS_PANEL));
+        }
+
+        return paginarTickets(spec, pagina, tamano);
+    }
+
+    //Contadores para las tarjetas "Pendientes/Vencidos/Vencen hoy" del mismo panel
+    public Map<String, Long> obtenerContadoresPanelAdmin(Long idUsuarioAdmin) {
+        UsuarioEntity admin = buscarUsuario(idUsuarioAdmin);
+        String tipoAdmin = admin.getDepartamento().getTipoDepartamento();
+
+        Specification<TicketEntity> base = TicketSpecifications.conTipoDepartamento(tipoAdmin);
+
+        long pendientes = repo.count(base.and(TicketSpecifications.conEstadosActivos(ESTADOS_ACTIVOS_PANEL)));
+        long vencidos = repo.count(base.and(TicketSpecifications.conEstado("Vencido")));
+        long hoy = repo.count(base.and(TicketSpecifications.conEstadosActivos(ESTADOS_ACTIVOS_PANEL))
+                .and(TicketSpecifications.conVenceHoy()));
+
+        Map<String, Long> resultado = new HashMap<>();
+        resultado.put("pendientes", pendientes);
+        resultado.put("vencidos", vencidos);
+        resultado.put("hoy", hoy);
+        return resultado;
+    }
+
+    //Panel "Asignaciones" del dashboard técnico: paginado y filtrado por los tickets asignados al técnico.
+    public TicketPaginaDTO obtenerResumenPanelTecnico(Long idUsuario, String categoria, int pagina, int tamano) {
+        Specification<TicketEntity> spec = TicketSpecifications.conTecnico(idUsuario);
+
+        switch (categoria == null ? "" : categoria) {
+            case "vencidos" -> spec = spec.and(TicketSpecifications.conEstado("Vencido"));
+            case "hoy" -> spec = spec.and(TicketSpecifications.conEstadosActivos(ESTADOS_ACTIVOS_PANEL))
+                    .and(TicketSpecifications.conVenceHoy());
+            default -> spec = spec.and(TicketSpecifications.conEstadosActivos(ESTADOS_ACTIVOS_PANEL));
+        }
+
+        return paginarTickets(spec, pagina, tamano);
+    }
+
+    //Contadores para las tarjetas "Pendientes/Vencidos/Vencen hoy" del mismo panel
+    public Map<String, Long> obtenerContadoresPanelTecnico(Long idUsuario) {
+        Specification<TicketEntity> base = TicketSpecifications.conTecnico(idUsuario);
+
+        long pendientes = repo.count(base.and(TicketSpecifications.conEstadosActivos(ESTADOS_ACTIVOS_PANEL)));
+        long vencidos = repo.count(base.and(TicketSpecifications.conEstado("Vencido")));
+        long hoy = repo.count(base.and(TicketSpecifications.conEstadosActivos(ESTADOS_ACTIVOS_PANEL))
+                .and(TicketSpecifications.conVenceHoy()));
+
+        Map<String, Long> resultado = new HashMap<>();
+        resultado.put("pendientes", pendientes);
+        resultado.put("vencidos", vencidos);
+        resultado.put("hoy", hoy);
+        return resultado;
+    }
+
+    //Para cambiar el estado de los tickets vencidos
+    @Transactional
+    public void marcarVencidos() {
+        List<String> estadosActivos = List.of("Asignado", "En proceso", "En espera");
+        List<TicketEntity> vencidos = repo.findByEstadoInAndFechaVencimientoBefore(estadosActivos, LocalDateTime.now());
+
+        for (TicketEntity ticket : vencidos) {
+            ticket.setEstado("Vencido");
+            repo.save(ticket);
+            registrarBitacora(ticket, ticket.getTecnicoAsignado().getIdUsuario());
+            eventos.publishEvent(new TicketVencidoEvent(ticket.getIdTicket(), ticket.getDepartamento().getIdDepartamento()));
+        }
+        if (!vencidos.isEmpty()) {
+            log.info("Tickets marcados como vencidos: " + vencidos.size());
+        }
     }
 }
