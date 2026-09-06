@@ -44,4 +44,7 @@ public class UsuarioEntity {
     @Convert(converter = BooleanToCharConverter.class)//Se aplica el BooleanToCharConverter para traducir el boolean a String
     @Column(name = "ESTADO")
     private Boolean estado;
+
+    @Column(name = "cloudinary_id")
+    private String cloudinaryId;
 }

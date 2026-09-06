@@ -34,10 +34,11 @@ public class EvidenciaService {
             throw new RecursoNoEncontradoException("El ticket con ID: " + idTicket + " no existe");
         }
 
-        String urlPublica = cloudinaryService.subirImagen(archivo, "iticket/evidencias");
+        CloudinaryService.ResultadoSubida subida = cloudinaryService.subirImagen(archivo, "iticket/evidencias");
 
         EvidenciaDTO dto = new EvidenciaDTO();
-        dto.setEvidenciaUrl(urlPublica);
+        dto.setEvidenciaUrl(subida.url());
+        dto.setCloudinaryId(subida.publicId());
         dto.setTicket(idTicket);
 
         return nuevaEvidencia(dto);
@@ -63,8 +64,7 @@ public class EvidenciaService {
     public boolean eliminarData(Long id) {
         Optional<EvidenciaEntity> entidad = repo.findById(id);
         if (entidad.isPresent()) {
-            String publicId = cloudinaryService.extraerPublicId(entidad.get().getEvidenciaUrl(), "iticket/evidencias");
-            cloudinaryService.eliminarImagen(publicId);
+            cloudinaryService.eliminarImagen(entidad.get().getCloudinaryId());
             repo.deleteById(id);
             return true;
         }
@@ -83,8 +83,15 @@ public class EvidenciaService {
     }
 
     private EvidenciaEntity convertirAEntity(@Valid EvidenciaDTO dto) {
+        if (dto.getEvidenciaUrl() == null || dto.getEvidenciaUrl().isBlank()) {
+            throw new IllegalStateException("La URL de la evidencia no puede estar vacía al guardar");
+        }
+        if (dto.getCloudinaryId() == null || dto.getCloudinaryId().isBlank()) {
+            throw new IllegalStateException("El identificador de Cloudinary no puede estar vacío al guardar");
+        }
         EvidenciaEntity objEntity = new EvidenciaEntity();
         objEntity.setEvidenciaUrl(dto.getEvidenciaUrl());
+        objEntity.setCloudinaryId(dto.getCloudinaryId());
         TicketEntity ticket = ticketsRepo.getReferenceById(dto.getTicket());
         objEntity.setTicket(ticket);
         return objEntity;
@@ -94,6 +101,7 @@ public class EvidenciaService {
         EvidenciaDTO objDTO = new EvidenciaDTO();
         objDTO.setIdEvidencia(entity.getIdEvidencia());
         objDTO.setEvidenciaUrl(entity.getEvidenciaUrl());
+        objDTO.setCloudinaryId(entity.getCloudinaryId());
         if (entity.getTicket() != null) {
             objDTO.setTicket(entity.getTicket().getIdTicket());
         }

@@ -38,4 +38,7 @@ public class UsuarioDTO {
 
     @NotNull(message = "Debe indicar el estado del usuario")
     private Boolean estado;
+
+    @Size(max = 150, message = "El identificador de Cloudinary no puede exceder los 150 caracteres")
+    private String cloudinaryId;
 }
