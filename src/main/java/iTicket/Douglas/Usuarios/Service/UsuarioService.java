@@ -173,6 +173,7 @@ public class UsuarioService {
         objEntity.setRol(rol);
         objEntity.setDepartamento(departamento);
         objEntity.setEstado(dto.getEstado());
+        objEntity.setCloudinaryId(dto.getCloudinaryId());
         return objEntity;
     }
 
@@ -187,6 +188,7 @@ public class UsuarioService {
         objDTO.setIdDepartamento(entity.getDepartamento().getIdDepartamento());
         objDTO.setNombreDepartamento(entity.getDepartamento().getNombreDepartamento());
         objDTO.setEstado(entity.getEstado());
+        objDTO.setCloudinaryId(entity.getCloudinaryId());
         return objDTO;
     }
 
@@ -195,10 +197,19 @@ public class UsuarioService {
         UsuarioEntity entidad = repo.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un usuario con id " + id));
 
-        String urlPublica = cloudinaryService.subirImagen(archivo, "iticket/usuarios");
-        entidad.setImagenUrl(urlPublica);
+        String cloudinaryIdAnterior = entidad.getCloudinaryId();
+
+        CloudinaryService.ResultadoSubida subida = cloudinaryService.subirImagen(archivo, "iticket/usuarios");
+        entidad.setImagenUrl(subida.url());
+        entidad.setCloudinaryId(subida.publicId());
 
         UsuarioEntity guardado = repo.save(entidad);
+
+        //Por si es la primera vez que el usuario sube una foto de perfil
+        if (cloudinaryIdAnterior != null) {
+            cloudinaryService.eliminarImagen(cloudinaryIdAnterior);
+        }
+
         log.info("Imagen actualizada para el usuario con id " + id);
         return convertirADTO(guardado);
     }

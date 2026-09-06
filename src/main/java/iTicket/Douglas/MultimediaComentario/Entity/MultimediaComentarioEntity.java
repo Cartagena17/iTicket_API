@@ -24,7 +24,11 @@ public class MultimediaComentarioEntity {
     @Column(name = "multimedia_url")
     private String multimediaUrl;
 
+    @Column(name = "cloudinary_id")
+    private String cloudinaryId;
+
     @ManyToOne
     @JoinColumn(name = "id_comentario")
     private ComentarioEntity comentario;
+
 }

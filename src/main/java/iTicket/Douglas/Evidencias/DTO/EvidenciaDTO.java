@@ -17,5 +17,9 @@ public class EvidenciaDTO {
     @NotNull(message = "El id del ticket es obligatorio para guardar la evidencia")
     @Positive
     private Long ticket;
+
+    @NotBlank(message = "El identificador de Cloudinary es obligatorio")
+    @Size(max = 150, message = "Longitud inválida del identificador de Cloudinary [150 caracteres]")
+    private String cloudinaryId;
 }
 
