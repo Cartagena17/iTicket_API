@@ -259,8 +259,8 @@ public class TicketController {
     }
 
     @PatchMapping("/reasignar/{id}")
-    public ResponseEntity<ApiResponse<TicketReasignarDepDTO>> reasignarDepartamento(@PathVariable Long id, @Valid @RequestBody TicketReasignarDepDTO dto) {
-        boolean resultado = service.reasignarDepartamento(id, dto);
+    public ResponseEntity<ApiResponse<TicketReasignarDepDTO>> reasignarDepartamento(@PathVariable Long id, @Valid @RequestBody TicketReasignarDepDTO dto, @RequestParam Long idUsuario) {
+        boolean resultado = service.reasignarDepartamento(id, dto, idUsuario);
         if (resultado) {
             log.info("El departamento del ticket con ID: " + id + ", se reasignó correctamente");
             ApiResponse<TicketReasignarDepDTO> respuesta = new ApiResponse<>(true, "El departamento del ticket con ID: " + id + ", se reasignó correctamente");

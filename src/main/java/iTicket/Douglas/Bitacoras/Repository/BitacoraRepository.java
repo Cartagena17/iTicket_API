@@ -117,4 +117,7 @@ public interface BitacoraRepository extends JpaRepository<BitacoraEntity, Long> 
     Double obtenerTiempoPromedioResolucionPorUsuario(
             @org.springframework.data.repository.query.Param("idUsuario") Long idUsuario
     );
+
+    //Devuelve la fila mas reciente con nuevoEstado "Cerrado" de un ticket
+    Optional<BitacoraEntity> findFirstByIdTicketAndNuevoEstadoOrderByFechaHoraDesc(Long idTicket, String nuevoEstado);
 }

@@ -27,8 +27,8 @@ public class EvaluacionesController {
     private final EvaluacionesService service;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<EvaluacionesDTO>> registrarEvaluacion(@Valid @RequestBody EvaluacionesDTO json) {
-        EvaluacionesDTO dto = service.nuevaEvaluacion(json);
+    public ResponseEntity<ApiResponse<EvaluacionesDTO>> registrarEvaluacion(@Valid @RequestBody EvaluacionesDTO json, @RequestParam Long idUsuario) {
+        EvaluacionesDTO dto = service.nuevaEvaluacion(json, idUsuario);
         log.info("Nueva evaluación creada: " + dto);
         ApiResponse<EvaluacionesDTO> respuesta = new ApiResponse<>(true, "Evaluación ingresada correctamente", dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
