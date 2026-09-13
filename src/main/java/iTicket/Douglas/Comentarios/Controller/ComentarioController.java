@@ -54,8 +54,8 @@ public class ComentarioController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> eliminarComentario(@PathVariable Long id) {
-        boolean eliminado = service.eliminarData(id);
+    public ResponseEntity<ApiResponse<Void>> eliminarComentario(@PathVariable Long id, @RequestParam Long idUsuario) {
+        boolean eliminado = service.eliminarData(id, idUsuario);
         if (eliminado) {
             log.info("El comentario con ID: " + id + " ya fue eliminado");
             ApiResponse<Void> respuesta = new ApiResponse<>(true, "El comentario con ID: " + id + " ya fue eliminado");

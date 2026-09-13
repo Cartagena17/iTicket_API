@@ -1,5 +1,6 @@
 package iTicket.Douglas.Evaluaciones.Service;
 
+import iTicket.Douglas.Bitacoras.Repository.BitacoraRepository;
 import iTicket.Douglas.Evaluaciones.DTO.EvaluacionesDTO;
 import iTicket.Douglas.Evaluaciones.DTO.MetricasDTO;
 import iTicket.Douglas.Evaluaciones.Entity.EvaluacionesEntity;
@@ -36,6 +37,7 @@ public class EvaluacionesService {
     private final TicketRepository ticketRepository;
     private final TicketService ticketService;
     private final UsuarioRepository usuarioRepository;
+    private final BitacoraRepository bitacoraRepo;
 
     private String resolverTipoDepartamento(Long idUsuarioAdmin) {
         return usuarioRepository.findById(idUsuarioAdmin)
@@ -44,13 +46,17 @@ public class EvaluacionesService {
     }
 
     @Transactional
-    public EvaluacionesDTO nuevaEvaluacion(@Valid EvaluacionesDTO dto) {
+    public EvaluacionesDTO nuevaEvaluacion(@Valid EvaluacionesDTO dto,  Long idUsuarioCreador) {
         if (repo.findByTicket_IdTicket(dto.getIdTicket()).isPresent()) {
             throw new RecursoDuplicadoException("El ticket con ID " + dto.getIdTicket() + " ya cuenta con una evaluación.");
         }
 
         TicketEntity ticketExistente = ticketRepository.findById(dto.getIdTicket())
                 .orElseThrow(() -> new RecursoNoEncontradoException("El ticket con ID " + dto.getIdTicket() + " no existe."));
+
+        if (!ticketExistente.getCreador().getIdUsuario().equals(idUsuarioCreador)) {
+            throw new OperacionInvalidaException("Solo el creador del ticket puede evaluarlo.");
+        }
 
         if (!"Resuelto".equalsIgnoreCase(ticketExistente.getEstado())) {
             throw new OperacionInvalidaException("Solo los tickets en estado 'Resuelto' pueden ser evaluados. El ticket actualmente está: " + ticketExistente.getEstado());
@@ -61,7 +67,7 @@ public class EvaluacionesService {
 
         TicketEstadoDTO dtoT = new TicketEstadoDTO();
         dtoT.setEstado("Cerrado");
-        ticketService.actualizarEstado(dto.getIdTicket(), dtoT);
+        ticketService.actualizarEstado(dto.getIdTicket(), dtoT, idUsuarioCreador);
 
         log.info("Nueva evaluación registrada: " + entitySave.getIdEvaluacion());
         return convertirADTO(entitySave);
@@ -197,7 +203,8 @@ public class EvaluacionesService {
             dto.setIdTicket(entity.getTicket().getIdTicket());
             dto.setCodigoTicket(entity.getTicket().getCodigo());
             dto.setAsuntoTicket(entity.getTicket().getAsunto());
-            dto.setFechaEvaluacion(entity.getTicket().getFechaCreacion());
+            bitacoraRepo.findFirstByIdTicketAndNuevoEstadoOrderByFechaHoraDesc(entity.getTicket().getIdTicket(), "Cerrado")
+                    .ifPresent(bitacora -> dto.setFechaEvaluacion(bitacora.getFechaHora()));
 
             if (entity.getTicket().getTecnicoAsignado() != null) {
                 dto.setNombreTecnico(entity.getTicket().getTecnicoAsignado().getNombreUsuario());
