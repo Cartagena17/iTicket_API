@@ -1,5 +1,6 @@
 package iTicket.Douglas.Modelos.Service;
 
+import iTicket.Douglas.Exception.RecursoDuplicadoException;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Marcas.Entity.MarcaEntity;
 import iTicket.Douglas.Marcas.Repository.MarcaRepository;
@@ -26,9 +27,17 @@ public class ModeloService {
 
     @Transactional
     public ModeloDTO nuevoModelo(@Valid ModeloDTO dto) {
+        String nombreNormalizado = normalizarNombre(dto.getNombreModelo());
+        if (repo.existsByNombreModeloIgnoreCaseAndMarca_IdMarca(nombreNormalizado, dto.getIdMarca())) {
+            throw new RecursoDuplicadoException(
+                    "El modelo '" + nombreNormalizado + "' ya está registrado para la marca seleccionada."
+            );
+        }
+
         MarcaEntity marca = marcaRepo.findById(dto.getIdMarca())
                 .orElseThrow(() -> new RecursoNoEncontradoException("La marca con id " + dto.getIdMarca() + " no existe"));
 
+        dto.setNombreModelo(nombreNormalizado);
         ModeloEntity entity = convertirAEntity(dto, marca);
         ModeloEntity entitySave = repo.save(entity);
         log.info("Nuevo modelo registrado: " + entitySave.getIdModelo());
@@ -51,13 +60,28 @@ public class ModeloService {
         ModeloEntity entidad = repo.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un modelo con id " + id));
 
+        String nombreNormalizado = normalizarNombre(dto.getNombreModelo());
+        Long idMarcaFinal = dto.getIdMarca() != null
+                ? dto.getIdMarca()
+                : entidad.getMarca().getIdMarca();
+
+        if (repo.existsByNombreModeloIgnoreCaseAndMarca_IdMarcaAndIdModeloNot(
+                nombreNormalizado,
+                idMarcaFinal,
+                id
+        )) {
+            throw new RecursoDuplicadoException(
+                    "El modelo '" + nombreNormalizado + "' ya está registrado para la marca seleccionada."
+            );
+        }
+
         if (dto.getIdMarca() != null) {
             MarcaEntity marca = marcaRepo.findById(dto.getIdMarca())
                     .orElseThrow(() -> new RecursoNoEncontradoException("La marca con id " + dto.getIdMarca() + " no existe"));
             entidad.setMarca(marca);
         }
 
-        entidad.setNombreModelo(dto.getNombreModelo());
+        entidad.setNombreModelo(nombreNormalizado);
         ModeloEntity datosGuardados = repo.save(entidad);
         log.info("Modelo con id " + id + " actualizado");
         return convertirADTO(datosGuardados);
@@ -86,5 +110,9 @@ public class ModeloService {
         objEntity.setNombreModelo(dto.getNombreModelo());
         objEntity.setMarca(marca);
         return objEntity;
+    }
+
+    private String normalizarNombre(String nombre) {
+        return nombre.trim().replaceAll("\\s+", " ");
     }
 }

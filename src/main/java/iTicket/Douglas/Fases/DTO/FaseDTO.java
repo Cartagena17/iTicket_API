@@ -20,24 +20,23 @@ public class FaseDTO {
     @NotNull @FutureOrPresent (message = "La fecha de inicio estimada no puede ser pasada.")
     private LocalDate fechaInicioEstimada;
 
-    @FutureOrPresent (message = "La fecha de inicio no puede ser pasada.")
+    // Las fechas reales describen lo que ya ocurrió, por eso pueden ser pasadas.
     private LocalDate fechaInicioReal;
 
     @NotNull
     @Future (message = "La fecha final estimada debe ser futura.")
     private LocalDate fechaFinalEstimada;
 
-    @Future (message = "La fecha final debe ser futura.")
     private LocalDate fechaFinalReal;
 
     @NotBlank @Size (max = 100, message = "El nombre del proveedor no puede exceder los 100 carácteres.")
     private String nombreProveedor;
 
     @NotNull (message = "Debe existir un presupuesto estimado.")
-    @Positive (message = "El presupuesto estimado no puede tener valores negativos.")
+    @PositiveOrZero (message = "El presupuesto estimado no puede tener valores negativos.")
     private Double presupuestoEstimado;
 
-    @Positive (message = "El presupuesto no puede ser negativo")
+    @PositiveOrZero (message = "El gasto total no puede ser negativo")
     private Double gastoTotal;
 
     @NotNull

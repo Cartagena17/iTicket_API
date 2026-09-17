@@ -1,5 +1,6 @@
 package iTicket.Douglas.TipoUbicacion.Service;
 
+import iTicket.Douglas.Exception.RecursoDuplicadoException;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.TipoUbicacion.DTO.TipoUbicacionDTO;
 import iTicket.Douglas.TipoUbicacion.Entity.TipoUbicacionEntity;
@@ -23,6 +24,11 @@ public class TipoUbicacionService {
 
     @Transactional
     public TipoUbicacionDTO nuevoTipoUbicacion(@Valid TipoUbicacionDTO dto) {
+        String nombre = normalizar(dto.getNombre_tipo_ubicacion());
+        if (repo.existsByNombreTipoUbicacionIgnoreCase(nombre)) {
+            throw new RecursoDuplicadoException("El tipo de ubicación '" + nombre + "' ya está registrado.");
+        }
+        dto.setNombre_tipo_ubicacion(nombre);
         TipoUbicacionEntity entity = convertirAEntity(dto);
         TipoUbicacionEntity entitySave = repo.save(entity);
         log.info("Nuevo tipo de ubicación registrado: " + entitySave.getId());
@@ -54,7 +60,11 @@ public class TipoUbicacionService {
         TipoUbicacionEntity entidad = repo.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un tipo de ubicación con id " + id));
 
-        entidad.setNombreTipoUbicacion(dto.getNombre_tipo_ubicacion());
+        String nombre = normalizar(dto.getNombre_tipo_ubicacion());
+        if (repo.existsByNombreTipoUbicacionIgnoreCaseAndIdNot(nombre, id)) {
+            throw new RecursoDuplicadoException("El tipo de ubicación '" + nombre + "' ya está registrado.");
+        }
+        entidad.setNombreTipoUbicacion(nombre);
         TipoUbicacionEntity datosGuardados = repo.save(entidad);
         log.info("Tipo de ubicación con id " + id + " actualizado");
         return convertirADTO(datosGuardados);
@@ -77,5 +87,9 @@ public class TipoUbicacionService {
         objDTO.setId(entity.getId());
         objDTO.setNombre_tipo_ubicacion(entity.getNombreTipoUbicacion());
         return objDTO;
+    }
+
+    private String normalizar(String valor) {
+        return valor.trim().replaceAll("\\s+", " ");
     }
 }

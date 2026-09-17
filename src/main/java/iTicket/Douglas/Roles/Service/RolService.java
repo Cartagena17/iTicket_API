@@ -1,5 +1,6 @@
 package iTicket.Douglas.Roles.Service;
 
+import iTicket.Douglas.Exception.RecursoDuplicadoException;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Roles.DTO.RolDTO;
 import iTicket.Douglas.Roles.Entity.RolEntity;
@@ -23,6 +24,11 @@ public class RolService {
 
     @Transactional
     public RolDTO nuevoRol(@Valid RolDTO dto) {
+        String nombre = dto.getNombreRol().trim();
+        if (repo.existsByNombreRolIgnoreCase(nombre)) {
+            throw new RecursoDuplicadoException("El rol '" + nombre + "' ya está registrado.");
+        }
+        dto.setNombreRol(nombre);
         RolEntity entity = convertirAEntity(dto);
         RolEntity entitySave = repo.save(entity);
         log.info("Nuevo rol registrado: " + entitySave.getIdRol());
@@ -54,7 +60,11 @@ public class RolService {
         RolEntity entidad = repo.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un rol con id " + id));
 
-        entidad.setNombreRol(dto.getNombreRol());
+        String nombre = dto.getNombreRol().trim();
+        if (repo.existsByNombreRolIgnoreCaseAndIdRolNot(nombre, id)) {
+            throw new RecursoDuplicadoException("El rol '" + nombre + "' ya está registrado.");
+        }
+        entidad.setNombreRol(nombre);
         RolEntity datosGuardados = repo.save(entidad);
         log.info("Rol con id " + id + " actualizado");
         return convertirADTO(datosGuardados);

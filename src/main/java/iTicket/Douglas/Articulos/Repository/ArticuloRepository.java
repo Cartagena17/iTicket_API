@@ -12,4 +12,6 @@ import java.util.Optional;
 public interface ArticuloRepository extends JpaRepository<ArticuloEntity, Long>, JpaSpecificationExecutor<ArticuloEntity> {
     List<ArticuloEntity> findByCodigoArticuloContainingIgnoreCase(String fragmento);
     Optional<ArticuloEntity> findByCodigoArticulo(String codigo);
+    boolean existsByCodigoArticuloIgnoreCase(String codigoArticulo);
+    boolean existsByCodigoArticuloIgnoreCaseAndIdArticuloNot(String codigoArticulo, Long idArticulo);
 }

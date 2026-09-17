@@ -48,23 +48,46 @@ public class GlobalExceptionHandler {
         log.error("Conflicto de integridad de datos: ", e);
         String mensaje = "El dato enviado no existe o hay un conflicto con la información ya guardada.";
 
-        if (e.getCause() != null && e.getCause().getCause() != null) {
-            String causa = e.getCause().getCause().getMessage();
-            if (causa.contains("ORA-02291")) {
-                mensaje = "El registro relacionado (llave foránea) no existe. Verifica el id enviado.";
-            } else if (causa.contains("ORA-00001")) {
-                mensaje = "Ese dato ya existe (restricción única violada).";
-            } else if (causa.contains("ORA-02290")) {
-                mensaje = "El dato no cumple con el formato requerido (restricción CHECK).";
-            } else if (causa.contains("ORA-01400")) {
-                mensaje = "Falta un campo obligatorio (no puede quedar vacío).";
-            } else if (causa.contains("ORA-02292")) {
-                mensaje = "No se puede eliminar: este registro está siendo usado por otro (llave foránea dependiente).";
-            }
+        String causa = obtenerCadenaDeCausas(e).toUpperCase();
+        if (causa.contains("ORA-02291")) {
+            mensaje = "No existe uno de los registros seleccionados. Actualiza la página y vuelve a elegirlo.";
+        } else if (causa.contains("ORA-00001")) {
+            mensaje = mensajeDuplicadoPorRestriccion(causa);
+        } else if (causa.contains("ORA-02290")) {
+            mensaje = "Uno de los datos no tiene un valor permitido. Revisa la información seleccionada.";
+        } else if (causa.contains("ORA-01400")) {
+            mensaje = "Falta completar un campo obligatorio.";
+        } else if (causa.contains("ORA-02292")) {
+            mensaje = "No se puede eliminar porque este registro está siendo utilizado en otra parte del sistema.";
         }
 
         ApiResponse<Object> respuesta = new ApiResponse<>(false, mensaje, null);
         return ResponseEntity.status(HttpStatus.CONFLICT).body(respuesta);
+    }
+
+    private String mensajeDuplicadoPorRestriccion(String causa) {
+        if (causa.contains("U_NOMBRE_ROL")) return "Ese rol ya está registrado.";
+        if (causa.contains("U_NOMBRE_AREA")) return "Esa área ya está registrada.";
+        if (causa.contains("U_NOMBRE_CATEGORIA")) return "Esa categoría ya está registrada.";
+        if (causa.contains("U_NOMBRE_TIPO_UBICACION")) return "Ese tipo de ubicación ya está registrado.";
+        if (causa.contains("U_NOMBRE_MARCA")) return "Esa marca ya está registrada.";
+        if (causa.contains("U_DEPARTAMENTO_AREA")) return "Ese departamento ya está registrado en el área seleccionada.";
+        if (causa.contains("U_CORREO")) return "Ese correo ya está registrado.";
+        if (causa.contains("U_NOMBRE_UBICACION")) return "Esa ubicación ya está registrada.";
+        if (causa.contains("U_CODIGO_TICKETS")) return "Ese código de ticket ya está registrado.";
+        if (causa.contains("U_CODIGO")) return "Ese código de artículo ya está registrado.";
+        if (causa.contains("U_ID_TICKET")) return "Ese ticket ya tiene la información asociada registrada.";
+        return "No se pudo guardar porque uno de los datos ya está registrado.";
+    }
+
+    private String obtenerCadenaDeCausas(Throwable error) {
+        StringBuilder mensajes = new StringBuilder();
+        Throwable actual = error;
+        while (actual != null) {
+            if (actual.getMessage() != null) mensajes.append(' ').append(actual.getMessage());
+            actual = actual.getCause();
+        }
+        return mensajes.toString();
     }
 
     @ExceptionHandler(OperacionInvalidaException.class)

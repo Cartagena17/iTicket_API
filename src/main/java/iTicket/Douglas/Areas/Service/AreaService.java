@@ -3,6 +3,7 @@ package iTicket.Douglas.Areas.Service;
 import iTicket.Douglas.Areas.DTO.AreaDTO;
 import iTicket.Douglas.Areas.Entity.AreaEntity;
 import iTicket.Douglas.Areas.Repository.AreaRepository;
+import iTicket.Douglas.Exception.RecursoDuplicadoException;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,11 @@ public class AreaService {
 
     @Transactional
     public AreaDTO nuevaArea(@Valid AreaDTO dto) {
+        String nombre = normalizar(dto.getNombreArea());
+        if (repo.existsByNombreAreaIgnoreCase(nombre)) {
+            throw new RecursoDuplicadoException("El área '" + nombre + "' ya está registrada.");
+        }
+        dto.setNombreArea(nombre);
         AreaEntity entity = convertirAEntity(dto);
         AreaEntity entitySave = repo.save(entity);
         log.info("Nueva área registrada: " + entitySave.getIdArea());
@@ -45,7 +51,11 @@ public class AreaService {
         AreaEntity entidad = repo.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un área con id " + id));
 
-        entidad.setNombreArea(dto.getNombreArea());
+        String nombre = normalizar(dto.getNombreArea());
+        if (repo.existsByNombreAreaIgnoreCaseAndIdAreaNot(nombre, id)) {
+            throw new RecursoDuplicadoException("El área '" + nombre + "' ya está registrada.");
+        }
+        entidad.setNombreArea(nombre);
         AreaEntity datosGuardados = repo.save(entidad);
         log.info("Área con id " + id + " actualizada");
         return convertirADTO(datosGuardados);
@@ -71,5 +81,9 @@ public class AreaService {
         objDTO.setIdArea(entity.getIdArea());
         objDTO.setNombreArea(entity.getNombreArea());
         return objDTO;
+    }
+
+    private String normalizar(String valor) {
+        return valor.trim().replaceAll("\\s+", " ");
     }
 }

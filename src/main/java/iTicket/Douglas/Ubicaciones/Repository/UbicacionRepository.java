@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface UbicacionRepository extends JpaRepository<UbicacionEntity, Long> {
 
     Optional<UbicacionEntity> findByNombreUbicacion(String nombreUbicacion);
+    boolean existsByNombreUbicacionIgnoreCase(String nombreUbicacion);
+    boolean existsByNombreUbicacionIgnoreCaseAndIdNot(String nombreUbicacion, Long id);
 }

@@ -1,5 +1,6 @@
 package iTicket.Douglas.Ubicaciones.Service;
 
+import iTicket.Douglas.Exception.RecursoDuplicadoException;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.TipoUbicacion.Entity.TipoUbicacionEntity;
 import iTicket.Douglas.TipoUbicacion.Repository.TipoUbicacionRepository;
@@ -26,9 +27,14 @@ public class UbicacionService {
 
     @Transactional
     public UbicacionDTO nuevaUbicacion(@Valid UbicacionDTO dto) {
+        String nombre = normalizar(dto.getNombreUbicacion());
+        if (repo.existsByNombreUbicacionIgnoreCase(nombre)) {
+            throw new RecursoDuplicadoException("La ubicación '" + nombre + "' ya está registrada.");
+        }
         TipoUbicacionEntity tipo = tipoUbicacionRepo.findById(dto.getIdTipoUbicacion())
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe el tipo de ubicación con id " + dto.getIdTipoUbicacion()));
 
+        dto.setNombreUbicacion(nombre);
         UbicacionEntity entity = convertirAEntity(dto, tipo);
         UbicacionEntity entitySave = repo.save(entity);
         log.info("Nueva ubicación registrada: " + entitySave.getId());
@@ -63,7 +69,11 @@ public class UbicacionService {
         TipoUbicacionEntity tipo = tipoUbicacionRepo.findById(dto.getIdTipoUbicacion())
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe el tipo de ubicación con id " + dto.getIdTipoUbicacion()));
 
-        entidad.setNombreUbicacion(dto.getNombreUbicacion());
+        String nombre = normalizar(dto.getNombreUbicacion());
+        if (repo.existsByNombreUbicacionIgnoreCaseAndIdNot(nombre, id)) {
+            throw new RecursoDuplicadoException("La ubicación '" + nombre + "' ya está registrada.");
+        }
+        entidad.setNombreUbicacion(nombre);
         entidad.setTipoUbicacion(tipo);
 
         UbicacionEntity datosGuardados = repo.save(entidad);
@@ -91,5 +101,9 @@ public class UbicacionService {
         objDTO.setIdTipoUbicacion(entity.getTipoUbicacion().getId());
         objDTO.setNombreTipoUbicacion(entity.getTipoUbicacion().getNombreTipoUbicacion());
         return objDTO;
+    }
+
+    private String normalizar(String valor) {
+        return valor.trim().replaceAll("\\s+", " ");
     }
 }

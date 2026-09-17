@@ -3,6 +3,7 @@ package iTicket.Douglas.Categoria.Service;
 import iTicket.Douglas.Categoria.DTO.CategoriaDTO;
 import iTicket.Douglas.Categoria.Entity.CategoriaEntity;
 import iTicket.Douglas.Categoria.Repository.CategoriaRepository;
+import iTicket.Douglas.Exception.RecursoDuplicadoException;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,11 @@ public class CategoriaSevice {
 
     @Transactional
     public CategoriaDTO nuevaCategoria(@Valid CategoriaDTO dto) {
+        String nombre = normalizar(dto.getNombreCategoria());
+        if (repo.existsByNombreCategoriaIgnoreCase(nombre)) {
+            throw new RecursoDuplicadoException("La categoría '" + nombre + "' ya está registrada.");
+        }
+        dto.setNombreCategoria(nombre);
         CategoriaEntity entity = convertirAEntity(dto);
         CategoriaEntity entitySave = repo.save(entity);
         log.info("Nueva categoría registrada: " + entitySave.getIdCategoria());
@@ -58,7 +64,11 @@ public class CategoriaSevice {
         CategoriaEntity entidad = repo.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe una categoría con id " + id));
 
-        entidad.setNombreCategoria(dto.getNombreCategoria());
+        String nombre = normalizar(dto.getNombreCategoria());
+        if (repo.existsByNombreCategoriaIgnoreCaseAndIdCategoriaNot(nombre, id)) {
+            throw new RecursoDuplicadoException("La categoría '" + nombre + "' ya está registrada.");
+        }
+        entidad.setNombreCategoria(nombre);
         CategoriaEntity datosGuardados = repo.save(entidad);
         log.info("Categoría con id " + id + " actualizada");
         return convertirADTO(datosGuardados);
@@ -71,5 +81,9 @@ public class CategoriaSevice {
             return true;
         }
         return false;
+    }
+
+    private String normalizar(String valor) {
+        return valor.trim().replaceAll("\\s+", " ");
     }
 }

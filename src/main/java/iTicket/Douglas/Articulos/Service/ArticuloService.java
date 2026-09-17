@@ -7,6 +7,7 @@ import iTicket.Douglas.Articulos.Repository.ArticuloRepository;
 import iTicket.Douglas.Articulos.Specification.ArticuloSpecifications;
 import iTicket.Douglas.Categoria.Entity.CategoriaEntity;
 import iTicket.Douglas.Categoria.Repository.CategoriaRepository;
+import iTicket.Douglas.Exception.RecursoDuplicadoException;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Modelos.Entity.ModeloEntity;
 import iTicket.Douglas.Modelos.Repository.ModeloRepository;
@@ -39,6 +40,11 @@ public class ArticuloService {
 
     @Transactional
     public ArticuloDTO nuevoArticulo(@Valid ArticuloDTO dto) {
+        String codigo = dto.getCodigoArticulo().trim();
+        if (repo.existsByCodigoArticuloIgnoreCase(codigo)) {
+            throw new RecursoDuplicadoException("El artículo con código '" + codigo + "' ya está registrado.");
+        }
+        dto.setCodigoArticulo(codigo);
         CategoriaEntity categoria = categoriaRepo.findById(dto.getIdCategoria())
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe la categoría con id " + dto.getIdCategoria()));
 
@@ -73,6 +79,11 @@ public class ArticuloService {
         ArticuloEntity entidad = repo.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un artículo con id " + id));
 
+        String codigo = dto.getCodigoArticulo().trim();
+        if (repo.existsByCodigoArticuloIgnoreCaseAndIdArticuloNot(codigo, id)) {
+            throw new RecursoDuplicadoException("El artículo con código '" + codigo + "' ya está registrado.");
+        }
+
         if (dto.getIdCategoria() != null) {
             CategoriaEntity categoria = categoriaRepo.findById(dto.getIdCategoria())
                     .orElseThrow(() -> new RecursoNoEncontradoException("No existe la categoría con id " + dto.getIdCategoria()));
@@ -89,9 +100,11 @@ public class ArticuloService {
             ModeloEntity modelo = modelorepo.findById(dto.getIdModelo())
                     .orElseThrow(() -> new RecursoNoEncontradoException("No existe el modelo con id " + dto.getIdModelo()));
             entidad.setModelo(modelo);
+        } else {
+            entidad.setModelo(null);
         }
 
-        entidad.setCodigoArticulo(dto.getCodigoArticulo());
+        entidad.setCodigoArticulo(codigo);
         ArticuloEntity datosGuardados = repo.save(entidad);
         log.info("Artículo con id " + id + " actualizado");
         return convertirADTO(datosGuardados);
@@ -116,7 +129,6 @@ public class ArticuloService {
         if (idMarca != null) {
             spec = spec.and(ArticuloSpecifications.conMarca(idMarca));
         }
-
         Pageable pageable = PageRequest.of(pagina - 1, tamano, Sort.by("idArticulo").descending());
         Page<ArticuloEntity> resultado = repo.findAll(spec, pageable);
 

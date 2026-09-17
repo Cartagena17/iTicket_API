@@ -16,6 +16,13 @@ public interface DepartamentoRepository extends JpaRepository<DepartamentoEntity
     @Query("SELECT d FROM DepartamentoEntity d WHERE d.tipoDepartamento <> 'Otro'")
     List<DepartamentoEntity> findAsignables();
 
+    boolean existsByNombreDepartamentoIgnoreCaseAndArea_IdArea(String nombreDepartamento, Long idArea);
+    boolean existsByNombreDepartamentoIgnoreCaseAndArea_IdAreaAndIdDepartamentoNot(
+            String nombreDepartamento,
+            Long idArea,
+            Long idDepartamento
+    );
+
     //Usados para validar que solo exista un departamento de tipo IT y uno de tipo Mantenimiento
     boolean existsByTipoDepartamento(String tipoDepartamento);
 
