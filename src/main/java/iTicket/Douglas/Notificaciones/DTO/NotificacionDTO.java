@@ -19,7 +19,7 @@ public class NotificacionDTO {
     private Long idUsuarioDestino;
 
     @NotBlank(message = "El tipo de notificación es obligatorio.")
-    @Pattern(regexp = "TICKET_CREADO|TICKET_ELIMINADO|TICKET_ASIGNADO|TICKET_RESUELTO|TICKET_VENCIDO|PROYECTO_CREADO|FASE_CREADA", message = "Tipo de notificación no válido.")
+    @Pattern(regexp = "TICKET_CREADO|TICKET_ELIMINADO|TICKET_ASIGNADO|TICKET_RESUELTO|TICKET_VENCIDO|TICKET_REASIGNADO|COMENTARIO_CREADO|PROYECTO_CREADO|FASE_CREADA", message = "Tipo de notificación no válido.")
     private String tipo;
 
     @NotBlank(message = "El título es obligatorio.")

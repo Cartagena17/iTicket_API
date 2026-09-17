@@ -77,6 +77,27 @@ public class NotificacionListener {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void manejarTicketReasignado(TicketReasignadoEvent evento) {
+        log.info("Evento TicketReasignadoEvent recibido: ticket {} -> departamento {}", evento.idTicket(), evento.idDepartamento());
+        List<UsuarioEntity> admins = usuarioRepo.findByRol_NombreRolAndDepartamento_IdDepartamento("Administrador", evento.idDepartamento());
+        if (admins.isEmpty()) {
+            log.warn("No se encontró ningún Administrador en el departamento {} para notificar la reasignación del ticket {}", evento.idDepartamento(), evento.idTicket());
+        }
+        admins.forEach(admin -> notificar(
+                admin.getIdUsuario(), "TICKET_REASIGNADO", "Ticket reasignado a tu departamento",
+                "Se reasignó un ticket a tu departamento.",
+                "Ticket", evento.idTicket()
+        ));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void manejarComentarioCreado(ComentarioCreadoEvent evento) {
+        //idUsuarioDestino ya viene resuelto desde ComentarioService (el otro participante del ticket)
+        notificar(evento.idUsuarioDestino(), "COMENTARIO_CREADO", "Nuevo comentario",
+                "Hay un nuevo comentario en un ticket.", "Ticket", evento.idTicket());
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void manejarProyectoCreado(ProyectoCreadoEvent evento) {
         notificar(evento.idCoordinador(), "PROYECTO_CREADO", "Nuevo proyecto",
                 "Se te asignó como coordinador de un nuevo proyecto.", "Proyecto", evento.idProyecto());

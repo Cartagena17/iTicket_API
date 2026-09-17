@@ -524,15 +524,27 @@ public class TicketService {
     }
 
     @Transactional
-    public boolean reasignarDepartamento(Long id, @Valid TicketReasignarDepDTO dto) {
+    public boolean reasignarDepartamento(Long id, @Valid TicketReasignarDepDTO dto, Long idUsuario) {
         Optional<TicketEntity> entidadOpcional = repo.findById(id);
         if (entidadOpcional.isEmpty()) {
             return false;
         }
 
+        UsuarioEntity solicitante = buscarUsuario(idUsuario);
+        if (!"Administrador".equalsIgnoreCase(solicitante.getRol().getNombreRol())) {
+            throw new OperacionInvalidaException("Solo un administrador puede reasignar el departamento de un ticket");
+        }
+
         TicketEntity ticket = entidadOpcional.get();
+        if (!"Nuevo".equalsIgnoreCase(ticket.getEstado())) {
+            throw new OperacionInvalidaException("Solo se puede reasignar el departamento mientras el ticket esta en estado 'Nuevo'");
+        }
+
         ticket.setDepartamento(buscarDepartamento(dto.getDepartamento()));
         repo.save(ticket);
+        //No se registra Bitacora para esta accion (a diferencia de asignar/editarComoAdmin/etc.),
+        //solo se notifica a los administradores del departamento nuevo
+        eventos.publishEvent(new TicketReasignadoEvent(ticket.getIdTicket(), ticket.getDepartamento().getIdDepartamento()));
         return true;
     }
 
@@ -584,13 +596,15 @@ public class TicketService {
         return new TicketPaginaDTO(tickets, resultado.getTotalElements(), resultado.getTotalPages(), pagina);
     }
 
+    //Se utiliza ara actualizar el estado a "Cerrado" cuando se registra una evaluación de ticket
     @Transactional
-    public boolean actualizarEstado(Long id, @Valid TicketEstadoDTO dto) {
+    public boolean actualizarEstado(Long id, @Valid TicketEstadoDTO dto, Long idUsuarioAccion) {
         TicketEntity ticket = repo.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("El ticket con ID: " + id + " no existe"));
 
         ticket.setEstado(dto.getEstado());
         repo.save(ticket);
+        registrarBitacora(ticket, idUsuarioAccion);
         return true;
     }
 
