@@ -1,6 +1,7 @@
 package iTicket.Douglas.Usuarios.Controller;
 
 import iTicket.Douglas.Response.ApiResponse;
+import iTicket.Douglas.Usuarios.DTO.CambioContraseñaDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioPatchDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioUpdateDTO;
@@ -62,6 +63,12 @@ public class UsuarioController {
         log.info("El usuario con id " + id + " fue actualizado parcialmente");
         ApiResponse<UsuarioDTO> respuesta = new ApiResponse<>(true, "Proceso completado", data);
         return ResponseEntity.ok(respuesta);
+    }
+
+    @PatchMapping("/{id}/clave")
+    public ResponseEntity<ApiResponse<Void>> cambiarClave(@PathVariable Long id, @Valid @RequestBody CambioContraseñaDTO dto) {
+        service.cambiarClave(id, dto);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Contraseña actualizada correctamente", null));
     }
 
     @DeleteMapping("/{id}")

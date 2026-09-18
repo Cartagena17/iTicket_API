@@ -6,6 +6,7 @@ import iTicket.Douglas.Exception.OperacionInvalidaException;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Roles.Entity.RolEntity;
 import iTicket.Douglas.Roles.Repository.RolRepository;
+import iTicket.Douglas.Usuarios.DTO.CambioContraseñaDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioPatchDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioUpdateDTO;
@@ -127,6 +128,28 @@ public class UsuarioService {
         UsuarioEntity datosGuardados = repo.save(entidad);
         log.info("Usuario con id " + id + " actualizado parcialmente");
         return convertirADTO(datosGuardados);
+    }
+
+    /**
+     * Aqui esta la lógica de cambio de contraseña
+     * */
+
+    // A diferencia de actualizarParcial, pide la contraseña actual antes de reemplazarla
+    @Transactional
+    public void cambiarClave(Long id, CambioContraseñaDTO dto) {
+        UsuarioEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un usuario con id " + id));
+
+        if (!passwordUtil.coincidence(dto.getClaveActual(), entidad.getClave())) {
+            throw new OperacionInvalidaException("La contraseña actual no es correcta.");
+        }
+        if (passwordUtil.coincidence(dto.getClaveNueva(), entidad.getClave())) {
+            throw new OperacionInvalidaException("La nueva contraseña debe ser diferente a la actual.");
+        }
+
+        entidad.setClave(passwordUtil.encriptar(dto.getClaveNueva()));
+        repo.save(entidad);
+        log.info("Usuario con id " + id + " cambió su contraseña");
     }
 
     @Transactional
