@@ -11,4 +11,6 @@ public interface CategoriaRepository extends JpaRepository<CategoriaEntity, Long
 
     //Metodos personalizados
     Optional<CategoriaEntity> findByNombreCategoria(String nombreCategoria);
+    boolean existsByNombreCategoriaIgnoreCase(String nombreCategoria);
+    boolean existsByNombreCategoriaIgnoreCaseAndIdCategoriaNot(String nombreCategoria, Long idCategoria);
 }

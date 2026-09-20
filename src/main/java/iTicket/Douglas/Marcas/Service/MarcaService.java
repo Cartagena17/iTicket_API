@@ -25,9 +25,11 @@ public class MarcaService {
 
     @Transactional
     public MarcaDTO nuevaMarca(@Valid MarcaDTO dto) {
-        if (repo.existsByNombreMarcaIgnoreCase(dto.getNombreMarca())) {
-            throw new RecursoDuplicadoException(ErrorCode.WMAR001, "Ya existe una marca llamada '" + dto.getNombreMarca() + "'");
+        String nombre = normalizar(dto.getNombreMarca());
+        if (repo.existsByNombreMarcaIgnoreCase(nombre)) {
+            throw new RecursoDuplicadoException(ErrorCode.WMAR001, "La marca '" + nombre + "' ya está registrada.");
         }
+        dto.setNombreMarca(nombre);
         MarcaEntity entity = convertirAEntity(dto);
         MarcaEntity entitySave = repo.save(entity);
         log.info("Nueva marca registrada: " + entitySave.getIdMarca());
@@ -59,7 +61,11 @@ public class MarcaService {
         MarcaEntity entidad = repo.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe una marca con id " + id));
 
-        entidad.setNombreMarca(dto.getNombreMarca());
+        String nombre = normalizar(dto.getNombreMarca());
+        if (repo.existsByNombreMarcaIgnoreCaseAndIdMarcaNot(nombre, id)) {
+            throw new RecursoDuplicadoException(ErrorCode.WMAR001, "La marca '" + nombre + "' ya está registrada.");
+        }
+        entidad.setNombreMarca(nombre);
         MarcaEntity datosGuardados = repo.save(entidad);
         log.info("Marca con id " + id + " actualizada");
         return convertirADTO(datosGuardados);
@@ -76,5 +82,9 @@ public class MarcaService {
         objDTO.setIdMarca(entity.getIdMarca());
         objDTO.setNombreMarca(entity.getNombreMarca());
         return objDTO;
+    }
+
+    private String normalizar(String valor) {
+        return valor.trim().replaceAll("\\s+", " ");
     }
 }

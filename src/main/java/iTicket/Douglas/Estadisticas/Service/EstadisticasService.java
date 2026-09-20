@@ -3,8 +3,11 @@ package iTicket.Douglas.Estadisticas.Service;
 import iTicket.Douglas.Bitacoras.Repository.BitacoraRepository;
 import iTicket.Douglas.Evaluaciones.Entity.EvaluacionesEntity;
 import iTicket.Douglas.Evaluaciones.Repository.EvaluacionesRepository;
+import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Response.*;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
+import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
+import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,19 +28,27 @@ public class EstadisticasService {
     private final TicketRepository ticketRepository;
     private final EvaluacionesRepository evaluacionesRepository;
     private final BitacoraRepository bitacoraRepository;
+    private final UsuarioRepository usuarioRepository;
 
     @Autowired
-    public EstadisticasService(TicketRepository ticketRepository,
-                               EvaluacionesRepository evaluacionesRepository,
-                               BitacoraRepository bitacoraRepository) {
+    public EstadisticasService(TicketRepository ticketRepository, EvaluacionesRepository evaluacionesRepository, BitacoraRepository bitacoraRepository, UsuarioRepository usuarioRepository) {
         this.ticketRepository = ticketRepository;
         this.evaluacionesRepository = evaluacionesRepository;
         this.bitacoraRepository = bitacoraRepository;
+        this.usuarioRepository = usuarioRepository;
+    }
+
+    //El módulo de Estadísticas es solo para admins, y cada admin ve únicamente los datos
+    //de su propio departamento (tipo). Se resuelve aquí una sola vez y se propaga a todas las queries.
+    private String resolverTipoDepartamento(Long idUsuarioAdmin) {
+        UsuarioEntity admin = usuarioRepository.findById(idUsuarioAdmin)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún usuario con ID: " + idUsuarioAdmin));
+        return admin.getDepartamento().getTipoDepartamento();
     }
 
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public MetricasResponseDTO obtenerMetricas(LocalDate fechaInicio, LocalDate fechaFin,
-                                               Pageable pageableAlertas, Pageable pageableEquipos) {
+    public MetricasResponseDTO obtenerMetricas(Long idUsuarioAdmin, LocalDate fechaInicio, LocalDate fechaFin, Pageable pageableAlertas, Pageable pageableEquipos) {
+        String tipoDepartamento = resolverTipoDepartamento(idUsuarioAdmin);
         LocalDateTime inicio = fechaInicio != null ? fechaInicio.atStartOfDay() : null;
         LocalDateTime fin = fechaFin != null ? fechaFin.atTime(LocalTime.MAX) : null;
 
@@ -45,10 +56,10 @@ public class EstadisticasService {
 
         // 1. Estadísticas de Tickets
         EstadisticasTicketDTO statsTickets = new EstadisticasTicketDTO();
-        long totalTickets = ticketRepository.contarTicketsTotalesRangoFechas(inicio, fin);
+        long totalTickets = ticketRepository.contarTicketsTotalesRangoFechasPorDepartamento(tipoDepartamento, inicio, fin);
         statsTickets.setTotalTickets(totalTickets);
 
-        List<Object[]> conteoPorEstado = ticketRepository.contarTicketsPorEstadoRangoFechas(inicio, fin);
+        List<Object[]> conteoPorEstado = ticketRepository.contarTicketsPorEstadoRangoFechas(tipoDepartamento, inicio, fin);
         long nuevos = 0, enProceso = 0, resueltos = 0, cancelados = 0;
 
         if (conteoPorEstado != null) {
@@ -94,7 +105,7 @@ public class EstadisticasService {
         // Tiempo Medio de Resolución — calculado desde Bitácoras filtrando solo tickets Resueltos/Cerrados
         // Se usa MIN(fechaHora) para tomar la primera vez que el ticket fue marcado como resuelto,
         // evitando que reaperturas o ediciones posteriores inflen el resultado.
-        List<Object[]> tiemposResolucion = bitacoraRepository.obtenerTiemposResolucionReales(inicio, fin);
+        List<Object[]> tiemposResolucion = bitacoraRepository.obtenerTiemposResolucionReales(tipoDepartamento, inicio, fin);
         if (tiemposResolucion != null && !tiemposResolucion.isEmpty()) {
             long totalHoras = 0;
             long count = 0;
@@ -124,7 +135,7 @@ public class EstadisticasService {
 
         // 2. Estadísticas de Evaluaciones
         EstadisticasEvaluacionesDTO statsEvaluaciones = new EstadisticasEvaluacionesDTO();
-        Object[] metricasEv = evaluacionesRepository.obtenerMetricasDashboard(inicio, fin);
+        Object[] metricasEv = evaluacionesRepository.obtenerMetricasDashboard(tipoDepartamento, inicio, fin);
 
         if (metricasEv != null && metricasEv.length >= 6) {
             statsEvaluaciones.setTotalEvaluaciones(metricasEv[0] != null ? ((Number) metricasEv[0]).longValue() : 0L);
@@ -146,9 +157,9 @@ public class EstadisticasService {
         }
         metricas.setEvaluaciones(statsEvaluaciones);
 
-        // 3. Equipos Más Reportados (paginado)
+        // 3. Equipos Más Reportados
         org.springframework.data.domain.Page<Object[]> articulosPage =
-                ticketRepository.obtenerArticulosMasReportadosRangoFechas(inicio, fin, pageableEquipos);
+                ticketRepository.obtenerArticulosMasReportadosRangoFechas(tipoDepartamento, inicio, fin, pageableEquipos);
         List<EquipoReportadoDTO> equiposList = new ArrayList<>();
 
         for (Object[] row : articulosPage.getContent()) {
@@ -167,9 +178,9 @@ public class EstadisticasService {
                 articulosPage.getTotalElements()
         ));
 
-        // 4. Alertas de Insatisfacción (paginado)
+        // 4. Alertas de Insatisfacción
         org.springframework.data.domain.Page<EvaluacionesEntity> alertasPage =
-                evaluacionesRepository.obtenerAlertasInsatisfaccion(inicio, fin, pageableAlertas);
+                evaluacionesRepository.obtenerAlertasInsatisfaccion(tipoDepartamento, inicio, fin, pageableAlertas);
         List<AlertaInsatisfaccionDTO> alertasList = new ArrayList<>();
 
         for (EvaluacionesEntity ev : alertasPage.getContent()) {
@@ -196,7 +207,7 @@ public class EstadisticasService {
         ));
 
         // 5. Tickets por Prioridad
-        List<Object[]> ticketsPrioridadData = ticketRepository.contarTicketsPorPrioridadRangoFechas(inicio, fin);
+        List<Object[]> ticketsPrioridadData = ticketRepository.contarTicketsPorPrioridadRangoFechas(tipoDepartamento, inicio, fin);
         List<TicketPrioridadDTO> prioridadesList = new ArrayList<>();
 
         if (ticketsPrioridadData != null) {
@@ -225,13 +236,13 @@ public class EstadisticasService {
             mesDTO.setMes(fechaIter.getMonth().getDisplayName(TextStyle.FULL, new Locale("es", "ES")));
             mesDTO.setYear(fechaIter.getYear());
 
-            long creadosMes = ticketRepository.contarTicketsTotalesRangoFechas(inicioMes, finMes);
+            long creadosMes = ticketRepository.contarTicketsTotalesRangoFechasPorDepartamento(tipoDepartamento, inicioMes, finMes);
             mesDTO.setCreados(creadosMes);
 
-            long vencidosMes = ticketRepository.contarTicketsVencidosRangoFechas(inicioMes, finMes);
+            long vencidosMes = ticketRepository.contarTicketsVencidosRangoFechas(tipoDepartamento, inicioMes, finMes);
             mesDTO.setVencidos(vencidosMes);
 
-            List<Object[]> conteoPorEstadoMes = ticketRepository.contarTicketsPorEstadoRangoFechas(inicioMes, finMes);
+            List<Object[]> conteoPorEstadoMes = ticketRepository.contarTicketsPorEstadoRangoFechas(tipoDepartamento, inicioMes, finMes);
             long resueltosMes = 0;
             if (conteoPorEstadoMes != null) {
                 for (Object[] fila : conteoPorEstadoMes) {
@@ -252,7 +263,7 @@ public class EstadisticasService {
         metricas.setTicketsPorMes(ticketsMesList);
 
         // 7. Satisfacción por Técnico
-        List<Object[]> satisfaccionData = evaluacionesRepository.obtenerPromedioSatisfaccionPorTecnico(inicio, fin);
+        List<Object[]> satisfaccionData = evaluacionesRepository.obtenerPromedioSatisfaccionPorTecnico(tipoDepartamento, inicio, fin);
         List<SatisfaccionTecnicoDTO> satisfaccionList = new ArrayList<>();
 
         if (satisfaccionData != null) {
@@ -283,8 +294,10 @@ public class EstadisticasService {
      * Devuelve la lista de evaluaciones con calificación <= umbral
      */
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public List<AlertaInsatisfaccionDTO> obtenerAlertasInsatisfaccion(
-            LocalDateTime inicio, LocalDateTime fin, Integer umbral) {
+    public PaginatedResponseDTO<AlertaInsatisfaccionDTO> obtenerAlertasInsatisfaccion(
+            Long idUsuarioAdmin, LocalDateTime inicio, LocalDateTime fin, Integer umbral, Pageable pageable) {
+
+        String tipoDepartamento = resolverTipoDepartamento(idUsuarioAdmin);
 
         // Valores por defecto si vienen nulos
         if (inicio == null) {
@@ -297,11 +310,11 @@ public class EstadisticasService {
             umbral = 2;
         }
 
-        List<EvaluacionesEntity> alertas =
-                evaluacionesRepository.obtenerAlertasConDetalle(umbral, inicio, fin);
+        org.springframework.data.domain.Page<EvaluacionesEntity> paginaAlertas =
+                evaluacionesRepository.obtenerAlertasConDetalle(tipoDepartamento, umbral, inicio, fin, pageable);
 
         List<AlertaInsatisfaccionDTO> resultado = new ArrayList<>();
-        for (EvaluacionesEntity ev : alertas) {
+        for (EvaluacionesEntity ev : paginaAlertas.getContent()) {
             AlertaInsatisfaccionDTO dto = new AlertaInsatisfaccionDTO();
             dto.setCalificacion(ev.getCalificacion());
             dto.setComentario(ev.getComentario());
@@ -330,16 +343,19 @@ public class EstadisticasService {
 
             resultado.add(dto);
         }
-        return resultado;
+        return new PaginatedResponseDTO<>(resultado, paginaAlertas.getNumber(), paginaAlertas.getTotalPages(), paginaAlertas.getTotalElements());
     }
 
     /**
-     * Endpoint dedicado: GET /api/articulos/mas_reportados
+     * Endpoint dedicado: GET /api/articulos/mas_reportados (paginado de verdad - antes traia
+     * la lista completa y el frontend paginaba en JS)
      * Devuelve la lista de artículos/equipos más reportados con detalle completo
      */
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public List<iTicket.Douglas.Articulos.DTO.ReportadosDTO> obtenerArticulosMasReportados(
-            LocalDateTime inicio, LocalDateTime fin) {
+    public PaginatedResponseDTO<iTicket.Douglas.Articulos.DTO.ReportadosDTO> obtenerArticulosMasReportados(
+            Long idUsuarioAdmin, LocalDateTime inicio, LocalDateTime fin, Pageable pageable) {
+
+        String tipoDepartamento = resolverTipoDepartamento(idUsuarioAdmin);
 
         // Valores por defecto si vienen nulos
         if (inicio == null) {
@@ -349,10 +365,10 @@ public class EstadisticasService {
             fin = LocalDateTime.now();
         }
 
-        List<Object[]> data = ticketRepository.obtenerArticulosReportadosCompleto(inicio, fin);
+        org.springframework.data.domain.Page<Object[]> paginaData = ticketRepository.obtenerArticulosReportadosCompleto(tipoDepartamento, inicio, fin, pageable);
 
         List<iTicket.Douglas.Articulos.DTO.ReportadosDTO> resultado = new ArrayList<>();
-        for (Object[] row : data) {
+        for (Object[] row : paginaData.getContent()) {
             if (row != null && row.length >= 5) {
                 iTicket.Douglas.Articulos.DTO.ReportadosDTO dto =
                         new iTicket.Douglas.Articulos.DTO.ReportadosDTO();
@@ -376,7 +392,7 @@ public class EstadisticasService {
                 resultado.add(dto);
             }
         }
-        return resultado;
+        return new PaginatedResponseDTO<>(resultado, paginaData.getNumber(), paginaData.getTotalPages(), paginaData.getTotalElements());
     }
 
     /**
@@ -384,7 +400,8 @@ public class EstadisticasService {
      * Para la gráfica de barras del Dashboard principal.
      */
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public List<Object[]> obtenerResolucionPorDiaSemana(LocalDateTime inicio, LocalDateTime fin) {
-        return bitacoraRepository.obtenerTiemposResolucionPorDiaSemana(inicio, fin);
+    public List<Object[]> obtenerResolucionPorDiaSemana(Long idUsuarioAdmin, LocalDateTime inicio, LocalDateTime fin) {
+        String tipoDepartamento = resolverTipoDepartamento(idUsuarioAdmin);
+        return bitacoraRepository.obtenerTiemposResolucionPorDiaSemana(tipoDepartamento, inicio, fin);
     }
 }

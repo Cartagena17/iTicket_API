@@ -13,7 +13,7 @@ public class ComentarioDTO {
     private Long id;
 
     @NotBlank
-    @Size(max = 300, message = "Longitud invalida en el comentario [300 caracteres como maximo]")
+    @Size(max = 500, message = "Longitud invalida en el comentario [500 caracteres como maximo]")
     private String comentario;
 
     private LocalDateTime fechaHora;

@@ -30,8 +30,8 @@ public class BitacoraController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<BitacoraDTO>>> obtenerBitacoras() {
-        List<BitacoraDTO> lista = service.obtenerBitacoras();
+    public ResponseEntity<ApiResponse<List<BitacoraDTO>>> obtenerBitacoras(@RequestParam Long idUsuarioAdmin) {
+        List<BitacoraDTO> lista = service.obtenerBitacoras(idUsuarioAdmin);
         log.info("Se obtuvieron con éxito las bitácoras");
         ApiResponse<List<BitacoraDTO>> respuesta = new ApiResponse<>(true, "Se obtuvieron con éxito las bitácoras", lista);
         return ResponseEntity.ok(respuesta);
@@ -42,6 +42,22 @@ public class BitacoraController {
         List<BitacoraDTO> lista = service.obtenerBitacorasIdTicket(idTicket);
         log.info("Se obtuvo la bitácora con ticket: " + idTicket);
         ApiResponse<List<BitacoraDTO>> respuesta = new ApiResponse<>(true, "Se obtuvo la bitácora con ticket: " + idTicket, lista);
+        return ResponseEntity.ok(respuesta);
+    }
+
+    @GetMapping("/tecnico/resolucion-por-dia")
+    public ResponseEntity<ApiResponse<List<Object[]>>> obtenerResolucionPorDiaTecnico(@RequestParam Long idUsuario) {
+        List<Object[]> data = service.obtenerResolucionPorDiaSemanaTecnico(idUsuario);
+        log.info("Resolución por día consultada para el técnico con ID: " + idUsuario);
+        ApiResponse<List<Object[]>> respuesta = new ApiResponse<>(true, "Resolución por día del técnico obtenida con éxito", data);
+        return ResponseEntity.ok(respuesta);
+    }
+
+    @GetMapping("/usuario/tiempo-promedio")
+    public ResponseEntity<ApiResponse<Double>> obtenerTiempoPromedioPorUsuario(@RequestParam Long idUsuario) {
+        double promedio = service.obtenerTiempoPromedioResolucionPorUsuario(idUsuario);
+        log.info("Tiempo promedio de resolución consultado para el usuario con ID: " + idUsuario);
+        ApiResponse<Double> respuesta = new ApiResponse<>(true, "Tiempo promedio obtenido", promedio);
         return ResponseEntity.ok(respuesta);
     }
 }

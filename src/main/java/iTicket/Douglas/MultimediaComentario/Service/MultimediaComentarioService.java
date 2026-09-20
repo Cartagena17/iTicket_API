@@ -33,11 +33,11 @@ public class MultimediaComentarioService {
         if (!comentarioRepo.existsById(idComentario)) {
             throw new RecursoNoEncontradoException(ErrorCode.WEVI002, "El comentario con ID: " + idComentario + " no existe");
         }
-
-        String urlPublica = cloudinaryService.subirImagen(archivo, "iticket/comentarios");
-
         MultimediaComentarioDTO dto = new MultimediaComentarioDTO();
-        dto.setMultimediaUrl(urlPublica);
+
+        CloudinaryService.ResultadoSubida subida = cloudinaryService.subirImagen(archivo, "iticket/comentarios");
+        dto.setMultimediaUrl(subida.url());
+        dto.setCloudinaryId(subida.publicId());
         dto.setIdComentario(idComentario);
 
         return nuevaMultimedia(dto);
@@ -52,10 +52,16 @@ public class MultimediaComentarioService {
     }
 
     private MultimediaComentarioEntity convertirAEntity(@Valid MultimediaComentarioDTO dto) {
+        if (dto.getMultimediaUrl() == null || dto.getMultimediaUrl().isBlank()) {
+            throw new IllegalStateException("La URL de la evidencia no puede estar vacía al guardar");
+        }
+        if (dto.getCloudinaryId() == null || dto.getCloudinaryId().isBlank()) {
+            throw new IllegalStateException("El identificador de Cloudinary no puede estar vacío al guardar");
+        }
         MultimediaComentarioEntity objEntity = new MultimediaComentarioEntity();
         objEntity.setMultimediaUrl(dto.getMultimediaUrl());
-        ComentarioEntity comentario = new ComentarioEntity();
-        comentario.setId(dto.getIdComentario());
+        objEntity.setCloudinaryId(dto.getCloudinaryId());
+        ComentarioEntity comentario = comentarioRepo.getReferenceById(dto.getIdComentario());
         objEntity.setComentario(comentario);
         return objEntity;
     }
@@ -64,6 +70,7 @@ public class MultimediaComentarioService {
         MultimediaComentarioDTO objDTO = new MultimediaComentarioDTO();
         objDTO.setId(entity.getId());
         objDTO.setMultimediaUrl(entity.getMultimediaUrl());
+        objDTO.setCloudinaryId(entity.getCloudinaryId());
         objDTO.setIdComentario(entity.getComentario().getId());
         return objDTO;
     }
@@ -83,8 +90,7 @@ public class MultimediaComentarioService {
     public boolean eliminarData(Long id) {
         var entidad = repo.findById(id);
         if (entidad.isPresent()) {
-            String publicId = cloudinaryService.extraerPublicId(entidad.get().getMultimediaUrl(), "iticket/comentarios");
-            cloudinaryService.eliminarImagen(publicId);
+            cloudinaryService.eliminarImagen(entidad.get().getCloudinaryId());
             repo.deleteById(id);
             return true;
         }

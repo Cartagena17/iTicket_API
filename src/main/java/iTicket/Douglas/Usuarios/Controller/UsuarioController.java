@@ -1,6 +1,7 @@
 package iTicket.Douglas.Usuarios.Controller;
 
 import iTicket.Douglas.Response.ApiResponse;
+import iTicket.Douglas.Usuarios.DTO.CambioContraseñaDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioPatchDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioUpdateDTO;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -63,6 +65,12 @@ public class UsuarioController {
         return ResponseEntity.ok(respuesta);
     }
 
+    @PatchMapping("/{id}/clave")
+    public ResponseEntity<ApiResponse<Void>> cambiarClave(@PathVariable Long id, @Valid @RequestBody CambioContraseñaDTO dto) {
+        service.cambiarClave(id, dto);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Contraseña actualizada correctamente", null));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> eliminarDatos(@PathVariable Long id) {
         boolean eliminado = service.eliminarUsuario(id);
@@ -79,6 +87,14 @@ public class UsuarioController {
     public ResponseEntity<ApiResponse<List<UsuarioDTO>>> obtenerTecnicosPorDepartamento(@RequestParam Long idDepartamento) {
         List<UsuarioDTO> lista = service.obtenerTecnicosPorDepartamento(idDepartamento);
         ApiResponse<List<UsuarioDTO>> respuesta = new ApiResponse<>(true, "Técnicos encontrados", lista);
+        return ResponseEntity.ok(respuesta);
+    }
+
+    @PatchMapping(value = "/{id}/imagen", consumes = "multipart/form-data")
+    public ResponseEntity<ApiResponse<UsuarioDTO>> actualizarImagen(@PathVariable Long id, @RequestParam("archivo") MultipartFile archivo) {
+        UsuarioDTO dto = service.actualizarImagen(id, archivo);
+        log.info("Imagen de perfil actualizada para el usuario con id " + id);
+        ApiResponse<UsuarioDTO> respuesta = new ApiResponse<>(true, "Imagen actualizada correctamente", dto);
         return ResponseEntity.ok(respuesta);
     }
 }

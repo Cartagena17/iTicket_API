@@ -9,7 +9,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -18,16 +17,19 @@ public class CloudinaryService {
 
     private final Cloudinary cloudinary;
 
-    //Sube la imagen a una carpeta de Cloudinary y devuelve la URL pública(https)
-    public String subirImagen(MultipartFile archivo, String carpeta) {
-        try {
-            Map<?, ?> resultado = cloudinary.uploader().upload(archivo.getBytes(), ObjectUtils.asMap(
+    public record ResultadoSubida(String url, String publicId) {}
+
+    //Sube la imagen a una carpeta de Cloudinary y devuelve la URL pública(https) y el public_id
+    public ResultadoSubida subirImagen(MultipartFile archivo, String carpeta) {
+        try{
+            Map<?,?> resultado = cloudinary.uploader().upload(archivo.getBytes(),ObjectUtils.asMap(
                     "folder", carpeta,
-                    "public_id", UUID.randomUUID().toString(),
-                    "resource_type", "image"
+                    "resource_type", "auto"
             ));
-            return resultado.get("secure_url").toString();
-        } catch (IOException e) {
+            String url = resultado.get("secure_url").toString();
+            String publicId = resultado.get("public_id").toString();
+            return new ResultadoSubida(url,publicId);
+        }catch (IOException e) {
             log.error("Error al subir la imagen a Cloudinary: " + e.getMessage());
             throw new RuntimeException("No se pudo subir la imagen", e);
         }
@@ -40,12 +42,5 @@ public class CloudinaryService {
         } catch (IOException e) {
             log.error("Error al eliminar la imagen de Cloudinary: " + e.getMessage());
         }
-    }
-
-    //Extrae el public_id a partir de la URL guardada, para poder borrarla después
-    public String extraerPublicId(String urlSegura, String carpeta) {
-        String nombreArchivo = urlSegura.substring(urlSegura.lastIndexOf("/") + 1);
-        String sinExtension = nombreArchivo.substring(0, nombreArchivo.lastIndexOf("."));
-        return carpeta + "/" + sinExtension;
     }
 }

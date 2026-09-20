@@ -22,4 +22,7 @@ public class EvidenciaEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ID_TICKET", referencedColumnName = "ID_TICKET")
     private TicketEntity ticket;
+
+    @Column(name = "CLOUDINARY_ID")
+    private String cloudinaryId;
 }

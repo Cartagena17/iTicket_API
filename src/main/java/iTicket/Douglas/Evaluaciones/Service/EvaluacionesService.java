@@ -1,5 +1,6 @@
 package iTicket.Douglas.Evaluaciones.Service;
 
+import iTicket.Douglas.Bitacoras.Repository.BitacoraRepository;
 import iTicket.Douglas.Evaluaciones.DTO.EvaluacionesDTO;
 import iTicket.Douglas.Evaluaciones.DTO.MetricasDTO;
 import iTicket.Douglas.Evaluaciones.Entity.EvaluacionesEntity;
@@ -12,6 +13,7 @@ import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
 import iTicket.Douglas.Tickets.Service.TicketService;
 import iTicket.Douglas.util.ErrorCode;
+import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,15 +37,27 @@ public class EvaluacionesService {
     private final EvaluacionesRepository repo;
     private final TicketRepository ticketRepository;
     private final TicketService ticketService;
+    private final UsuarioRepository usuarioRepository;
+    private final BitacoraRepository bitacoraRepo;
+
+    private String resolverTipoDepartamento(Long idUsuarioAdmin) {
+        return usuarioRepository.findById(idUsuarioAdmin)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún usuario con id: " + idUsuarioAdmin))
+                .getDepartamento().getTipoDepartamento();
+    }
 
     @Transactional
-    public EvaluacionesDTO nuevaEvaluacion(@Valid EvaluacionesDTO dto) {
+    public EvaluacionesDTO nuevaEvaluacion(@Valid EvaluacionesDTO dto,  Long idUsuarioCreador) {
         if (repo.findByTicket_IdTicket(dto.getIdTicket()).isPresent()) {
             throw new RecursoDuplicadoException(ErrorCode.WEVA001, "El ticket con ID " + dto.getIdTicket() + " ya cuenta con una evaluación.");
         }
 
         TicketEntity ticketExistente = ticketRepository.findById(dto.getIdTicket())
                 .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "El ticket con ID " + dto.getIdTicket() + " no existe."));
+
+        if (!ticketExistente.getCreador().getIdUsuario().equals(idUsuarioCreador)) {
+            throw new OperacionInvalidaException("Solo el creador del ticket puede evaluarlo.");
+        }
 
         if (!"Resuelto".equalsIgnoreCase(ticketExistente.getEstado())) {
             throw new OperacionInvalidaException(ErrorCode.WEVA002, "Solo los tickets en estado 'Resuelto' pueden ser evaluados. El ticket actualmente está: " + ticketExistente.getEstado());
@@ -54,7 +68,7 @@ public class EvaluacionesService {
 
         TicketEstadoDTO dtoT = new TicketEstadoDTO();
         dtoT.setEstado("Cerrado");
-        ticketService.actualizarEstado(dto.getIdTicket(), dtoT);
+        ticketService.actualizarEstado(dto.getIdTicket(), dtoT, idUsuarioCreador);
 
         log.info("Nueva evaluación registrada: " + entitySave.getIdEvaluacion());
         return convertirADTO(entitySave);
@@ -111,25 +125,27 @@ public class EvaluacionesService {
         return repo.countEvaluaciones();
     }
 
-    public Page<EvaluacionesDTO> obtenerEvaluacionesPaginadas(String busqueda, Double calificacion, LocalDate fecha, Pageable pageable) {
+    public Page<EvaluacionesDTO> obtenerEvaluacionesPaginadas(Long idUsuarioAdmin, String busqueda, Double calificacion, LocalDate fecha, Pageable pageable) {
+        String tipoDepartamento = resolverTipoDepartamento(idUsuarioAdmin);
         String filtroBusqueda = (busqueda != null && !busqueda.trim().isEmpty()) ? busqueda.trim() : null;
         Double filtroCalificacion = (calificacion != null && calificacion > 0) ? calificacion : null;
 
         LocalDateTime fechaInicio = (fecha != null) ? fecha.atStartOfDay() : null;
         LocalDateTime fechaFin = (fecha != null) ? fecha.atTime(LocalTime.MAX) : null;
 
-        Page<EvaluacionesEntity> paginaEntities = repo.buscarPorFiltrosPaginado(filtroBusqueda, filtroCalificacion, fechaInicio, fechaFin, pageable);
+        Page<EvaluacionesEntity> paginaEntities = repo.buscarPorFiltrosPaginado(tipoDepartamento, filtroBusqueda, filtroCalificacion, fechaInicio, fechaFin, pageable);
         return paginaEntities.map(this::convertirADTO);
     }
 
-    public MetricasDTO obtenerMetricas(String busqueda, Double calificacion, LocalDate fecha) {
+    public MetricasDTO obtenerMetricas(Long idUsuarioAdmin, String busqueda, Double calificacion, LocalDate fecha) {
+        String tipoDepartamento = resolverTipoDepartamento(idUsuarioAdmin);
         String filtroBusqueda = (busqueda != null && !busqueda.trim().isEmpty()) ? busqueda.trim() : null;
         Double filtroCalificacion = (calificacion != null && calificacion > 0) ? calificacion : null;
 
         LocalDateTime fechaInicio = (fecha != null) ? fecha.atStartOfDay() : null;
         LocalDateTime fechaFin = (fecha != null) ? fecha.atTime(LocalTime.MAX) : null;
 
-        Object[] res = repo.obtenerMetricasRaw(filtroBusqueda, filtroCalificacion, fechaInicio, fechaFin);
+        Object[] res = repo.obtenerMetricasRaw(tipoDepartamento, filtroBusqueda, filtroCalificacion, fechaInicio, fechaFin);
 
         if (res == null || res.length == 0 || res[0] == null) {
             return new MetricasDTO(0L, 0.0, 0L, 0L);
@@ -144,6 +160,30 @@ public class EvaluacionesService {
         Long negativas = (fila.length > 3 && fila[3] != null) ? ((Number) fila[3]).longValue() : 0L;
 
         return new MetricasDTO(total, promedio, positivas, negativas);
+    }
+
+    public List<Long> obtenerDistribucionCalificacionesPorTecnico(Long idUsuarioTecnico) {
+        Object[] res = repo.obtenerDistribucionCalificacionesPorTecnico(idUsuarioTecnico);
+        Object[] fila = (res != null && res.length > 0 && res[0] instanceof Object[]) ? (Object[]) res[0] : res;
+
+        List<Long> distribucion = new java.util.ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            Object valor = (fila != null && fila.length > i) ? fila[i] : null;
+            distribucion.add(valor != null ? ((Number) valor).longValue() : 0L);
+        }
+        return distribucion;
+    }
+
+    public List<Long> obtenerDistribucionCalificacionesPorUsuario(Long idUsuarioCreador) {
+        Object[] res = repo.obtenerDistribucionCalificacionesPorUsuario(idUsuarioCreador);
+        Object[] fila = (res != null && res.length > 0 && res[0] instanceof Object[]) ? (Object[]) res[0] : res;
+
+        List<Long> distribucion = new java.util.ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            Object valor = (fila != null && fila.length > i) ? fila[i] : null;
+            distribucion.add(valor != null ? ((Number) valor).longValue() : 0L);
+        }
+        return distribucion;
     }
 
     private EvaluacionesEntity convertirAEntity(EvaluacionesDTO dto, TicketEntity ticket) {
@@ -164,7 +204,8 @@ public class EvaluacionesService {
             dto.setIdTicket(entity.getTicket().getIdTicket());
             dto.setCodigoTicket(entity.getTicket().getCodigo());
             dto.setAsuntoTicket(entity.getTicket().getAsunto());
-            dto.setFechaEvaluacion(entity.getTicket().getFechaCreacion());
+            bitacoraRepo.findFirstByIdTicketAndNuevoEstadoOrderByFechaHoraDesc(entity.getTicket().getIdTicket(), "Cerrado")
+                    .ifPresent(bitacora -> dto.setFechaEvaluacion(bitacora.getFechaHora()));
 
             if (entity.getTicket().getTecnicoAsignado() != null) {
                 dto.setNombreTecnico(entity.getTicket().getTecnicoAsignado().getNombreUsuario());

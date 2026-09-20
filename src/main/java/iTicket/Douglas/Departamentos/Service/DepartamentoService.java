@@ -5,6 +5,7 @@ import iTicket.Douglas.Areas.Repository.AreaRepository;
 import iTicket.Douglas.Departamentos.DTO.DepartamentoDTO;
 import iTicket.Douglas.Departamentos.Entity.DepartamentoEntity;
 import iTicket.Douglas.Departamentos.Repository.DepartamentoRepository;
+import iTicket.Douglas.Exception.OperacionInvalidaException;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
@@ -33,6 +34,8 @@ public class DepartamentoService {
         AreaEntity area = arearepo.findById(dto.getIdArea())
                 .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WDEP001, "El área con id " + dto.getIdArea() + " no existe"));
 
+        validarTipoUnico(dto.getTipoDepartamento(), null);
+
         DepartamentoEntity entity = convertirAEntity(dto, area);
         DepartamentoEntity entitySave = repo.save(entity);
         log.info("Nuevo departamento registrado: " + entitySave.getIdDepartamento());
@@ -60,7 +63,11 @@ public class DepartamentoService {
                     .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WDEP001, "El área con id " + dto.getIdArea() + " no existe"));
             entidad.setArea(area);
         }
+
+        validarTipoUnico(dto.getTipoDepartamento(), id);
+
         entidad.setNombreDepartamento(dto.getNombreDepartamento());
+        entidad.setTipoDepartamento(dto.getTipoDepartamento());
         DepartamentoEntity datosGuardados = repo.save(entidad);
         log.info("Departamento con id " + id + " actualizado");
         return convertirADTO(datosGuardados);
@@ -79,6 +86,20 @@ public class DepartamentoService {
     public List<DepartamentoDTO> obtenerDepartamentosAsignables() {
         List<DepartamentoEntity> data = repo.findAsignables();
         return data.stream().map(this::convertirADTO).collect(Collectors.toList());
+    }
+
+    //'Otro' sí puede repetirse, cada área puede tener el suyo, pero solo puede haber uno de IT y uno de Mantenimiento
+    private void validarTipoUnico(String tipoDepartamento, Long idDepartamentoActual) {
+        boolean unico = "IT".equalsIgnoreCase(tipoDepartamento) || "Mantenimiento".equalsIgnoreCase(tipoDepartamento);
+        if (!unico) return;
+
+        boolean yaExiste = (idDepartamentoActual == null)
+                ? repo.existsByTipoDepartamento(tipoDepartamento)
+                : repo.existsByTipoDepartamentoAndIdDepartamentoNot(tipoDepartamento, idDepartamentoActual);
+
+        if (yaExiste) {
+            throw new OperacionInvalidaException("Ya existe un departamento de tipo '" + tipoDepartamento + "'. Solo puede haber uno.");
+        }
     }
 
     private DepartamentoEntity convertirAEntity(@Valid DepartamentoDTO dto, AreaEntity area) {

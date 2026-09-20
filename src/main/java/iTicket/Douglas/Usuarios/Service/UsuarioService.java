@@ -6,11 +6,13 @@ import iTicket.Douglas.Exception.OperacionInvalidaException;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Roles.Entity.RolEntity;
 import iTicket.Douglas.Roles.Repository.RolRepository;
+import iTicket.Douglas.Usuarios.DTO.CambioContraseñaDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioPatchDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioUpdateDTO;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
+import iTicket.Douglas.Utils.CloudinaryService;
 import iTicket.Douglas.Utils.PasswordUtil;
 import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
@@ -18,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,6 +35,7 @@ public class UsuarioService {
     private final RolRepository rolRepo;
     private final DepartamentoRepository departamentoRepo;
     private final PasswordUtil passwordUtil;
+    private final CloudinaryService cloudinaryService;
 
     @Transactional
     public UsuarioDTO nuevoUsuario(@Valid UsuarioDTO dto) {
@@ -78,6 +82,7 @@ public class UsuarioService {
         entidad.setImagenUrl(dto.getImagenUrl());
         entidad.setRol(rol);
         entidad.setDepartamento(departamento);
+        entidad.setEstado(dto.getEstado());
 
         if (dto.getClave() != null && !dto.getClave().isBlank()) {
             entidad.setClave(passwordUtil.encriptar(dto.getClave()));
@@ -123,6 +128,28 @@ public class UsuarioService {
         return convertirADTO(datosGuardados);
     }
 
+    /**
+     * Aqui esta la lógica de cambio de contraseña
+     * */
+
+    // A diferencia de actualizarParcial, pide la contraseña actual antes de reemplazarla
+    @Transactional
+    public void cambiarClave(Long id, CambioContraseñaDTO dto) {
+        UsuarioEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un usuario con id " + id));
+
+        if (!passwordUtil.coincidence(dto.getClaveActual(), entidad.getClave())) {
+            throw new OperacionInvalidaException("La contraseña actual no es correcta.");
+        }
+        if (passwordUtil.coincidence(dto.getClaveNueva(), entidad.getClave())) {
+            throw new OperacionInvalidaException("La nueva contraseña debe ser diferente a la actual.");
+        }
+
+        entidad.setClave(passwordUtil.encriptar(dto.getClaveNueva()));
+        repo.save(entidad);
+        log.info("Usuario con id " + id + " cambió su contraseña");
+    }
+
     @Transactional
     public boolean eliminarUsuario(Long id) {
         if (repo.existsById(id)) {
@@ -142,7 +169,7 @@ public class UsuarioService {
         }
 
         List<UsuarioEntity> lista = repo.findByRol_NombreRolInAndEstadoAndDepartamento_TipoDepartamento(
-                List.of("Tecnico", "Administrador"), 'T', departamento.getTipoDepartamento());
+                List.of("Tecnico", "Administrador"), true, departamento.getTipoDepartamento());
         return lista.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
@@ -165,6 +192,7 @@ public class UsuarioService {
         objEntity.setRol(rol);
         objEntity.setDepartamento(departamento);
         objEntity.setEstado(dto.getEstado());
+        objEntity.setCloudinaryId(dto.getCloudinaryId());
         return objEntity;
     }
 
@@ -179,6 +207,29 @@ public class UsuarioService {
         objDTO.setIdDepartamento(entity.getDepartamento().getIdDepartamento());
         objDTO.setNombreDepartamento(entity.getDepartamento().getNombreDepartamento());
         objDTO.setEstado(entity.getEstado());
+        objDTO.setCloudinaryId(entity.getCloudinaryId());
         return objDTO;
+    }
+
+    @Transactional
+    public UsuarioDTO actualizarImagen(Long id, MultipartFile archivo) {
+        UsuarioEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un usuario con id " + id));
+
+        String cloudinaryIdAnterior = entidad.getCloudinaryId();
+
+        CloudinaryService.ResultadoSubida subida = cloudinaryService.subirImagen(archivo, "iticket/usuarios");
+        entidad.setImagenUrl(subida.url());
+        entidad.setCloudinaryId(subida.publicId());
+
+        UsuarioEntity guardado = repo.save(entidad);
+
+        //Por si es la primera vez que el usuario sube una foto de perfil
+        if (cloudinaryIdAnterior != null) {
+            cloudinaryService.eliminarImagen(cloudinaryIdAnterior);
+        }
+
+        log.info("Imagen actualizada para el usuario con id " + id);
+        return convertirADTO(guardado);
     }
 }

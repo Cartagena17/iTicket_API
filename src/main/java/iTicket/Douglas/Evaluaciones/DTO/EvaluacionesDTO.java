@@ -28,6 +28,6 @@ public class EvaluacionesDTO {
     private String asuntoTicket;
     private String nombreTecnico;
     private LocalDateTime fechaEvaluacion;
-    // La fecha viene directamente del ticket: un ticket solo se puede cerrar cuando ya fue evaluado,
+    // La fecha viene directamente de la bitacora: un ticket solo se puede cerrar cuando ya fue evaluado,
     // así que la fecha de cierre del ticket es también la fecha de evaluación.
 }

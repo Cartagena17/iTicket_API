@@ -7,8 +7,6 @@ import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.util.ErrorCode;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
-import iTicket.Douglas.Ubicaciones.Entity.UbicacionEntity;
-import iTicket.Douglas.Ubicaciones.Repository.UbicacionRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +26,6 @@ public class DetalleTSService {
 
     private final DetalleTSRepository repo;
     private final TicketRepository ticketRepo;
-    private final UbicacionRepository ubicacionRepo;
 
     @Transactional
     public DetalleTSDTO nuevoDetalleTS(@Valid DetalleTSDTO dto) {
@@ -42,7 +39,7 @@ public class DetalleTSService {
         DetalleTSEntity entity = new DetalleTSEntity();
         entity.setNombreSoftware(dto.getNombreSoftware());
         entity.setVersion(dto.getVersion());
-        entity.setUbicacion(buscarUbicacion(dto.getUbicacion()));
+        entity.setDescripcionUbicaciones(dto.getDescripcionUbicaciones());
         entity.setTicket(buscarTicket(dto.getTicket()));
         return entity;
     }
@@ -52,7 +49,7 @@ public class DetalleTSService {
         dto.setIdDetalleTs(entity.getIdDetalleTS());
         dto.setNombreSoftware(entity.getNombreSoftware());
         dto.setVersion(entity.getVersion());
-        dto.setUbicacion(entity.getUbicacion().getId());
+        dto.setDescripcionUbicaciones(entity.getDescripcionUbicaciones());
         dto.setTicket(entity.getTicket().getIdTicket());
         dto.setAsunto(entity.getTicket().getAsunto());
         return dto;
@@ -70,7 +67,7 @@ public class DetalleTSService {
 
         entidad.setNombreSoftware(dto.getNombreSoftware());
         entidad.setVersion(dto.getVersion());
-        entidad.setUbicacion(buscarUbicacion(dto.getUbicacion()));
+        entidad.setDescripcionUbicaciones(dto.getDescripcionUbicaciones());
         entidad.setTicket(buscarTicket(dto.getTicket()));
         DetalleTSEntity datosGuardados = repo.save(entidad);
         log.info("Detalle TS con id " + id + " actualizado");
@@ -96,20 +93,16 @@ public class DetalleTSService {
                 .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "No existe ningún ticket con id: " + id));
     }
 
-    private UbicacionEntity buscarUbicacion(Long id) {
-        return ubicacionRepo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe ninguna ubicación con id: " + id));
-    }
 
     @Transactional
-    public void reemplazarDetalles(TicketEntity ticket, List<DetalleTSDTO> detalles) {
+    public void reemplazarDetalles(TicketEntity ticket, @Valid List<DetalleTSDTO> detalles) {
         repo.deleteByTicket(ticket);
 
         for (DetalleTSDTO dto : detalles) {
             DetalleTSEntity entity = new DetalleTSEntity();
             entity.setNombreSoftware(dto.getNombreSoftware());
             entity.setVersion(dto.getVersion());
-            entity.setUbicacion(buscarUbicacion(dto.getUbicacion()));
+            entity.setDescripcionUbicaciones(dto.getDescripcionUbicaciones());
             entity.setTicket(ticket);
             repo.save(entity);
         }

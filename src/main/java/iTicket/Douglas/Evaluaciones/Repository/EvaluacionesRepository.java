@@ -17,12 +17,14 @@ public interface EvaluacionesRepository extends JpaRepository<EvaluacionesEntity
     Optional<EvaluacionesEntity> findByTicket_IdTicket(Long idTicket);
 
     @Query("SELECT e FROM EvaluacionesEntity e WHERE " +
+            "e.ticket.departamento.tipoDepartamento = :tipoDepartamento AND " +
             "(:busqueda IS NULL OR :busqueda = '' OR " +
             " UPPER(e.ticket.codigo) LIKE UPPER(CONCAT('%', :busqueda, '%')) OR " +
             " UPPER(e.ticket.asunto) LIKE UPPER(CONCAT('%', :busqueda, '%'))) AND " +
             "(:calificacion IS NULL OR e.calificacion = :calificacion) AND " +
             "(:fechaInicio IS NULL OR (e.ticket.fechaCreacion >= :fechaInicio AND e.ticket.fechaCreacion <= :fechaFin))")
     Page<EvaluacionesEntity> buscarPorFiltrosPaginado(
+            @Param("tipoDepartamento") String tipoDepartamento,
             @Param("busqueda") String busqueda,
             @Param("calificacion") Double calificacion,
             @Param("fechaInicio") LocalDateTime fechaInicio,
@@ -34,12 +36,14 @@ public interface EvaluacionesRepository extends JpaRepository<EvaluacionesEntity
             "SUM(CASE WHEN e.calificacion >= 4 THEN 1L ELSE 0L END), " +
             "SUM(CASE WHEN e.calificacion <= 2 THEN 1L ELSE 0L END) " +
             "FROM EvaluacionesEntity e WHERE " +
+            "e.ticket.departamento.tipoDepartamento = :tipoDepartamento AND " +
             "(:busqueda IS NULL OR :busqueda = '' OR " +
             " UPPER(e.ticket.codigo) LIKE UPPER(CONCAT('%', :busqueda, '%')) OR " +
             " UPPER(e.ticket.asunto) LIKE UPPER(CONCAT('%', :busqueda, '%'))) AND " +
             "(:calificacion IS NULL OR e.calificacion = :calificacion) AND " +
             "(:fechaInicio IS NULL OR (e.ticket.fechaCreacion >= :fechaInicio AND e.ticket.fechaCreacion <= :fechaFin))")
     Object[] obtenerMetricasRaw(
+            @Param("tipoDepartamento") String tipoDepartamento,
             @Param("busqueda") String busqueda,
             @Param("calificacion") Double calificacion,
             @Param("fechaInicio") LocalDateTime fechaInicio,
@@ -55,41 +59,75 @@ public interface EvaluacionesRepository extends JpaRepository<EvaluacionesEntity
             "SUM(CASE WHEN e.calificacion = 3 THEN 1L ELSE 0L END), " +
             "SUM(CASE WHEN e.calificacion <= 2 THEN 1L ELSE 0L END) " +
             "FROM EvaluacionesEntity e WHERE " +
+            "e.ticket.departamento.tipoDepartamento = :tipoDepartamento AND " +
             "(:inicio IS NULL OR e.ticket.fechaCreacion >= :inicio) AND " +
             "(:fin IS NULL OR e.ticket.fechaCreacion <= :fin)")
-    Object[] obtenerMetricasDashboard(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+    Object[] obtenerMetricasDashboard(@Param("tipoDepartamento") String tipoDepartamento, @Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
 
     @Query(value = "SELECT e FROM EvaluacionesEntity e WHERE e.calificacion <= 2 AND " +
+            "e.ticket.departamento.tipoDepartamento = :tipoDepartamento AND " +
             "(:inicio IS NULL OR e.ticket.fechaCreacion >= :inicio) AND " +
             "(:fin IS NULL OR e.ticket.fechaCreacion <= :fin) " +
             "ORDER BY e.ticket.fechaCreacion DESC",
             countQuery = "SELECT COUNT(e) FROM EvaluacionesEntity e WHERE e.calificacion <= 2 AND " +
+                    "e.ticket.departamento.tipoDepartamento = :tipoDepartamento AND " +
                     "(:inicio IS NULL OR e.ticket.fechaCreacion >= :inicio) AND " +
                     "(:fin IS NULL OR e.ticket.fechaCreacion <= :fin)")
-    Page<EvaluacionesEntity> obtenerAlertasInsatisfaccion(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin, Pageable pageable);
+    Page<EvaluacionesEntity> obtenerAlertasInsatisfaccion(@Param("tipoDepartamento") String tipoDepartamento, @Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin, Pageable pageable);
+
+    @Query("SELECT " +
+            "SUM(CASE WHEN e.calificacion = 5 THEN 1L ELSE 0L END), " +
+            "SUM(CASE WHEN e.calificacion = 4 THEN 1L ELSE 0L END), " +
+            "SUM(CASE WHEN e.calificacion = 3 THEN 1L ELSE 0L END), " +
+            "SUM(CASE WHEN e.calificacion = 2 THEN 1L ELSE 0L END), " +
+            "SUM(CASE WHEN e.calificacion = 1 THEN 1L ELSE 0L END) " +
+            "FROM EvaluacionesEntity e WHERE e.ticket.tecnicoAsignado.idUsuario = :idUsuario")
+    Object[] obtenerDistribucionCalificacionesPorTecnico(@Param("idUsuario") Long idUsuario);
+
+    @Query("SELECT " +
+            "SUM(CASE WHEN e.calificacion = 5 THEN 1L ELSE 0L END), " +
+            "SUM(CASE WHEN e.calificacion = 4 THEN 1L ELSE 0L END), " +
+            "SUM(CASE WHEN e.calificacion = 3 THEN 1L ELSE 0L END), " +
+            "SUM(CASE WHEN e.calificacion = 2 THEN 1L ELSE 0L END), " +
+            "SUM(CASE WHEN e.calificacion = 1 THEN 1L ELSE 0L END) " +
+            "FROM EvaluacionesEntity e WHERE e.ticket.creador.idUsuario = :idUsuario")
+    Object[] obtenerDistribucionCalificacionesPorUsuario(@Param("idUsuario") Long idUsuario);
 
     @Query("SELECT e.ticket.tecnicoAsignado.nombreUsuario, AVG(e.calificacion) " +
             "FROM EvaluacionesEntity e " +
             "WHERE e.ticket.tecnicoAsignado IS NOT NULL " +
+            "AND e.ticket.departamento.tipoDepartamento = :tipoDepartamento " +
             "AND (:inicio IS NULL OR e.ticket.fechaCreacion >= :inicio) " +
             "AND (:fin IS NULL OR e.ticket.fechaCreacion <= :fin) " +
             "GROUP BY e.ticket.tecnicoAsignado.nombreUsuario " +
             "ORDER BY AVG(e.calificacion) DESC")
-    java.util.List<Object[]> obtenerPromedioSatisfaccionPorTecnico(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+    java.util.List<Object[]> obtenerPromedioSatisfaccionPorTecnico(@Param("tipoDepartamento") String tipoDepartamento, @Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
 
-    // Consulta dedicada para el endpoint /api/evaluaciones/alertas
-    // JOIN FETCH para pre-cargar ticket, creador y técnico y evitar LazyInitializationException
-    @Query("SELECT e FROM EvaluacionesEntity e " +
+    // Consulta dedicada para el endpoint /api/evaluaciones/alertas (paginada de verdad -
+    // antes traia la lista completa y el frontend paginaba en JS).
+    // JOIN FETCH para pre-cargar ticket, creador y tecnico y evitar LazyInitializationException.
+    // Todos los join son *-a-uno, paginar con fetch join aqui es seguro (el warning de
+    // Hibernate por paginar con fetch join solo aplica a colecciones *-a-muchos).
+    @Query(value = "SELECT e FROM EvaluacionesEntity e " +
             "JOIN FETCH e.ticket t " +
             "LEFT JOIN FETCH t.creador " +
             "LEFT JOIN FETCH t.tecnicoAsignado " +
             "WHERE e.calificacion <= :umbral " +
+            "AND t.departamento.tipoDepartamento = :tipoDepartamento " +
             "AND (:inicio IS NULL OR t.fechaCreacion >= :inicio) " +
             "AND (:fin IS NULL OR t.fechaCreacion <= :fin) " +
-            "ORDER BY t.fechaCreacion DESC")
-    java.util.List<EvaluacionesEntity> obtenerAlertasConDetalle(
+            "ORDER BY t.fechaCreacion DESC",
+            countQuery = "SELECT COUNT(e) FROM EvaluacionesEntity e " +
+            "JOIN e.ticket t " +
+            "WHERE e.calificacion <= :umbral " +
+            "AND t.departamento.tipoDepartamento = :tipoDepartamento " +
+            "AND (:inicio IS NULL OR t.fechaCreacion >= :inicio) " +
+            "AND (:fin IS NULL OR t.fechaCreacion <= :fin)")
+    Page<EvaluacionesEntity> obtenerAlertasConDetalle(
+            @Param("tipoDepartamento") String tipoDepartamento,
             @Param("umbral") Integer umbral,
             @Param("inicio") LocalDateTime inicio,
-            @Param("fin") LocalDateTime fin
+            @Param("fin") LocalDateTime fin,
+            Pageable pageable
     );
 }
