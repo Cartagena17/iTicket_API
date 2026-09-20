@@ -4,6 +4,7 @@ import iTicket.Douglas.Areas.DTO.AreaDTO;
 import iTicket.Douglas.Areas.Entity.AreaEntity;
 import iTicket.Douglas.Areas.Repository.AreaRepository;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
+import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,14 +37,14 @@ public class AreaService {
 
     public AreaDTO obtenerPorId(Long id) {
         AreaEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un área con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WDEP001, "No existe un área con id " + id));
         return convertirADTO(entidad);
     }
 
     @Transactional
     public AreaDTO editarArea(Long id, @Valid AreaDTO dto) {
         AreaEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un área con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WDEP001, "No existe un área con id " + id));
 
         entidad.setNombreArea(dto.getNombreArea());
         AreaEntity datosGuardados = repo.save(entidad);

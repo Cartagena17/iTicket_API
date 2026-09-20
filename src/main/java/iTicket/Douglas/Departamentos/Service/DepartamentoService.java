@@ -8,6 +8,7 @@ import iTicket.Douglas.Departamentos.Repository.DepartamentoRepository;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
+import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +31,7 @@ public class DepartamentoService {
     @Transactional
     public DepartamentoDTO nuevoDepartamento(@Valid DepartamentoDTO dto) {
         AreaEntity area = arearepo.findById(dto.getIdArea())
-                .orElseThrow(() -> new RecursoNoEncontradoException("El área con id " + dto.getIdArea() + " no existe"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WDEP001, "El área con id " + dto.getIdArea() + " no existe"));
 
         DepartamentoEntity entity = convertirAEntity(dto, area);
         DepartamentoEntity entitySave = repo.save(entity);
@@ -45,18 +46,18 @@ public class DepartamentoService {
 
     public DepartamentoDTO obtenerPorId(Long id) {
         DepartamentoEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un departamento con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WDEP001, "No existe un departamento con id " + id));
         return convertirADTO(entidad);
     }
 
     @Transactional
     public DepartamentoDTO actualizar(Long id, @Valid DepartamentoDTO dto) {
         DepartamentoEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un departamento con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WDEP001, "No existe un departamento con id " + id));
 
         if (dto.getIdArea() != null) {
             AreaEntity area = arearepo.findById(dto.getIdArea())
-                    .orElseThrow(() -> new RecursoNoEncontradoException("El área con id " + dto.getIdArea() + " no existe"));
+                    .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WDEP001, "El área con id " + dto.getIdArea() + " no existe"));
             entidad.setArea(area);
         }
         entidad.setNombreDepartamento(dto.getNombreDepartamento());

@@ -7,6 +7,7 @@ import iTicket.Douglas.MultimediaComentario.DTO.MultimediaComentarioDTO;
 import iTicket.Douglas.MultimediaComentario.Entity.MultimediaComentarioEntity;
 import iTicket.Douglas.MultimediaComentario.Repository.MultimediaComentarioRepository;
 import iTicket.Douglas.Utils.CloudinaryService;
+import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +31,7 @@ public class MultimediaComentarioService {
     @Transactional
     public MultimediaComentarioDTO subirMultimedia(MultipartFile archivo, Long idComentario) {
         if (!comentarioRepo.existsById(idComentario)) {
-            throw new RecursoNoEncontradoException("El comentario con ID: " + idComentario + " no existe");
+            throw new RecursoNoEncontradoException(ErrorCode.WEVI002, "El comentario con ID: " + idComentario + " no existe");
         }
 
         String urlPublica = cloudinaryService.subirImagen(archivo, "iticket/comentarios");
@@ -74,7 +75,7 @@ public class MultimediaComentarioService {
 
     public MultimediaComentarioDTO buscarPorId(Long id) {
         MultimediaComentarioEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe una multimedia con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WEVI002, "No existe una multimedia con id " + id));
         return convertirADTO(entidad);
     }
 
@@ -93,7 +94,7 @@ public class MultimediaComentarioService {
     @Transactional
     public MultimediaComentarioDTO actualizar(Long id, @Valid MultimediaComentarioDTO dto) {
         MultimediaComentarioEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe una multimedia con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WEVI002, "No existe una multimedia con id " + id));
 
         entidad.setMultimediaUrl(dto.getMultimediaUrl());
         ComentarioEntity comentario = new ComentarioEntity();

@@ -22,6 +22,7 @@ import iTicket.Douglas.DetalleTS.Service.DetalleTSService;
 import iTicket.Douglas.Evidencias.Entity.EvidenciaEntity;
 import iTicket.Douglas.Exception.OperacionInvalidaException;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
+import iTicket.Douglas.util.ErrorCode;
 import iTicket.Douglas.Tickets.DTO.*;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
@@ -84,7 +85,7 @@ public class TicketService {
         switch (dto.getTipoTicket()) {
             case "General" -> {
                 if (dto.getDescripcionUbicacion() == null || dto.getDescripcionUbicacion().isBlank()) {
-                    throw new OperacionInvalidaException("Debe indicar la ubicación del problema.");
+                    throw new OperacionInvalidaException(ErrorCode.WTK001, "Debe indicar la ubicaciÃ³n del problema.");
                 }
                 DetalleGDTO detalleDto = new DetalleGDTO();
                 detalleDto.setTicket(ticket.getIdTicket());
@@ -93,20 +94,20 @@ public class TicketService {
             }
             case "Articulo" -> {
                 if (dto.getCodigosArticulos() == null || dto.getCodigosArticulos().isEmpty()) {
-                    throw new OperacionInvalidaException("Debe agregar al menos un código de equipo/mobiliario.");
+                    throw new OperacionInvalidaException(ErrorCode.WTK004, "Debe agregar al menos un cÃ³digo de equipo/mobiliario.");
                 }
 
                 List<ArticuloEntity> articulos = new ArrayList<>();
                 for (String codigo : dto.getCodigosArticulos()) {
                     ArticuloEntity articulo = articuloRepo.findByCodigoArticulo(codigo)
-                            .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún artículo con código: " + codigo));
+                            .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WGLB404, "No existe ningÃºn artÃ­culo con cÃ³digo: " + codigo));
                     articulos.add(articulo);
                 }
 
                 long ubicacionesDistintas = articulos.stream().map(a -> a.getUbicacion().getId()).distinct().count();
 
                 if (ubicacionesDistintas > 1) {
-                    throw new OperacionInvalidaException("Los artículos seleccionados deben estar en la misma ubicación. No puedes reportar en un solo ticket equipos de distintos lugares.");
+                    throw new OperacionInvalidaException(ErrorCode.WTK004, "Los artÃ­culos seleccionados deben estar en la misma ubicaciÃ³n. No puedes reportar en un solo ticket equipos de distintos lugares.");
                 }
 
                 for (ArticuloEntity articulo : articulos) {
@@ -118,14 +119,14 @@ public class TicketService {
             }
             case "Software" -> {
                 if (dto.getDetallesSoftware() == null || dto.getDetallesSoftware().isEmpty()) {
-                    throw new OperacionInvalidaException("Debe agregar al menos un software a instalar.");
+                    throw new OperacionInvalidaException(ErrorCode.WTK004, "Debe agregar al menos un software a instalar.");
                 }
                 for (DetalleTSDTO sw : dto.getDetallesSoftware()) {
                     sw.setTicket(ticket.getIdTicket());
                     detalleTSService.nuevoDetalleTS(sw);
                 }
             }
-            default -> throw new OperacionInvalidaException("Tipo de ticket no reconocido: " + dto.getTipoTicket());
+            default -> throw new OperacionInvalidaException(ErrorCode.WTK002, "Tipo de ticket no reconocido: " + dto.getTipoTicket());
         }
     }
 
@@ -155,7 +156,7 @@ public class TicketService {
 
     public TicketDTO buscarTicket(Long id) {
         TicketEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un ticket con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "No existe un ticket con id " + id));
         return convertirADTOCompleto(entidad);
     }
 
@@ -176,14 +177,14 @@ public class TicketService {
             boolean resuelto = "Resuelto".equals(ticket.getEstado());
             boolean cerrado = "Cerrado".equals(ticket.getEstado());
             if (resuelto || cerrado) {
-                throw new OperacionInvalidaException("No se puede eliminar un ticket ya resuelto y evaluado.");
+                throw new OperacionInvalidaException(ErrorCode.WTK005, "No se puede eliminar un ticket ya resuelto y evaluado.");
             }
         } else if (esCreador) {
             if (!"Nuevo".equals(ticket.getEstado())) {
-                throw new OperacionInvalidaException("No puedes eliminar un ticket que ya fue asignado.");
+                throw new OperacionInvalidaException(ErrorCode.WTK005, "No puedes eliminar un ticket que ya fue asignado.");
             }
         } else {
-            throw new OperacionInvalidaException("No tienes permisos para eliminar este ticket.");
+            throw new OperacionInvalidaException(ErrorCode.WTK003, "No tienes permisos para eliminar este ticket.");
         }
 
         repo.delete(ticket);
@@ -194,7 +195,7 @@ public class TicketService {
     @Transactional
     public TicketDTO actualizarTicket(Long id, @Valid TicketDTO dto) {
         TicketEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un ticket con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "No existe un ticket con id " + id));
 
         entidad.setAsunto(dto.getAsunto());
         entidad.setDescripcion(dto.getDescripcion());
@@ -216,7 +217,7 @@ public class TicketService {
 
     public TicketDTO buscarPorCodigo(String codigo) {
         TicketEntity entidad = repo.findByCodigo(codigo)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún ticket con código: " + codigo));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "No existe ningún ticket con código: " + codigo));
         return convertirADTO(entidad);
     }
 
@@ -227,12 +228,12 @@ public class TicketService {
 
     private DepartamentoEntity buscarDepartamento(Long id) {
         return departamentosRepo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún departamento con ID: " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WDEP001, "No existe ningún departamento con ID: " + id));
     }
 
     private UsuarioEntity buscarUsuario(Long id) {
         return usuariosRepo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún usuario con ID: " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WUSR002, "No existe ningún usuario con ID: " + id));
     }
 
     private TicketEntity convertirAEntity(@Valid TicketDTO dto) {
@@ -316,10 +317,10 @@ public class TicketService {
         TicketEntity ticket = entidadOpcional.get();
 
         if (ticket.getTecnicoAsignado() == null || !ticket.getTecnicoAsignado().getIdUsuario().equals(idUsuarioTecnico)) {
-            throw new OperacionInvalidaException("Solo el usuario asignado puede hacer un reporte de este ticket");
+            throw new OperacionInvalidaException(ErrorCode.WTK003, "Solo el usuario asignado puede hacer un reporte de este ticket");
         }
         if (!List.of("En proceso", "En espera", "Vencido", "Resuelto").contains(ticket.getEstado())) {
-            throw new OperacionInvalidaException("El ticket no se encuentra en un estado que permita generar el reporte");
+            throw new OperacionInvalidaException(ErrorCode.WTK002, "El ticket no se encuentra en un estado que permita generar el reporte");
         }
         ticket.setDescripcionFalla(dto.getDescripcionFalla());
         ticket.setDescripcionSolucion(dto.getDescripcionSolucion());
@@ -381,13 +382,13 @@ public class TicketService {
         switch (entity.getTipoTicket()) {
             case "General":
                 DetalleGEntity detalle = detalleGRepo.findByTicket_IdTicket(entity.getIdTicket())
-                        .orElseThrow(() -> new RecursoNoEncontradoException("El ticket " + entity.getCodigo() + " es de tipo General pero no tiene detalle registrado."));
+                        .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "El ticket " + entity.getCodigo() + " es de tipo General pero no tiene detalle registrado."));
                 objDTO.setUbicacion(detalle.getDescripcionUbicacion());
                 break;
             case "Articulo":
                 List<DetalleTAEntity> detalles = detalleTARepo.findByTicket_IdTicket(entity.getIdTicket());
                 if (detalles.isEmpty()) {
-                    throw new RecursoNoEncontradoException("El ticket " + entity.getCodigo() + " es de tipo Articulo pero no tiene ningún detalle registrado.");
+                    throw new RecursoNoEncontradoException(ErrorCode.WTK008, "El ticket " + entity.getCodigo() + " es de tipo Articulo pero no tiene ningún detalle registrado.");
                 }
                 objDTO.setCodigosArticulos(detalles.stream().map(d -> d.getArticulo().getCodigoArticulo()).collect(Collectors.toList()));
                 detalles.stream().findFirst().ifPresent(d -> objDTO.setUbicacion(d.getArticulo().getUbicacion().getNombreUbicacion()));
@@ -395,7 +396,7 @@ public class TicketService {
             case "Software":
                 List<DetalleTSEntity> detallesS = detalleTSRepo.findByTicket_IdTicket(entity.getIdTicket());
                 if (detallesS.isEmpty()) {
-                    throw new RecursoNoEncontradoException("El ticket " + entity.getCodigo() + " es de tipo Software pero no tiene ningún detalle registrado.");
+                    throw new RecursoNoEncontradoException(ErrorCode.WTK008, "El ticket " + entity.getCodigo() + " es de tipo Software pero no tiene ningún detalle registrado.");
                 }
                 objDTO.setDetallesSoftware(detallesS.stream().map(d -> {
                     DetalleTSDTO detallesSoftware = new DetalleTSDTO();
@@ -418,10 +419,10 @@ public class TicketService {
         TicketEntity ticket = entidadOpcional.get();
 
         if (!ticket.getCreador().getIdUsuario().equals(idUsuario)) {
-            throw new OperacionInvalidaException("El usuario no tiene permiso para editar este ticket");
+            throw new OperacionInvalidaException(ErrorCode.WTK003, "El usuario no tiene permiso para editar este ticket");
         }
         if (!"Nuevo".equals(ticket.getEstado())) {
-            throw new OperacionInvalidaException("Solo se puede editar el ticket mientras está en estado 'Nuevo'");
+            throw new OperacionInvalidaException(ErrorCode.WTK002, "Solo se puede editar el ticket mientras está en estado 'Nuevo'");
         }
 
         ticket.setAsunto(dto.getAsunto());
@@ -438,7 +439,7 @@ public class TicketService {
         switch (ticket.getTipoTicket()) {
             case "General" -> {
                 if (dto.getDescripcionUbicacion() == null || dto.getDescripcionUbicacion().isBlank()) {
-                    throw new OperacionInvalidaException("Debe indicar la ubicación del problema.");
+                    throw new OperacionInvalidaException(ErrorCode.WTK001, "Debe indicar la ubicación del problema.");
                 }
                 DetalleGDTO detalleDto = new DetalleGDTO();
                 detalleDto.setTicket(ticket.getIdTicket());
@@ -447,17 +448,17 @@ public class TicketService {
             }
             case "Articulo" -> {
                 if (dto.getCodigosArticulos() == null || dto.getCodigosArticulos().isEmpty()) {
-                    throw new OperacionInvalidaException("Debe agregar al menos un código de equipo/mobiliario.");
+                    throw new OperacionInvalidaException(ErrorCode.WTK004, "Debe agregar al menos un código de equipo/mobiliario.");
                 }
                 detalleTAService.reemplazarDetalles(ticket, dto.getCodigosArticulos());
             }
             case "Software" -> {
                 if (dto.getDetallesSoftware() == null || dto.getDetallesSoftware().isEmpty()) {
-                    throw new OperacionInvalidaException("Debe agregar al menos un software a instalar.");
+                    throw new OperacionInvalidaException(ErrorCode.WTK004, "Debe agregar al menos un software a instalar.");
                 }
                 detalleTSService.reemplazarDetalles(ticket, dto.getDetallesSoftware());
             }
-            default -> throw new OperacionInvalidaException("Tipo de ticket no reconocido: " + ticket.getTipoTicket());
+            default -> throw new OperacionInvalidaException(ErrorCode.WTK006, "Tipo de ticket no reconocido: " + ticket.getTipoTicket());
         }
     }
 
@@ -472,7 +473,7 @@ public class TicketService {
 
         List<String> estadosReasignables = List.of("Asignado", "En proceso", "En espera", "Vencido");
         if (!estadosReasignables.contains(ticket.getEstado())) {
-            throw new OperacionInvalidaException("El ticket ya no puede reasignarse en su estado actual: " + ticket.getEstado());
+            throw new OperacionInvalidaException(ErrorCode.WTK007, "El ticket ya no puede reasignarse en su estado actual: " + ticket.getEstado());
         }
 
         ticket.setFechaVencimiento(dto.getFechaVencimiento());
@@ -495,15 +496,15 @@ public class TicketService {
         TicketEntity ticket = entidadOpcional.get();
 
         if (ticket.getTecnicoAsignado() == null || !ticket.getTecnicoAsignado().getIdUsuario().equals(idUsuario)) {
-            throw new OperacionInvalidaException("El usuario no tiene permiso para cambiar el estado de este ticket");
+            throw new OperacionInvalidaException(ErrorCode.WTK003, "El usuario no tiene permiso para cambiar el estado de este ticket");
         }
 
         List<String> estadosPermitidos = List.of("En proceso", "En espera");
         if (!estadosPermitidos.contains(dto.getEstado())) {
-            throw new OperacionInvalidaException("Solo puedes mover el ticket entre 'En proceso' y 'En espera'. Para marcarlo como resuelto, crea el reporte técnico.");
+            throw new OperacionInvalidaException(ErrorCode.WTK007, "Solo puedes mover el ticket entre 'En proceso' y 'En espera'. Para marcarlo como resuelto, crea el reporte técnico.");
         }
         if (!List.of("Asignado", "En proceso", "En espera").contains(ticket.getEstado())) {
-            throw new OperacionInvalidaException("El ticket no se encuentra en un estado que permita este cambio");
+            throw new OperacionInvalidaException(ErrorCode.WTK007, "El ticket no se encuentra en un estado que permita este cambio");
         }
 
         ticket.setEstado(dto.getEstado());
@@ -576,14 +577,14 @@ public class TicketService {
     @Transactional
     public boolean actualizarEstado(Long id, @Valid TicketEstadoDTO dto) {
         TicketEntity ticket = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("El ticket con ID: " + id + " no existe"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "El ticket con ID: " + id + " no existe"));
 
         ticket.setEstado(dto.getEstado());
         repo.save(ticket);
         return true;
     }
 
-    private static final List<String> diasSemana = List.of("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom");
+    private static final List<String> diasSemana = List.of("Lun", "Mar", "MiÃ©", "Jue", "Vie", "SÃ¡b", "Dom");
 
     public List<TicketResumenDiaDTO> obtenerResumenSemanal(Long idUsuario) {
         LocalDate hoy = LocalDate.now();
@@ -617,7 +618,7 @@ public class TicketService {
             LocalDate temp = fechaInicio;
             fechaInicio = fechaFin;
             fechaFin = temp;
-            log.warn("Fechas invertidas, se corrigieron automáticamente.");
+            log.warn("Fechas invertidas, se corrigieron automÃ¡ticamente.");
         }
 
         LocalDateTime inicio = fechaInicio.atStartOfDay();

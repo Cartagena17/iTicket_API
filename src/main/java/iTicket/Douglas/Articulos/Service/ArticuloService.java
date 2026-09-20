@@ -12,6 +12,7 @@ import iTicket.Douglas.Modelos.Entity.ModeloEntity;
 import iTicket.Douglas.Modelos.Repository.ModeloRepository;
 import iTicket.Douglas.Ubicaciones.Entity.UbicacionEntity;
 import iTicket.Douglas.Ubicaciones.Repository.UbicacionRepository;
+import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,15 +41,15 @@ public class ArticuloService {
     @Transactional
     public ArticuloDTO nuevoArticulo(@Valid ArticuloDTO dto) {
         CategoriaEntity categoria = categoriaRepo.findById(dto.getIdCategoria())
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe la categoría con id " + dto.getIdCategoria()));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe la categoría con id " + dto.getIdCategoria()));
 
         UbicacionEntity ubicacion = ubicacionRepo.findById(dto.getIdUbicacion())
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe la ubicación con id " + dto.getIdUbicacion()));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe la ubicación con id " + dto.getIdUbicacion()));
 
         ModeloEntity modelo = null;
         if (dto.getIdModelo() != null) {
             modelo = modelorepo.findById(dto.getIdModelo())
-                    .orElseThrow(() -> new RecursoNoEncontradoException("No existe el modelo con id " + dto.getIdModelo()));
+                    .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe el modelo con id " + dto.getIdModelo()));
         }
 
         ArticuloEntity entity = convertirAEntity(dto, modelo, categoria, ubicacion);
@@ -64,30 +65,30 @@ public class ArticuloService {
 
     public ArticuloDTO obtenerPorId(Long id) {
         ArticuloEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un artículo con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe un artículo con id " + id));
         return convertirADTO(entidad);
     }
 
     @Transactional
     public ArticuloDTO actualizarData(Long id, @Valid ArticuloDTO dto) {
         ArticuloEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un artículo con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe un artículo con id " + id));
 
         if (dto.getIdCategoria() != null) {
             CategoriaEntity categoria = categoriaRepo.findById(dto.getIdCategoria())
-                    .orElseThrow(() -> new RecursoNoEncontradoException("No existe la categoría con id " + dto.getIdCategoria()));
+                    .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe la categoría con id " + dto.getIdCategoria()));
             entidad.setCategoria(categoria);
         }
 
         if (dto.getIdUbicacion() != null) {
             UbicacionEntity ubicacion = ubicacionRepo.findById(dto.getIdUbicacion())
-                    .orElseThrow(() -> new RecursoNoEncontradoException("No existe la ubicación con id " + dto.getIdUbicacion()));
+                    .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe la ubicación con id " + dto.getIdUbicacion()));
             entidad.setUbicacion(ubicacion);
         }
 
         if (dto.getIdModelo() != null) {
             ModeloEntity modelo = modelorepo.findById(dto.getIdModelo())
-                    .orElseThrow(() -> new RecursoNoEncontradoException("No existe el modelo con id " + dto.getIdModelo()));
+                    .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe el modelo con id " + dto.getIdModelo()));
             entidad.setModelo(modelo);
         }
 

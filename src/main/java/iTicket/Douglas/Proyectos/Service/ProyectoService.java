@@ -7,6 +7,7 @@ import iTicket.Douglas.Proyectos.Entity.ProyectoEntity;
 import iTicket.Douglas.Proyectos.Repository.ProyectoRepository;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
+import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,7 +54,7 @@ public class ProyectoService {
 
     public ProyectoDTO obtenerPorId(Long id) {
         ProyectoEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un proyecto con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WPRY001, "No existe un proyecto con id " + id));
         return convertirADTO(entidad);
     }
 
@@ -79,7 +80,7 @@ public class ProyectoService {
     @Transactional
     public ProyectoDTO actualizarProyecto(Long id, @Valid ProyectoDTO dto) {
         ProyectoEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un proyecto con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WPRY001, "No existe un proyecto con id " + id));
 
         entidad.setNombreProyecto(dto.getNombreProyecto());
         entidad.setTipoProyecto(dto.getTipoProyecto());
@@ -128,6 +129,6 @@ public class ProyectoService {
 
     private UsuarioEntity buscarUsuario(Long id) {
         return repoUsuario.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún usuario con ID: " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WUSR002, "No existe ningún usuario con ID: " + id));
     }
 }

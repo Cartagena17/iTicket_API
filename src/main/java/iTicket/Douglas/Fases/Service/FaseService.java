@@ -7,6 +7,7 @@ import iTicket.Douglas.Fases.Entity.FaseEntity;
 import iTicket.Douglas.Fases.Repository.FaseRepository;
 import iTicket.Douglas.Proyectos.Entity.ProyectoEntity;
 import iTicket.Douglas.Proyectos.Repository.ProyectoRepository;
+import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,7 +63,7 @@ public class FaseService {
 
     private ProyectoEntity buscarProyecto(Long id) {
         return proyectoRepo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún proyecto con id: " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WPRY001, "No existe ningún proyecto con id: " + id));
     }
 
     @Transactional
@@ -81,7 +82,7 @@ public class FaseService {
     @Transactional
     public FaseDTO actualizarFase(Long id, @Valid FaseDTO dto) {
         FaseEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe una fase con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WPRY002, "No existe una fase con id " + id));
 
         entidad.setNombreFase(dto.getNombreFase());
         entidad.setFaseDescripcion(dto.getFaseDescripcion());
@@ -103,7 +104,7 @@ public class FaseService {
 
     public FaseDTO buscarPorNombreFase(String nombreFase) {
         FaseEntity entidad = repo.findByNombreFase(nombreFase)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ninguna fase con nombre: " + nombreFase));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WPRY002, "No existe ninguna fase con nombre: " + nombreFase));
         return convertirADTO(entidad);
     }
 
@@ -119,7 +120,7 @@ public class FaseService {
     @Transactional
     public FaseDTO actualizarCampoFase(Long id, @Valid PatchFaseDTO dto) {
         FaseEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe una fase con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WPRY002, "No existe una fase con id " + id));
 
         if (dto.getGastoTotal() != null) {
             entidad.setGastoTotal(dto.getGastoTotal());

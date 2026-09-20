@@ -4,6 +4,7 @@ import iTicket.Douglas.DetalleGeneral.DTO.DetalleGDTO;
 import iTicket.Douglas.DetalleGeneral.Entity.DetalleGEntity;
 import iTicket.Douglas.DetalleGeneral.Repository.DetalleGRepository;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
+import iTicket.Douglas.util.ErrorCode;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
 import jakarta.validation.Valid;
@@ -59,7 +60,7 @@ public class DetalleGService {
     @Transactional
     public DetalleGDTO actualizarDetalleG(Long id, @Valid DetalleGDTO dto) {
         DetalleGEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un detalle general con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "No existe un detalle general con id " + id));
 
         entidad.setDescripcionUbicacion(dto.getDescripcionUbicacion());
         entidad.setTicket(buscarTicket(dto.getTicket()));
@@ -79,13 +80,13 @@ public class DetalleGService {
 
     public DetalleGDTO obtenerDetallesIdTicket(Long idTicket) {
         DetalleGEntity entidad = repo.findByTicket_IdTicket(idTicket)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún detalle general para el ticket: " + idTicket));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "No existe ningún detalle general para el ticket: " + idTicket));
         return convertirADTO(entidad);
     }
 
     private TicketEntity buscarTicket(Long id) {
         return ticketRepo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún ticket con id: " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "No existe ningún ticket con id: " + id));
     }
 
     @Transactional

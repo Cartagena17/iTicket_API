@@ -11,6 +11,7 @@ import iTicket.Douglas.Tickets.DTO.TicketEstadoDTO;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
 import iTicket.Douglas.Tickets.Service.TicketService;
+import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,14 +39,14 @@ public class EvaluacionesService {
     @Transactional
     public EvaluacionesDTO nuevaEvaluacion(@Valid EvaluacionesDTO dto) {
         if (repo.findByTicket_IdTicket(dto.getIdTicket()).isPresent()) {
-            throw new RecursoDuplicadoException("El ticket con ID " + dto.getIdTicket() + " ya cuenta con una evaluación.");
+            throw new RecursoDuplicadoException(ErrorCode.WEVA001, "El ticket con ID " + dto.getIdTicket() + " ya cuenta con una evaluación.");
         }
 
         TicketEntity ticketExistente = ticketRepository.findById(dto.getIdTicket())
-                .orElseThrow(() -> new RecursoNoEncontradoException("El ticket con ID " + dto.getIdTicket() + " no existe."));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "El ticket con ID " + dto.getIdTicket() + " no existe."));
 
         if (!"Resuelto".equalsIgnoreCase(ticketExistente.getEstado())) {
-            throw new OperacionInvalidaException("Solo los tickets en estado 'Resuelto' pueden ser evaluados. El ticket actualmente está: " + ticketExistente.getEstado());
+            throw new OperacionInvalidaException(ErrorCode.WEVA002, "Solo los tickets en estado 'Resuelto' pueden ser evaluados. El ticket actualmente está: " + ticketExistente.getEstado());
         }
 
         EvaluacionesEntity entity = convertirAEntity(dto, ticketExistente);
@@ -65,27 +66,27 @@ public class EvaluacionesService {
 
     public EvaluacionesDTO buscarPorId(Long id) {
         EvaluacionesEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe una evaluación con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WEVA003, "No existe una evaluación con id " + id));
         return convertirADTO(entidad);
     }
 
     public EvaluacionesDTO buscarPorTicket(Long idTicket) {
         EvaluacionesEntity entidad = repo.findByTicket_IdTicket(idTicket)
-                .orElseThrow(() -> new RecursoNoEncontradoException("El ticket con id " + idTicket + " no tiene evaluación registrada"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WEVA003, "El ticket con id " + idTicket + " no tiene evaluación registrada"));
         return convertirADTO(entidad);
     }
 
     @Transactional
     public EvaluacionesDTO actualizarEvaluacion(Long id, @Valid EvaluacionesDTO dto) {
         EvaluacionesEntity entity = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("La evaluación con ID " + id + " no existe."));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WEVA003, "La evaluación con ID " + id + " no existe."));
 
         if (dto.getIdTicket() != null && !dto.getIdTicket().equals(entity.getTicket().getIdTicket())) {
             if (repo.findByTicket_IdTicket(dto.getIdTicket()).isPresent()) {
-                throw new RecursoDuplicadoException("El nuevo ticket con ID " + dto.getIdTicket() + " ya cuenta con una evaluación.");
+                throw new RecursoDuplicadoException(ErrorCode.WEVA001, "El nuevo ticket con ID " + dto.getIdTicket() + " ya cuenta con una evaluación.");
             }
             TicketEntity ticketExistente = ticketRepository.findById(dto.getIdTicket())
-                    .orElseThrow(() -> new RecursoNoEncontradoException("El ticket con ID " + dto.getIdTicket() + " no existe."));
+                    .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "El ticket con ID " + dto.getIdTicket() + " no existe."));
             entity.setTicket(ticketExistente);
         }
 

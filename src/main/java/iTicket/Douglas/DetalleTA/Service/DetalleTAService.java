@@ -6,6 +6,7 @@ import iTicket.Douglas.DetalleTA.DTO.DetalleTADTO;
 import iTicket.Douglas.DetalleTA.Entity.DetalleTAEntity;
 import iTicket.Douglas.DetalleTA.Repository.DetalleTARepository;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
+import iTicket.Douglas.util.ErrorCode;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
 import jakarta.validation.Valid;
@@ -32,10 +33,10 @@ public class DetalleTAService {
     @Transactional
     public DetalleTADTO nuevoDetalle(@Valid DetalleTADTO dto) {
         TicketEntity ticket = ticketRepo.findById(dto.getIdTicket())
-                .orElseThrow(() -> new RecursoNoEncontradoException("El ticket con id " + dto.getIdTicket() + " no existe"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "El ticket con id " + dto.getIdTicket() + " no existe"));
 
         ArticuloEntity articulo = articuloRepo.findById(dto.getIdArticulo())
-                .orElseThrow(() -> new RecursoNoEncontradoException("El artículo con id " + dto.getIdArticulo() + " no existe"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "El artículo con id " + dto.getIdArticulo() + " no existe"));
 
         DetalleTAEntity entity = convertirAEntity(ticket, articulo);
         DetalleTAEntity entitySave = repo.save(entity);
@@ -50,24 +51,24 @@ public class DetalleTAService {
 
     public DetalleTADTO obtenerPorId(Long id) {
         DetalleTAEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un detalle TA con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "No existe un detalle TA con id " + id));
         return convertirADTO(entidad);
     }
 
     @Transactional
     public DetalleTADTO actualizarData(Long id, DetalleTADTO dto) {
         DetalleTAEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un detalle TA con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "No existe un detalle TA con id " + id));
 
         if (dto.getIdTicket() != null) {
             TicketEntity ticket = ticketRepo.findById(dto.getIdTicket())
-                    .orElseThrow(() -> new RecursoNoEncontradoException("El ticket con id " + dto.getIdTicket() + " no existe"));
+                    .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "El ticket con id " + dto.getIdTicket() + " no existe"));
             entidad.setTicket(ticket);
         }
 
         if (dto.getIdArticulo() != null) {
             ArticuloEntity articulo = articuloRepo.findById(dto.getIdArticulo())
-                    .orElseThrow(() -> new RecursoNoEncontradoException("El artículo con id " + dto.getIdArticulo() + " no existe"));
+                    .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "El artículo con id " + dto.getIdArticulo() + " no existe"));
             entidad.setArticulo(articulo);
         }
 
@@ -108,7 +109,7 @@ public class DetalleTAService {
 
         for (String codigo : codigosArticulos) {
             ArticuloEntity articulo = articuloRepo.findByCodigoArticulo(codigo)
-                    .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún artículo con código: " + codigo));
+                    .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe ningún artículo con código: " + codigo));
 
             DetalleTAEntity entity = new DetalleTAEntity();
             entity.setTicket(ticket);

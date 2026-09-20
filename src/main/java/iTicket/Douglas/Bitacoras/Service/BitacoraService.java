@@ -6,6 +6,7 @@ import iTicket.Douglas.Bitacoras.Repository.BitacoraRepository;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
+import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,7 +60,7 @@ public class BitacoraService {
 
     private UsuarioEntity buscarUsuario(Long id) {
         return usuarioRepo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún usuario con id: " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WUSR002, "No existe ningún usuario con id: " + id));
     }
 
     public List<BitacoraDTO> obtenerBitacoras() {

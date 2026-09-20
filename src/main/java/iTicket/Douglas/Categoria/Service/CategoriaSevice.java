@@ -4,6 +4,7 @@ import iTicket.Douglas.Categoria.DTO.CategoriaDTO;
 import iTicket.Douglas.Categoria.Entity.CategoriaEntity;
 import iTicket.Douglas.Categoria.Repository.CategoriaRepository;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
+import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,14 +50,14 @@ public class CategoriaSevice {
 
     public CategoriaDTO obtenerNombreCategoria(String nombreCategoria) {
         CategoriaEntity entidad = repo.findByNombreCategoria(nombreCategoria)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe una categoría con nombre: " + nombreCategoria));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe una categoría con nombre: " + nombreCategoria));
         return convertirADTO(entidad);
     }
 
     @Transactional
     public CategoriaDTO actualizarCategoria(Long id, @Valid CategoriaDTO dto) {
         CategoriaEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe una categoría con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe una categoría con id " + id));
 
         entidad.setNombreCategoria(dto.getNombreCategoria());
         CategoriaEntity datosGuardados = repo.save(entidad);

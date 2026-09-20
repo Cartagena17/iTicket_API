@@ -5,6 +5,7 @@ import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Marcas.DTO.MarcaDTO;
 import iTicket.Douglas.Marcas.Entity.MarcaEntity;
 import iTicket.Douglas.Marcas.Repository.MarcaRepository;
+import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +26,7 @@ public class MarcaService {
     @Transactional
     public MarcaDTO nuevaMarca(@Valid MarcaDTO dto) {
         if (repo.existsByNombreMarcaIgnoreCase(dto.getNombreMarca())) {
-            throw new RecursoDuplicadoException("Ya existe una marca llamada '" + dto.getNombreMarca() + "'");
+            throw new RecursoDuplicadoException(ErrorCode.WMAR001, "Ya existe una marca llamada '" + dto.getNombreMarca() + "'");
         }
         MarcaEntity entity = convertirAEntity(dto);
         MarcaEntity entitySave = repo.save(entity);
@@ -40,7 +41,7 @@ public class MarcaService {
 
     public MarcaDTO obtenerporId(Long id) {
         MarcaEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe una marca con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe una marca con id " + id));
         return convertirADTO(entidad);
     }
 
@@ -56,7 +57,7 @@ public class MarcaService {
     @Transactional
     public MarcaDTO actualizar(Long id, @Valid MarcaDTO dto) {
         MarcaEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe una marca con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe una marca con id " + id));
 
         entidad.setNombreMarca(dto.getNombreMarca());
         MarcaEntity datosGuardados = repo.save(entidad);

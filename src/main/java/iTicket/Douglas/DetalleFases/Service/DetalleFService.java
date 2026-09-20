@@ -4,6 +4,7 @@ import iTicket.Douglas.DetalleFases.DTO.DetalleFDTO;
 import iTicket.Douglas.DetalleFases.Entity.DetalleFEntity;
 import iTicket.Douglas.DetalleFases.Repository.DetalleFRepository;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
+import iTicket.Douglas.util.ErrorCode;
 import iTicket.Douglas.Fases.Entity.FaseEntity;
 import iTicket.Douglas.Fases.Repository.FaseRepository;
 import jakarta.validation.Valid;
@@ -44,7 +45,7 @@ public class DetalleFService {
 
     private FaseEntity buscarFase(Long id) {
         return faseRepo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ninguna fase con id: " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WPRY002, "No existe ninguna fase con id: " + id));
     }
 
     @Transactional
@@ -63,7 +64,7 @@ public class DetalleFService {
     @Transactional
     public DetalleFDTO actualizarDetalleF(Long id, @Valid DetalleFDTO dto) {
         DetalleFEntity entity = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un detalle de fase con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WPRY002, "No existe un detalle de fase con id " + id));
 
         entity.setDescripcionDetalle(dto.getDescripcionDetalle());
         entity.setCompletado(dto.getCompletado());
