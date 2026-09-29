@@ -33,18 +33,18 @@ public class ComentarioEntity {
     @Column(name = "comentario")
     private String comentario;
 
-    @OneToMany(mappedBy = "comentario")
+    @OneToMany(mappedBy = "comentario", fetch = FetchType.LAZY)
     private List<MultimediaComentarioEntity> multimediaComentarios;
 
     @CreationTimestamp
     @Column(name = "fecha_hora")
     private LocalDateTime fechaHora;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_ticket")
     private TicketEntity ticket;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_usuario_comentario")
     private UsuarioEntity usuario;
 }

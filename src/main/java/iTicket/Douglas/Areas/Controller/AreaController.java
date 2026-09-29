@@ -16,7 +16,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/areas")
 @RequiredArgsConstructor
-@CrossOrigin
 public class AreaController {
 
     private final AreaService service;

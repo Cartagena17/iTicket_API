@@ -1,10 +1,13 @@
 package iTicket.Douglas.Articulos.Entity;
 import iTicket.Douglas.Categoria.Entity.CategoriaEntity;
+import iTicket.Douglas.DetalleTA.Entity.DetalleTAEntity;
 import iTicket.Douglas.Modelos.Entity.ModeloEntity;
 import iTicket.Douglas.Ubicaciones.Entity.UbicacionEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
 
 @Entity
 @Getter @Setter
@@ -35,4 +38,7 @@ public class ArticuloEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_ubicacion",  nullable = false)
     private UbicacionEntity ubicacion;
+
+    @OneToMany(mappedBy = "articulo", fetch = FetchType.LAZY)
+    private List<DetalleTAEntity> detallesArticulo;
 }

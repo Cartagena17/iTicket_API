@@ -21,7 +21,6 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/chatbot")
-@CrossOrigin
 public class ChatbotController {
 
     private final ChatbotService chatbotService;

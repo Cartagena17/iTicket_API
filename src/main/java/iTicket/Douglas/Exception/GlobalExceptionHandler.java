@@ -11,6 +11,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.security.access.AccessDeniedException;
+
+
 
 import java.util.stream.Collectors;
 
@@ -121,5 +124,12 @@ public class GlobalExceptionHandler {
         log.error("Error inesperado: ", e);
         ApiResponse<Object> respuesta = new ApiResponse<>(false, "Ocurrió un error inesperado. Contacte al administrador", null);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuesta);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Object>> manejarAccesoDenegado(AccessDeniedException e) {
+        log.warn("Acceso denegado: " + e.getMessage());
+        ApiResponse<Object> respuesta = new ApiResponse<>(false, "No tienes permisos para realizar esta accion", null);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(respuesta);
     }
 }

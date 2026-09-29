@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -20,7 +21,6 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@CrossOrigin
 @RequestMapping("/api/tickets")
 @RequiredArgsConstructor
 @Validated
@@ -148,6 +148,7 @@ public class TicketController {
     }
 
     //Panel "Mi resumen" del dashboard admin: paginado y filtrado por el departamento del admin.
+    @PreAuthorize("hasRole('Administrador')")
     @GetMapping("/resumen-panel-admin")
     public ResponseEntity<ApiResponse<TicketPaginaDTO>> obtenerResumenPanelAdmin(
             @RequestParam Long idUsuarioAdmin,
@@ -162,6 +163,7 @@ public class TicketController {
     }
 
     //Contadores (sin paginar) para las tarjetas Pendientes/Vencidos/Vencen hoy del mismo panel
+    @PreAuthorize("hasRole('Administrador')")
     @GetMapping("/resumen-panel-admin/contadores")
     public ResponseEntity<ApiResponse<Map<String, Long>>> obtenerContadoresPanelAdmin(@RequestParam Long idUsuarioAdmin) {
         Map<String, Long> resultado = service.obtenerContadoresPanelAdmin(idUsuarioAdmin);
@@ -171,6 +173,7 @@ public class TicketController {
     }
 
     //Panel "Asignaciones" del dashboard técnico: paginado y filtrado por los tickets asignados al técnico.
+    @PreAuthorize("hasAnyRole('Administrador', 'Tecnico')")
     @GetMapping("/resumen-panel-tecnico")
     public ResponseEntity<ApiResponse<TicketPaginaDTO>> obtenerResumenPanelTecnico(
             @RequestParam Long idUsuario,
@@ -185,6 +188,7 @@ public class TicketController {
     }
 
     //Contadores (sin paginar) para las tarjetas Pendientes/Vencidos/Vencen hoy del mismo panel
+    @PreAuthorize("hasAnyRole('Administrador', 'Tecnico')")
     @GetMapping("/resumen-panel-tecnico/contadores")
     public ResponseEntity<ApiResponse<Map<String, Long>>> obtenerContadoresPanelTecnico(@RequestParam Long idUsuario) {
         Map<String, Long> resultado = service.obtenerContadoresPanelTecnico(idUsuario);
@@ -193,6 +197,7 @@ public class TicketController {
         return ResponseEntity.ok(respuesta);
     }
 
+    @PreAuthorize("hasRole('Administrador')")
     @GetMapping("/aprobaciones-pendientes")
     public ResponseEntity<ApiResponse<List<TicketDTO>>> obtenerAprobacionesPendientes(
             @RequestParam(defaultValue = "5") @Min(value = 5, message = "El tamaño mínimo de página es 5")
@@ -234,6 +239,7 @@ public class TicketController {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse<>(false, "Ticket con ID: " + id + " no encontrado"));
     }
 
+    @PreAuthorize("hasRole('Administrador')")
     @GetMapping("/departamento")
     public ResponseEntity<ApiResponse<TicketPaginaDTO>> obtenerTicketsPorDepartamento(
             @RequestParam Long idUsuarioAdmin,
@@ -248,6 +254,7 @@ public class TicketController {
         return ResponseEntity.ok(respuesta);
     }
 
+    @PreAuthorize("hasAnyRole('Administrador', 'Tecnico')")
     @GetMapping("/tickets-asignados")
     public ResponseEntity<ApiResponse<TicketPaginaDTO>> obtenerPorTecnicoAsignado(
             @RequestParam Long idUsuario,

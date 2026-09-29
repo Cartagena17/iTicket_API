@@ -1,8 +1,13 @@
 package iTicket.Douglas.Usuarios.Entity;
 
+import iTicket.Douglas.Bitacoras.Entity.BitacoraEntity;
+import iTicket.Douglas.Chatbot.Entity.ChatConversationEntity;
 import iTicket.Douglas.Comentarios.Entity.ComentarioEntity;
 import iTicket.Douglas.Departamentos.Entity.DepartamentoEntity;
+import iTicket.Douglas.Notificaciones.Entity.NotificacionEntity;
+import iTicket.Douglas.Proyectos.Entity.ProyectoEntity;
 import iTicket.Douglas.Roles.Entity.RolEntity;
+import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Utils.BooleanToCharConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -48,8 +53,29 @@ public class UsuarioEntity {
     @JoinColumn(name = "id_departamento", nullable = false)
     private DepartamentoEntity departamento;
 
-    @OneToMany(mappedBy = "usuario")
+    @OneToMany(mappedBy = "usuario", fetch = FetchType.LAZY)
     private List<ComentarioEntity> comentarios;
+
+    @OneToMany(mappedBy = "creador", fetch = FetchType.LAZY)
+    private List<TicketEntity> ticketsCreados;
+
+    @OneToMany(mappedBy = "tecnicoAsignado", fetch = FetchType.LAZY)
+    private List<TicketEntity> ticketsAsignados;
+
+    @OneToMany(mappedBy = "usuario", fetch = FetchType.LAZY)
+    private List<BitacoraEntity> bitacoras;
+
+    @OneToMany(mappedBy = "coordinador", fetch = FetchType.LAZY)
+    private List<ProyectoEntity> proyectosCoordinados;
+
+    @OneToMany(mappedBy = "supervisor", fetch = FetchType.LAZY)
+    private List<ProyectoEntity> proyectosSupervisados;
+
+    @OneToMany(mappedBy = "usuario", fetch = FetchType.LAZY)
+    private List<ChatConversationEntity> conversaciones;
+
+    @OneToMany(mappedBy = "usuarioDestino", fetch = FetchType.LAZY)
+    private List<NotificacionEntity> notificaciones;
 
     @Convert(converter = BooleanToCharConverter.class)//Se aplica el BooleanToCharConverter para traducir el boolean a String
     @Column(name = "ESTADO")

@@ -3,6 +3,10 @@ package iTicket.Douglas.Tickets.Entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import iTicket.Douglas.Comentarios.Entity.ComentarioEntity;
 import iTicket.Douglas.Departamentos.Entity.DepartamentoEntity;
+import iTicket.Douglas.DetalleGeneral.Entity.DetalleGEntity;
+import iTicket.Douglas.DetalleTA.Entity.DetalleTAEntity;
+import iTicket.Douglas.DetalleTS.Entity.DetalleTSEntity;
+import iTicket.Douglas.Evaluaciones.Entity.EvaluacionesEntity;
 import iTicket.Douglas.Evidencias.Entity.EvidenciaEntity;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import jakarta.persistence.*;
@@ -74,9 +78,21 @@ public class TicketEntity {
     @Column(name = "ESTADO")
     private String estado;
 
-    @OneToMany(mappedBy = "ticket")
+    @OneToMany(mappedBy = "ticket", fetch = FetchType.LAZY)
     private List<ComentarioEntity> comentarios;
 
     @Column(name = "FECHA_CREACION", insertable = false, updatable = false)
     private LocalDateTime fechaCreacion;
+
+    @OneToMany(mappedBy = "ticket", fetch = FetchType.LAZY)
+    private List<DetalleGEntity> detallesGenerales;
+
+    @OneToMany(mappedBy = "ticket", fetch = FetchType.LAZY)
+    private List<DetalleTSEntity> detallesSoftware;
+
+    @OneToMany(mappedBy = "ticket", fetch = FetchType.LAZY)
+    private List<DetalleTAEntity> detallesArticulo;
+
+    @OneToMany(mappedBy = "ticket", fetch = FetchType.LAZY)
+    private List<EvaluacionesEntity> evaluaciones;
 }

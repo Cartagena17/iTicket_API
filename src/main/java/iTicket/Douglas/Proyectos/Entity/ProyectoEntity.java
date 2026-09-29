@@ -1,5 +1,6 @@
 package iTicket.Douglas.Proyectos.Entity;
 
+import iTicket.Douglas.Fases.Entity.FaseEntity;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import iTicket.Douglas.Utils.BooleanToCharConverter;
 import jakarta.persistence.*;
@@ -7,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Entity
 @Getter @Setter
@@ -48,4 +50,7 @@ public class ProyectoEntity {
     @Convert(converter = BooleanToCharConverter.class)//Se aplica el BooleanToCharConverter para traducir el boolean a String
     @Column(name = "FINALIZADO")
     private Boolean finalizado;
+
+    @OneToMany(mappedBy = "proyecto", fetch = FetchType.LAZY)
+    private List<FaseEntity> fases;
 }

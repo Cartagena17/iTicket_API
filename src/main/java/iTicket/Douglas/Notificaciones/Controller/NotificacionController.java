@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@CrossOrigin
 @RequestMapping("/api/notificaciones")
 @RequiredArgsConstructor
 @Validated

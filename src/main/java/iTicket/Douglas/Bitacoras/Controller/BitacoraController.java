@@ -8,13 +8,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @Slf4j
 @RestController
-@CrossOrigin
 @RequestMapping("/api/bitacoras")
 @RequiredArgsConstructor
 public class BitacoraController {
@@ -29,6 +29,8 @@ public class BitacoraController {
         return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
     }
 
+    // Listado completo: panel de Administrador/Tecnico (usa idUsuarioAdmin).
+    @PreAuthorize("hasAnyRole('Administrador', 'Tecnico')")
     @GetMapping
     public ResponseEntity<ApiResponse<List<BitacoraDTO>>> obtenerBitacoras(@RequestParam Long idUsuarioAdmin) {
         List<BitacoraDTO> lista = service.obtenerBitacoras(idUsuarioAdmin);
@@ -45,6 +47,7 @@ public class BitacoraController {
         return ResponseEntity.ok(respuesta);
     }
 
+    @PreAuthorize("hasAnyRole('Administrador', 'Tecnico')")
     @GetMapping("/tecnico/resolucion-por-dia")
     public ResponseEntity<ApiResponse<List<Object[]>>> obtenerResolucionPorDiaTecnico(@RequestParam Long idUsuario) {
         List<Object[]> data = service.obtenerResolucionPorDiaSemanaTecnico(idUsuario);

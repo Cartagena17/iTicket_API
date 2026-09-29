@@ -19,6 +19,6 @@ public class TipoUbicacionEntity {
     private Long id;
     @Column (name = "nombre_tipo_ubicacion")
     private String nombreTipoUbicacion;
-    @OneToMany(mappedBy = "tipoUbicacion")
+    @OneToMany(mappedBy = "tipoUbicacion", fetch = FetchType.LAZY)
     private List<UbicacionEntity> ubicaciones;
 }
