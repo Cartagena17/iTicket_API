@@ -16,6 +16,9 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
+    @org.springframework.beans.factory.annotation.Value("${spring.mail.username}")
+    private String correoRemitente;
+
     public void enviarCorreoRecuperacion(String destino, String token, String nombreUsuario) {
         try {
             MimeMessage mensaje = mailSender.createMimeMessage();
@@ -142,6 +145,7 @@ public class EmailService {
                     "</body>\n" +
                     "</html>";
 
+            helper.setFrom(correoRemitente);
             helper.setTo(destino);
             helper.setSubject(" Restablece tu contraseña de iTicket");
             helper.setText(htmlMsg, true);
