@@ -1,8 +1,11 @@
 package iTicket.Douglas.Roles.Entity;
 
+import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
 
 @Entity
 @Getter @Setter
@@ -17,4 +20,7 @@ public class RolEntity {
 
     @Column(name = "nombre_rol")
     private String nombreRol;
+
+    @OneToMany(mappedBy = "rol", fetch = FetchType.LAZY)
+    private List<UsuarioEntity> usuarios;
 }

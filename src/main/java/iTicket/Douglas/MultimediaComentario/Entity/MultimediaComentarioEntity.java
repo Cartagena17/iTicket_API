@@ -27,7 +27,7 @@ public class MultimediaComentarioEntity {
     @Column(name = "cloudinary_id")
     private String cloudinaryId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_comentario")
     private ComentarioEntity comentario;
 
