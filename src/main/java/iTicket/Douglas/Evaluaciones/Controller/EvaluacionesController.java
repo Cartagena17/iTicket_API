@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
@@ -20,7 +21,6 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/api/evaluaciones")
-@CrossOrigin
 @RequiredArgsConstructor
 public class EvaluacionesController {
 
@@ -78,6 +78,8 @@ public class EvaluacionesController {
         return ResponseEntity.ok(respuesta);
     }
 
+    // Listado paginado con filtros: panel de Administrador/Tecnico (usa idUsuarioAdmin).
+    @PreAuthorize("hasAnyRole('Administrador', 'Tecnico')")
     @GetMapping
     public ResponseEntity<ApiResponse<Page<EvaluacionesDTO>>> obtenerTodas(
             @RequestParam Long idUsuarioAdmin,
@@ -91,6 +93,7 @@ public class EvaluacionesController {
         return ResponseEntity.ok(respuesta);
     }
 
+    @PreAuthorize("hasAnyRole('Administrador', 'Tecnico')")
     @GetMapping("/tecnico/calificaciones")
     public ResponseEntity<ApiResponse<List<Long>>> obtenerCalificacionesPorTecnico(@RequestParam Long idUsuario) {
         List<Long> distribucion = service.obtenerDistribucionCalificacionesPorTecnico(idUsuario);
@@ -99,6 +102,7 @@ public class EvaluacionesController {
         return ResponseEntity.ok(respuesta);
     }
 
+    @PreAuthorize("hasAnyRole('Administrador', 'Tecnico')")
     @GetMapping("/usuario/calificaciones")
     public ResponseEntity<ApiResponse<List<Long>>> obtenerCalificacionesPorUsuario(@RequestParam Long idUsuario) {
         List<Long> distribucion = service.obtenerDistribucionCalificacionesPorUsuario(idUsuario);
@@ -107,6 +111,7 @@ public class EvaluacionesController {
         return ResponseEntity.ok(respuesta);
     }
 
+    @PreAuthorize("hasAnyRole('Administrador', 'Tecnico')")
     @GetMapping("/metricas")
     public ResponseEntity<ApiResponse<MetricasDTO>> obtenerMetricas(
             @RequestParam Long idUsuarioAdmin,

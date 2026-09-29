@@ -14,7 +14,6 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@CrossOrigin
 @RequestMapping("/api/detalleG")
 @RequiredArgsConstructor
 public class DetalleGController {

@@ -14,7 +14,6 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@CrossOrigin
 @RequestMapping("/api/departamentos")
 @RequiredArgsConstructor
 public class DepartamentoController {

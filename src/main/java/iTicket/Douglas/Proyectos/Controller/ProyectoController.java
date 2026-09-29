@@ -15,7 +15,6 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@CrossOrigin
 @RequestMapping("api/proyectos")
 @RequiredArgsConstructor
 public class ProyectoController {
