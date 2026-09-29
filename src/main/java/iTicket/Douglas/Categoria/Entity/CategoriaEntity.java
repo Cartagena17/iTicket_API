@@ -1,9 +1,12 @@
 package iTicket.Douglas.Categoria.Entity;
 
 
+import iTicket.Douglas.Articulos.Entity.ArticuloEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
 
 @Entity
 @Getter @Setter
@@ -17,4 +20,7 @@ public class CategoriaEntity {
     private Long idCategoria;
     @Column (name = "NOMBRE_CATEGORIA")
     private String nombreCategoria;
+
+    @OneToMany(mappedBy = "categoria", fetch = FetchType.LAZY)
+    private List<ArticuloEntity> articulos;
 }
