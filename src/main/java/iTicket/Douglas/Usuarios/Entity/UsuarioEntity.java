@@ -12,7 +12,10 @@ import java.util.List;
 
 @Entity
 @Getter @Setter
-@Table(name = "Usuarios")
+@Table(name = "Usuarios", indexes = {
+        @Index(name = "idx_usuarios_rol", columnList = "id_rol"),
+        @Index(name = "idx_usuarios_departamento", columnList = "id_departamento")
+})
 public class UsuarioEntity {
 
     @Id
@@ -23,10 +26,17 @@ public class UsuarioEntity {
 
     @Column(name = "nombre_usuario")
     private String nombreUsuario;
+
     @Column(name = "correo")
     private String correo;
+
     @Column(name = "clave")
     private String clave;
+
+    @Convert(converter = BooleanToCharConverter.class)
+    @Column(name = "clave_inicial")
+    private Boolean claveInicial;
+
     @Column(name = "imagen_url")
     private String imagenUrl;
 

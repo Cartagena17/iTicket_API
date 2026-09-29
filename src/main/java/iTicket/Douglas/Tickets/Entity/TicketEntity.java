@@ -15,7 +15,13 @@ import java.util.List;
 
 @Entity
 @Getter @Setter
-@Table(name = "TICKETS")
+@Table(name = "TICKETS", indexes = {
+        @Index(name = "idx_tickets_creador_estado", columnList = "id_creador, estado"),
+        @Index(name = "idx_tickets_tecnico_estado", columnList = "id_tecnico_asignado, estado"),
+        @Index(name = "idx_tickets_departamento", columnList = "id_departamento"),
+        @Index(name = "idx_tickets_fecha_creacion", columnList = "fecha_creacion"),
+        @Index(name = "idx_tickets_fecha_vencimiento", columnList = "fecha_vencimiento")
+})
 public class TicketEntity {
 
     @Id

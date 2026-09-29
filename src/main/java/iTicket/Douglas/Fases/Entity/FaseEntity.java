@@ -11,7 +11,9 @@ import java.time.LocalDate;
 
 @Entity
 @Getter @Setter
-@Table (name = "FASES")
+@Table(name = "FASES", indexes = {
+        @Index(name = "idx_fases_proyecto", columnList = "id_proyecto")
+})
 public class FaseEntity {
 
 

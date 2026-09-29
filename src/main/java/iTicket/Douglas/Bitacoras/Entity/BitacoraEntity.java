@@ -10,7 +10,10 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter @Setter
-@Table (name = "BITACORAS")
+@Table(name = "BITACORAS", indexes = {
+        @Index(name = "idx_bitacoras_ticket_fecha", columnList = "id_ticket, fecha_hora"),
+        @Index(name = "idx_bitacoras_usuario", columnList = "id_usuario")
+})
 public class BitacoraEntity {
 
     @Id

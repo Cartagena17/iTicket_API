@@ -5,10 +5,13 @@ import iTicket.Douglas.Proyectos.DTO.ProyectoPaginaDTO;
 import iTicket.Douglas.Proyectos.Service.ProyectoService;
 import iTicket.Douglas.Response.ApiResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,6 +21,7 @@ import java.util.List;
 @CrossOrigin
 @RequestMapping("api/proyectos")
 @RequiredArgsConstructor
+@Validated
 public class ProyectoController {
 
     private final ProyectoService service;
@@ -40,8 +44,9 @@ public class ProyectoController {
 
     @GetMapping("/pagina")
     public ResponseEntity<ApiResponse<ProyectoPaginaDTO>> obtenerProyectosPaginados(
-            @RequestParam(defaultValue = "1") int pagina,
-            @RequestParam(defaultValue = "10") int tamano) {
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "La página mínima es 1") int pagina,
+            @RequestParam(defaultValue = "10") @Min(value = 5, message = "El tamaño mínimo de página es 5")
+            @Max(value = 50, message = "El tamaño máximo de página es 50") int tamano) {
         ProyectoPaginaDTO resultado = service.obtenerPaginado(pagina, tamano);
         log.info("Proyectos paginados consultados (página " + pagina + ")");
         ApiResponse<ProyectoPaginaDTO> respuesta = new ApiResponse<>(true, "Proyectos obtenidos", resultado);

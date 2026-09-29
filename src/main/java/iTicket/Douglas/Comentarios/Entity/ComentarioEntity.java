@@ -14,7 +14,10 @@ import java.util.List;
 @Entity
 @Getter
 @Setter
-@Table(name = "Comentarios")
+@Table(name = "Comentarios", indexes = {
+        @Index(name = "idx_comentarios_ticket_fecha", columnList = "id_ticket, fecha_hora"),
+        @Index(name = "idx_comentarios_usuario", columnList = "id_usuario_comentario")
+})
 public class ComentarioEntity {
 
     @Id

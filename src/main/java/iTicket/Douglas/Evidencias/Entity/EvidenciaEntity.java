@@ -7,7 +7,9 @@ import lombok.Setter;
 
 @Entity
 @Getter @Setter
-@Table(name = "EVIDENCIAS")
+@Table(name = "EVIDENCIAS", indexes = {
+        @Index(name = "idx_evidencias_ticket", columnList = "id_ticket")
+})
 public class EvidenciaEntity {
 
     @Id

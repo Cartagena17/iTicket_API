@@ -1,6 +1,8 @@
 package iTicket.Douglas.Exception;
 
 import iTicket.Douglas.Response.ApiResponse;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -38,6 +40,15 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining(", "));
         log.warn("Validación fallida: " + mensajes);
         ApiResponse<Object> respuesta = new ApiResponse<>(false, "Datos inválidos: " + mensajes, null);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuesta);
+    }
+
+    // Errores de la paginación, para que no devuelvan un 500 y devuelva un 400
+    @ExceptionHandler
+    public ResponseEntity<ApiResponse<Object>> manejarValidacionDeParametros(ConstraintViolationException e) {
+        String mensajes = e.getConstraintViolations().stream().map(ConstraintViolation::getMessage).collect(Collectors.joining(", "));
+        log.warn("Parámetros inválidos: " + mensajes);
+        ApiResponse<Object> respuesta = new ApiResponse<>(false, mensajes, null);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuesta);
     }
 

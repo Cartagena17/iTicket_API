@@ -8,7 +8,11 @@ import lombok.Setter;
 
 @Entity
 @Getter @Setter
-@Table(name = "Articulos")
+@Table(name = "Articulos", indexes = {
+        @Index(name = "idx_articulos_categoria", columnList = "id_categoria"),
+        @Index(name = "idx_articulos_modelo", columnList = "id_modelo"),
+        @Index(name = "idx_articulos_ubicacion", columnList = "id_ubicacion")
+})
 public class ArticuloEntity {
 
     @Id

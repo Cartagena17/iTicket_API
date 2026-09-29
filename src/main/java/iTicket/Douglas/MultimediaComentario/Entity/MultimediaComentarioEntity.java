@@ -8,7 +8,9 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
-@Table(name = "MultimediaComentarios")
+@Table(name = "MultimediaComentarios", indexes = {
+        @Index(name = "idx_multimedia_comentario", columnList = "id_comentario")
+})
 public class MultimediaComentarioEntity {
 
     @Id
