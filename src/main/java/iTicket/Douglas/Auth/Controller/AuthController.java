@@ -17,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import iTicket.Douglas.Auth.DTO.RecuperacionRequestDTO;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -62,5 +63,26 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> logout(HttpServletResponse response) {
         response.addHeader(HttpHeaders.SET_COOKIE, cookieFactory.clear().toString());
         return ResponseEntity.ok(new ApiResponse<>(true, "Sesion cerrada"));
+    }
+
+    @PostMapping("/recuperar-contrasena")
+    public ResponseEntity<ApiResponse<Void>> solicitarRecuperacion(@RequestBody Map<String, String> body) {
+        String correo = body.get("correo");
+        if (correo == null || correo.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "El correo es requerido"));
+        }
+        
+        authService.solicitarRecuperacion(correo);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Correo enviado exitosamente"));
+    }
+
+    @PostMapping("/restablecer-contrasena")
+    public ResponseEntity<ApiResponse<Void>> restablecerContrasena(@RequestBody RecuperacionRequestDTO dto) {
+        if (dto.getToken() == null || dto.getNuevaContrasena() == null) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Token y nueva contraseña son requeridos"));
+        }
+        
+        authService.restablecerContrasena(dto.getToken(), dto.getNuevaContrasena());
+        return ResponseEntity.ok(new ApiResponse<>(true, "Contraseña actualizada exitosamente"));
     }
 }

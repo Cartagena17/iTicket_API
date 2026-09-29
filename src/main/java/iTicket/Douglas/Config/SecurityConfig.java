@@ -41,7 +41,7 @@ public class SecurityConfig {
                                 escribirError(response, 403, "No tienes permisos para realizar esta accion"))
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/recuperar-contrasena", "/api/auth/restablecer-contrasena").permitAll()
 
                         // --- Administracion pura: solo Administrador ---
                         .requestMatchers("/api/roles/**").hasRole("Administrador")
