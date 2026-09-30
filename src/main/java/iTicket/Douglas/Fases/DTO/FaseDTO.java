@@ -17,14 +17,17 @@ public class FaseDTO {
     @NotBlank @Size (max = 300, message = "La descripción de la fase no puede exceder los 300 carácteres.")
     private String faseDescripcion;
 
-    @NotNull @FutureOrPresent (message = "La fecha de inicio estimada no puede ser pasada.")
+    // Solo se exige al crear (grupo ValidacionCrear): al editar una fase ya existente, esta fecha
+    // pudo haber quedado legítimamente en el pasado si la fase ya inició.
+    @NotNull @FutureOrPresent (message = "La fecha de inicio estimada no puede ser pasada.", groups = ValidacionCrear.class)
     private LocalDate fechaInicioEstimada;
 
     // Las fechas reales describen lo que ya ocurrió, por eso pueden ser pasadas.
     private LocalDate fechaInicioReal;
 
     @NotNull
-    @Future (message = "La fecha final estimada debe ser futura.")
+    // Solo se exige al crear (grupo ValidacionCrear): ver comentario de fechaInicioEstimada.
+    @Future (message = "La fecha final estimada debe ser futura.", groups = ValidacionCrear.class)
     private LocalDate fechaFinalEstimada;
 
     private LocalDate fechaFinalReal;

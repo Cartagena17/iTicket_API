@@ -51,6 +51,9 @@ public class ProyectoEntity {
     @Column(name = "FINALIZADO")
     private Boolean finalizado;
 
+    @Column(name = "CONTRATISTA")
+    private String contratista;
+
     @OneToMany(mappedBy = "proyecto", fetch = FetchType.LAZY)
     private List<FaseEntity> fases;
 }

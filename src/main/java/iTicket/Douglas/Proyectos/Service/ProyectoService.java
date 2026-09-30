@@ -1,5 +1,6 @@
 package iTicket.Douglas.Proyectos.Service;
 
+import iTicket.Douglas.Exception.OperacionInvalidaException;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Notificaciones.Event.ProyectoCreadoEvent;
 import iTicket.Douglas.Proyectos.DTO.ProyectoDTO;
@@ -8,6 +9,7 @@ import iTicket.Douglas.Proyectos.Entity.ProyectoEntity;
 import iTicket.Douglas.Proyectos.Repository.ProyectoRepository;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
+import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,7 +59,7 @@ public class ProyectoService {
 
     public ProyectoDTO obtenerPorId(Long id) {
         ProyectoEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un proyecto con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WPRY001, "No existe un proyecto con id " + id));
         return convertirADTO(entidad);
     }
 
@@ -83,15 +85,16 @@ public class ProyectoService {
     @Transactional
     public ProyectoDTO actualizarProyecto(Long id, @Valid ProyectoDTO dto) {
         ProyectoEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un proyecto con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WPRY001, "No existe un proyecto con id " + id));
 
         entidad.setNombreProyecto(dto.getNombreProyecto());
         entidad.setTipoProyecto(dto.getTipoProyecto());
         entidad.setUbicacion(dto.getUbicacion());
         entidad.setDescripcionProyecto(dto.getDescripcionProyecto());
         entidad.setPresupuestoEstimado(dto.getPresupuestoEstimado());
-        entidad.setCoordinador(buscarUsuario(dto.getCoordinador()));
-        entidad.setSupervisor(buscarUsuario(dto.getSupervisor()));
+        entidad.setContratista(dto.getContratista());
+        entidad.setCoordinador(buscarResponsable(dto.getCoordinador(), "coordinador"));
+        entidad.setSupervisor(buscarResponsable(dto.getSupervisor(), "supervisor"));
         entidad.setFinalizado(dto.getFinalizado());
         entidad.setGastoTotal(dto.getGastoTotal());
 
@@ -114,6 +117,7 @@ public class ProyectoService {
         objDTO.setSupervisor(entity.getSupervisor().getIdUsuario());
         objDTO.setNombreSupervisor(entity.getSupervisor().getNombreUsuario());
         objDTO.setFinalizado(entity.getFinalizado());
+        objDTO.setContratista(entity.getContratista());
         return objDTO;
     }
 
@@ -124,14 +128,29 @@ public class ProyectoService {
         objEntity.setUbicacion(dto.getUbicacion());
         objEntity.setDescripcionProyecto(dto.getDescripcionProyecto());
         objEntity.setPresupuestoEstimado(dto.getPresupuestoEstimado());
-        objEntity.setCoordinador(buscarUsuario(dto.getCoordinador()));
-        objEntity.setSupervisor(buscarUsuario(dto.getSupervisor()));
+        objEntity.setContratista(dto.getContratista());
+        objEntity.setCoordinador(buscarResponsable(dto.getCoordinador(), "coordinador"));
+        objEntity.setSupervisor(buscarResponsable(dto.getSupervisor(), "supervisor"));
         objEntity.setFinalizado(dto.getFinalizado());
         return objEntity;
     }
 
     private UsuarioEntity buscarUsuario(Long id) {
         return repoUsuario.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún usuario con ID: " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WUSR002, "No existe ningún usuario con ID: " + id));
+    }
+
+    // Solo el personal operativo (rol Administrador o Tecnico) puede ser coordinador o supervisor
+    // de un proyecto; un usuario con rol "Usuario" (quien reporta tickets) no califica.
+    private static final List<String> ROLES_VALIDOS_RESPONSABLE = List.of("Administrador", "Tecnico");
+
+    private UsuarioEntity buscarResponsable(Long id, String cargo) {
+        UsuarioEntity usuario = buscarUsuario(id);
+        String rol = usuario.getRol() != null ? usuario.getRol().getNombreRol() : null;
+        if (rol == null || !ROLES_VALIDOS_RESPONSABLE.contains(rol)) {
+            throw new OperacionInvalidaException(
+                    "El usuario asignado como " + cargo + " debe tener rol Administrador o Tecnico.");
+        }
+        return usuario;
     }
 }

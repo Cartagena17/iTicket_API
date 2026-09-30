@@ -2,13 +2,16 @@ package iTicket.Douglas.Fases.Coontroller;
 
 import iTicket.Douglas.Fases.DTO.FaseDTO;
 import iTicket.Douglas.Fases.DTO.PatchFaseDTO;
+import iTicket.Douglas.Fases.DTO.ValidacionCrear;
 import iTicket.Douglas.Fases.Service.FaseService;
 import iTicket.Douglas.Response.ApiResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.groups.Default;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,7 +25,8 @@ public class FaseController {
     private final FaseService service;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<FaseDTO>> nuevaFase(@Valid @RequestBody FaseDTO json) {
+    // Solo al crear se exige que las fechas estimadas sean hoy/futuras (grupo ValidacionCrear).
+    public ResponseEntity<ApiResponse<FaseDTO>> nuevaFase(@Validated({Default.class, ValidacionCrear.class}) @RequestBody FaseDTO json) {
         FaseDTO dto = service.nuevaFase(json);
         log.info("Nueva fase ingresada: " + dto);
         ApiResponse<FaseDTO> respuesta = new ApiResponse<>(true, "Datos ingresados correctamente", dto);
@@ -54,6 +58,8 @@ public class FaseController {
     }
 
     @PutMapping("/{id}")
+    // Al editar solo se valida el grupo Default: las fechas estimadas de una fase ya
+    // existente pueden legitimamente haber quedado en el pasado (ver FaseDTO/ValidacionCrear).
     public ResponseEntity<ApiResponse<FaseDTO>> actualizarFase(@PathVariable Long id, @Valid @RequestBody FaseDTO dto) {
         FaseDTO data = service.actualizarFase(id, dto);
         log.info("Fase con id: " + id + ", ha sido actualizada");

@@ -4,6 +4,7 @@ import iTicket.Douglas.DetalleTS.DTO.DetalleTSDTO;
 import iTicket.Douglas.DetalleTS.Entity.DetalleTSEntity;
 import iTicket.Douglas.DetalleTS.Repository.DetalleTSRepository;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
+import iTicket.Douglas.util.ErrorCode;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
 import jakarta.validation.Valid;
@@ -62,7 +63,7 @@ public class DetalleTSService {
     @Transactional
     public DetalleTSDTO actualizarDetalleTS(Long id, @Valid DetalleTSDTO dto) {
         DetalleTSEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un detalle TS con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "No existe un detalle TS con id " + id));
 
         entidad.setNombreSoftware(dto.getNombreSoftware());
         entidad.setVersion(dto.getVersion());
@@ -89,8 +90,9 @@ public class DetalleTSService {
 
     private TicketEntity buscarTicket(Long id) {
         return ticketRepo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún ticket con id: " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "No existe ningún ticket con id: " + id));
     }
+
 
     @Transactional
     public void reemplazarDetalles(TicketEntity ticket, @Valid List<DetalleTSDTO> detalles) {

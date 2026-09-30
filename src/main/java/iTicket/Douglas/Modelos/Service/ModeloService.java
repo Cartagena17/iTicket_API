@@ -7,6 +7,7 @@ import iTicket.Douglas.Marcas.Repository.MarcaRepository;
 import iTicket.Douglas.Modelos.DTO.ModeloDTO;
 import iTicket.Douglas.Modelos.Entity.ModeloEntity;
 import iTicket.Douglas.Modelos.Repository.ModeloRepository;
+import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +36,7 @@ public class ModeloService {
         }
 
         MarcaEntity marca = marcaRepo.findById(dto.getIdMarca())
-                .orElseThrow(() -> new RecursoNoEncontradoException("La marca con id " + dto.getIdMarca() + " no existe"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "La marca con id " + dto.getIdMarca() + " no existe"));
 
         dto.setNombreModelo(nombreNormalizado);
         ModeloEntity entity = convertirAEntity(dto, marca);
@@ -51,14 +52,14 @@ public class ModeloService {
 
     public ModeloDTO obtenerPorId(Long id) {
         ModeloEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un modelo con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe un modelo con id " + id));
         return convertirADTO(entidad);
     }
 
     @Transactional
     public ModeloDTO actualizarData(Long id, @Valid ModeloDTO dto) {
         ModeloEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un modelo con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe un modelo con id " + id));
 
         String nombreNormalizado = normalizarNombre(dto.getNombreModelo());
         Long idMarcaFinal = dto.getIdMarca() != null
@@ -77,7 +78,7 @@ public class ModeloService {
 
         if (dto.getIdMarca() != null) {
             MarcaEntity marca = marcaRepo.findById(dto.getIdMarca())
-                    .orElseThrow(() -> new RecursoNoEncontradoException("La marca con id " + dto.getIdMarca() + " no existe"));
+                    .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "La marca con id " + dto.getIdMarca() + " no existe"));
             entidad.setMarca(marca);
         }
 
