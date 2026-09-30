@@ -43,14 +43,23 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login").permitAll()
 
+                        /* Arranque del sistema: publicas a la fuerza, porque sirven cuando
+                           todavia no existe ningun usuario que pueda iniciar sesion. El
+                           SetupService las cierra solo en cuanto la tabla deja de estar vacia. */
+                        .requestMatchers("/api/setup/**").permitAll()
+
                         // --- Administracion pura: solo Administrador ---
                         .requestMatchers("/api/roles/**").hasRole("Administrador")
                         .requestMatchers("/api/areas/**").hasRole("Administrador")
                         // Proyectos: el tecnico solo consulta (GET); crear/editar/eliminar es del Administrador
                         .requestMatchers(HttpMethod.GET, "/api/proyectos/**", "/api/fases/**", "/api/detalleFase/**")
                         .hasAnyRole("Administrador", "Tecnico")
-                        .requestMatchers("/api/proyectos/**", "/api/fases/**", "/api/detalleFase/**")
-                        .hasRole("Administrador")
+                        .requestMatchers("/api/proyectos/**").hasRole("Administrador")
+                        // Fases y Detalles de fase: Administrador y Tecnico pueden llegar al endpoint de
+                        // escritura; el permiso fino por proyecto (coordinador para Fases, coordinador o
+                        // supervisor para Detalles) se valida dentro de FaseService/DetalleFService, ya que
+                        // depende de a QUE proyecto pertenece el recurso, algo que un requestMatcher no puede ver.
+                        .requestMatchers("/api/fases/**", "/api/detalleFase/**").hasAnyRole("Administrador", "Tecnico")
 
                         // --- Departamentos: leer (GET) lo necesita cualquiera al crear un ticket ---
                         .requestMatchers(HttpMethod.GET, "/api/departamentos/**").hasAnyRole("Administrador", "Tecnico", "Usuario")

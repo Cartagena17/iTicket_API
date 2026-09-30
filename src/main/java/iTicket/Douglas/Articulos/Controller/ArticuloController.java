@@ -5,10 +5,13 @@ import iTicket.Douglas.Articulos.DTO.ArticuloPaginaDTO;
 import iTicket.Douglas.Articulos.Service.ArticuloService;
 import iTicket.Douglas.Response.ApiResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +20,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/articulos")
 @RequiredArgsConstructor
+@CrossOrigin
+@Validated
 public class ArticuloController {
 
     private final ArticuloService service;
@@ -46,13 +51,15 @@ public class ArticuloController {
 
     @GetMapping("/paginado")
     public ResponseEntity<ApiResponse<ArticuloPaginaDTO>> obtenerPaginado(
-            @RequestParam(defaultValue = "1") int pagina,
-            @RequestParam(defaultValue = "10") int tamano,
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "La página mínima es 1") int pagina,
+            @RequestParam(defaultValue = "10") @Min(value = 5, message = "El tamaño mínimo de página es 5")
+            @Max(value = 50, message = "El tamaño máximo de página es 50") int tamano,
             @RequestParam(required = false) String busqueda,
             @RequestParam(required = false) Long idCategoria,
             @RequestParam(required = false) Long idUbicacion,
-            @RequestParam(required = false) Long idMarca) {
-        ArticuloPaginaDTO resultado = service.obtenerPaginado(pagina, tamano, busqueda, idCategoria, idUbicacion, idMarca);
+            @RequestParam(required = false) Long idMarca,
+            @RequestParam(required = false) String sort) {
+        ArticuloPaginaDTO resultado = service.obtenerPaginado(pagina, tamano, busqueda, idCategoria, idUbicacion, idMarca, sort);
         log.info("Artículos paginados consultados (página " + pagina + ")");
         ApiResponse<ArticuloPaginaDTO> respuesta = new ApiResponse<>(true, "Artículos obtenidos", resultado);
         return ResponseEntity.ok(respuesta);

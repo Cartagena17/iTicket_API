@@ -5,6 +5,7 @@ import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Marcas.DTO.MarcaDTO;
 import iTicket.Douglas.Marcas.Entity.MarcaEntity;
 import iTicket.Douglas.Marcas.Repository.MarcaRepository;
+import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +27,7 @@ public class MarcaService {
     public MarcaDTO nuevaMarca(@Valid MarcaDTO dto) {
         String nombre = normalizar(dto.getNombreMarca());
         if (repo.existsByNombreMarcaIgnoreCase(nombre)) {
-            throw new RecursoDuplicadoException("La marca '" + nombre + "' ya está registrada.");
+            throw new RecursoDuplicadoException(ErrorCode.WMAR001, "La marca '" + nombre + "' ya está registrada.");
         }
         dto.setNombreMarca(nombre);
         MarcaEntity entity = convertirAEntity(dto);
@@ -42,7 +43,7 @@ public class MarcaService {
 
     public MarcaDTO obtenerporId(Long id) {
         MarcaEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe una marca con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe una marca con id " + id));
         return convertirADTO(entidad);
     }
 
@@ -58,11 +59,11 @@ public class MarcaService {
     @Transactional
     public MarcaDTO actualizar(Long id, @Valid MarcaDTO dto) {
         MarcaEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe una marca con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe una marca con id " + id));
 
         String nombre = normalizar(dto.getNombreMarca());
         if (repo.existsByNombreMarcaIgnoreCaseAndIdMarcaNot(nombre, id)) {
-            throw new RecursoDuplicadoException("La marca '" + nombre + "' ya está registrada.");
+            throw new RecursoDuplicadoException(ErrorCode.WMAR001, "La marca '" + nombre + "' ya está registrada.");
         }
         entidad.setNombreMarca(nombre);
         MarcaEntity datosGuardados = repo.save(entidad);

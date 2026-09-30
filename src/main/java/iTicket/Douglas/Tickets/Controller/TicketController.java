@@ -4,11 +4,14 @@ import iTicket.Douglas.Response.ApiResponse;
 import iTicket.Douglas.Tickets.DTO.*;
 import iTicket.Douglas.Tickets.Service.TicketService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 
@@ -20,6 +23,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/tickets")
 @RequiredArgsConstructor
+@Validated
 public class TicketController {
 
     private final TicketService service;
@@ -149,8 +153,9 @@ public class TicketController {
     public ResponseEntity<ApiResponse<TicketPaginaDTO>> obtenerResumenPanelAdmin(
             @RequestParam Long idUsuarioAdmin,
             @RequestParam(defaultValue = "pendientes") String categoria,
-            @RequestParam(defaultValue = "1") int pagina,
-            @RequestParam(defaultValue = "5") int tamano) {
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "La página mínima es 1") int pagina,
+            @RequestParam(defaultValue = "5") @Min(value = 5, message = "El tamaño mínimo de página es 5")
+            @Max(value = 50, message = "El tamaño máximo de página es 50") int tamano) {
         TicketPaginaDTO resultado = service.obtenerResumenPanelAdmin(idUsuarioAdmin, categoria, pagina, tamano);
         log.info("Resumen del panel admin consultado, categoría: " + categoria);
         ApiResponse<TicketPaginaDTO> respuesta = new ApiResponse<>(true, "Resumen obtenido", resultado);
@@ -173,8 +178,9 @@ public class TicketController {
     public ResponseEntity<ApiResponse<TicketPaginaDTO>> obtenerResumenPanelTecnico(
             @RequestParam Long idUsuario,
             @RequestParam(defaultValue = "pendientes") String categoria,
-            @RequestParam(defaultValue = "1") int pagina,
-            @RequestParam(defaultValue = "5") int tamano) {
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "La página mínima es 1") int pagina,
+            @RequestParam(defaultValue = "5") @Min(value = 5, message = "El tamaño mínimo de página es 5")
+            @Max(value = 50, message = "El tamaño máximo de página es 50") int tamano) {
         TicketPaginaDTO resultado = service.obtenerResumenPanelTecnico(idUsuario, categoria, pagina, tamano);
         log.info("Resumen del panel técnico consultado, categoría: " + categoria);
         ApiResponse<TicketPaginaDTO> respuesta = new ApiResponse<>(true, "Resumen obtenido", resultado);
@@ -193,7 +199,10 @@ public class TicketController {
 
     @PreAuthorize("hasRole('Administrador')")
     @GetMapping("/aprobaciones-pendientes")
-    public ResponseEntity<ApiResponse<List<TicketDTO>>> obtenerAprobacionesPendientes(@RequestParam(defaultValue = "5") int limite, @RequestParam Long idUsuarioAdmin) {
+    public ResponseEntity<ApiResponse<List<TicketDTO>>> obtenerAprobacionesPendientes(
+            @RequestParam(defaultValue = "5") @Min(value = 5, message = "El tamaño mínimo de página es 5")
+            @Max(value = 50, message = "El tamaño máximo de página es 50") int limite,
+            @RequestParam Long idUsuarioAdmin)  {
         List<TicketDTO> lista = service.obtenerAprobacionesPendientes(limite, idUsuarioAdmin);
         log.info("Se consultaron las aprobaciones pendientes");
         ApiResponse<List<TicketDTO>> respuesta = new ApiResponse<>(true, "Aprobaciones pendientes obtenidas", lista);
@@ -233,7 +242,10 @@ public class TicketController {
     @PreAuthorize("hasRole('Administrador')")
     @GetMapping("/departamento")
     public ResponseEntity<ApiResponse<TicketPaginaDTO>> obtenerTicketsPorDepartamento(
-            @RequestParam Long idUsuarioAdmin, @RequestParam(defaultValue = "1") int pagina, @RequestParam(defaultValue = "10") int tamano,
+            @RequestParam Long idUsuarioAdmin,
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "La página mínima es 1") int pagina,
+            @RequestParam(defaultValue = "10") @Min(value = 5, message = "El tamaño mínimo de página es 5")
+            @Max(value = 50, message = "El tamaño máximo de página es 50") int tamano,
             @RequestParam(required = false) String busqueda, @RequestParam(required = false) String prioridad,
             @RequestParam(required = false) String estado, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
         TicketPaginaDTO resultado = service.obtenerTicketsPorDepartamento(idUsuarioAdmin, pagina, tamano, busqueda, prioridad, estado, fecha);
@@ -245,7 +257,10 @@ public class TicketController {
     @PreAuthorize("hasAnyRole('Administrador', 'Tecnico')")
     @GetMapping("/tickets-asignados")
     public ResponseEntity<ApiResponse<TicketPaginaDTO>> obtenerPorTecnicoAsignado(
-            @RequestParam Long idUsuario, @RequestParam(defaultValue = "1") int pagina, @RequestParam(defaultValue = "5") int tamano,
+            @RequestParam Long idUsuario,
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "La página mínima es 1") int pagina,
+            @RequestParam(defaultValue = "5") @Min(value = 5, message = "El tamaño mínimo de página es 5")
+            @Max(value = 50, message = "El tamaño máximo de página es 50") int tamano,
             @RequestParam(required = false) String busqueda, @RequestParam(required = false) String prioridad,
             @RequestParam(required = false) String estado, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
         TicketPaginaDTO resultado = service.obtenerTicketsAsignados(idUsuario, pagina, tamano, busqueda, prioridad, estado, fecha);
@@ -256,7 +271,10 @@ public class TicketController {
 
     @GetMapping("/mis-tickets")
     public ResponseEntity<ApiResponse<TicketPaginaDTO>> obtenerPorUsuario(
-            @RequestParam Long idUsuario, @RequestParam(defaultValue = "1") int pagina, @RequestParam(defaultValue = "5") int tamano,
+            @RequestParam Long idUsuario,
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "La página mínima es 1") int pagina,
+            @RequestParam(defaultValue = "5") @Min(value = 5, message = "El tamaño mínimo de página es 5")
+            @Max(value = 50, message = "El tamaño máximo de página es 50") int tamano,
             @RequestParam(required = false) String busqueda, @RequestParam(required = false) String prioridad,
             @RequestParam(required = false) String estado, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
         TicketPaginaDTO resultado = service.obtenerTicketsPorUsuario(idUsuario, pagina, tamano, busqueda, prioridad, estado, fecha);

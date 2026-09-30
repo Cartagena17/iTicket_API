@@ -24,6 +24,8 @@ public class UsuarioDTO {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String clave;
 
+    private Boolean claveInicial;
+
     @URL(message = "La URL de la imagen no es válida")
     @Size(max = 2050, message = "La URL no puede exceder los 2050 caracteres")
     private String imagenUrl;
@@ -41,4 +43,7 @@ public class UsuarioDTO {
 
     @Size(max = 150, message = "El identificador de Cloudinary no puede exceder los 150 caracteres")
     private String cloudinaryId;
+
+    // No tiene que guardarse en la bd ya que se arma del mismo cloudinaryId solo varia como tal al transformarse pero eso lo hace cloudinaryService
+    private String imagenMiniaturaUrl;
 }

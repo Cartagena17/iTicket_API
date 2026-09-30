@@ -7,6 +7,7 @@ import iTicket.Douglas.TipoUbicacion.Repository.TipoUbicacionRepository;
 import iTicket.Douglas.Ubicaciones.DTO.UbicacionDTO;
 import iTicket.Douglas.Ubicaciones.Entity.UbicacionEntity;
 import iTicket.Douglas.Ubicaciones.Repository.UbicacionRepository;
+import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +33,7 @@ public class UbicacionService {
             throw new RecursoDuplicadoException("La ubicación '" + nombre + "' ya está registrada.");
         }
         TipoUbicacionEntity tipo = tipoUbicacionRepo.findById(dto.getIdTipoUbicacion())
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe el tipo de ubicación con id " + dto.getIdTipoUbicacion()));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe el tipo de ubicación con id " + dto.getIdTipoUbicacion()));
 
         dto.setNombreUbicacion(nombre);
         UbicacionEntity entity = convertirAEntity(dto, tipo);
@@ -48,7 +49,7 @@ public class UbicacionService {
 
     public UbicacionDTO buscarUbicacionPorId(Long id) {
         UbicacionEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe una ubicación con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe una ubicación con id " + id));
         return convertirADTO(entidad);
     }
 
@@ -64,10 +65,10 @@ public class UbicacionService {
     @Transactional
     public UbicacionDTO actualizar(Long id, @Valid UbicacionDTO dto) {
         UbicacionEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe una ubicación con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe una ubicación con id " + id));
 
         TipoUbicacionEntity tipo = tipoUbicacionRepo.findById(dto.getIdTipoUbicacion())
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe el tipo de ubicación con id " + dto.getIdTipoUbicacion()));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe el tipo de ubicación con id " + dto.getIdTipoUbicacion()));
 
         String nombre = normalizar(dto.getNombreUbicacion());
         if (repo.existsByNombreUbicacionIgnoreCaseAndIdNot(nombre, id)) {
@@ -83,7 +84,7 @@ public class UbicacionService {
 
     public UbicacionDTO buscarUbicacionPorNombre(String nombreUbicacion) {
         UbicacionEntity entidad = repo.findByNombreUbicacion(nombreUbicacion)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ninguna ubicación con nombre: " + nombreUbicacion));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe ninguna ubicación con nombre: " + nombreUbicacion));
         return convertirADTO(entidad);
     }
 

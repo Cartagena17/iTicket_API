@@ -7,6 +7,7 @@ import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
 import iTicket.Douglas.Utils.CloudinaryService;
+import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +32,7 @@ public class EvidenciaService {
     @Transactional
     public EvidenciaDTO subirEvidencia(MultipartFile archivo, Long idTicket) {
         if (!ticketsRepo.existsById(idTicket)) {
-            throw new RecursoNoEncontradoException("El ticket con ID: " + idTicket + " no existe");
+            throw new RecursoNoEncontradoException(ErrorCode.WTK008, "El ticket con ID: " + idTicket + " no existe");
         }
 
         CloudinaryService.ResultadoSubida subida = cloudinaryService.subirImagen(archivo, "iticket/evidencias");
@@ -54,7 +55,7 @@ public class EvidenciaService {
 
     public List<EvidenciaDTO> obtenerEvidenciasPorTicket(Long idTicket) {
         TicketEntity ticket = ticketsRepo.findById(idTicket)
-                .orElseThrow(() -> new RecursoNoEncontradoException("El ticket con ID: " + idTicket + " no existe"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "El ticket con ID: " + idTicket + " no existe"));
 
         List<EvidenciaEntity> data = repo.findByTicket(ticket);
         return data.stream().map(this::convertirADTO).collect(Collectors.toList());
@@ -78,7 +79,7 @@ public class EvidenciaService {
 
     public EvidenciaDTO buscarEvidencia(Long id) {
         EvidenciaEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe una evidencia con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WEVI002, "No existe una evidencia con id " + id));
         return convertirADTO(entidad);
     }
 

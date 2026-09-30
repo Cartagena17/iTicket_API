@@ -1,6 +1,10 @@
 package iTicket.Douglas.Exception;
 
+import iTicket.Douglas.Response.ErrorResponseDTO;
+import iTicket.Douglas.util.ErrorCode;
 import iTicket.Douglas.Response.ApiResponse;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -11,8 +15,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.security.access.AccessDeniedException;
 
-
-
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -20,34 +22,42 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(RecursoNoEncontradoException.class)
-    public ResponseEntity<ApiResponse<Object>> manejarNoEncontrado(RecursoNoEncontradoException e) {
+    public ResponseEntity<ErrorResponseDTO> manejarNoEncontrado(RecursoNoEncontradoException e) {
         log.warn("Recurso no encontrado: " + e.getMessage());
-        ApiResponse<Object> respuesta = new ApiResponse<>(false, e.getMessage(), null);
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
+        String errorCodeStr = e.getErrorCode() != null ? e.getErrorCode().name() : ErrorCode.WGLB404.name();
+        return buildErrorResponse(HttpStatus.NOT_FOUND, errorCodeStr, e.getMessage());
     }
 
     @ExceptionHandler(RecursoDuplicadoException.class)
-    public ResponseEntity<ApiResponse<Object>> manejarDuplicado(RecursoDuplicadoException e) {
+    public ResponseEntity<ErrorResponseDTO> manejarDuplicado(RecursoDuplicadoException e) {
         log.warn("Recurso duplicado: " + e.getMessage());
-        ApiResponse<Object> respuesta = new ApiResponse<>(false, e.getMessage(), null);
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(respuesta);
+        String errorCodeStr = e.getErrorCode() != null ? e.getErrorCode().name() : ErrorCode.WGLB409.name();
+        return buildErrorResponse(HttpStatus.CONFLICT, errorCodeStr, e.getMessage());
     }
 
     // Errores de validación de @Valid en los DTO (@NotBlank, @NotNull, @Size, etc.)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Object>> manejarValidacion(MethodArgumentNotValidException e) {
+    public ResponseEntity<ErrorResponseDTO> manejarValidacion(MethodArgumentNotValidException e) {
         String mensajes = e.getBindingResult().getFieldErrors().stream()
                 .map(fe -> "[" + fe.getField() + "] " + fe.getDefaultMessage())
                 .collect(Collectors.joining(", "));
         log.warn("Validación fallida: " + mensajes);
-        ApiResponse<Object> respuesta = new ApiResponse<>(false, "Datos inválidos: " + mensajes, null);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ErrorCode.WGLB001.name(), "Datos inválidos: " + mensajes);
+    }
+
+    // Errores de la paginación, para que no devuelvan un 500 y devuelva un 400
+    @ExceptionHandler
+    public ResponseEntity<ApiResponse<Object>> manejarValidacionDeParametros(ConstraintViolationException e) {
+        String mensajes = e.getConstraintViolations().stream().map(ConstraintViolation::getMessage).collect(Collectors.joining(", "));
+        log.warn("Parámetros inválidos: " + mensajes);
+        ApiResponse<Object> respuesta = new ApiResponse<>(false, mensajes, null);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuesta);
     }
 
     // Red de seguridad: restricciones de la base de datos que no se validaron a mano antes
     // (llaves foráneas inexistentes, UNIQUE, NOT NULL, CHECK), decodificando el código Oracle real
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ApiResponse<Object>> manejarIntegridad(DataIntegrityViolationException e) {
+    public ResponseEntity<ErrorResponseDTO> manejarIntegridad(DataIntegrityViolationException e) {
         log.error("Conflicto de integridad de datos: ", e);
         String mensaje = "El dato enviado no existe o hay un conflicto con la información ya guardada.";
 
@@ -64,8 +74,7 @@ public class GlobalExceptionHandler {
             mensaje = "No se puede eliminar porque este registro está siendo utilizado en otra parte del sistema.";
         }
 
-        ApiResponse<Object> respuesta = new ApiResponse<>(false, mensaje, null);
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(respuesta);
+        return buildErrorResponse(HttpStatus.CONFLICT, ErrorCode.WGLB002.name(), mensaje);
     }
 
     private String mensajeDuplicadoPorRestriccion(String causa) {
@@ -94,25 +103,28 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(OperacionInvalidaException.class)
-    public ResponseEntity<ApiResponse<Object>> manejarOperacionInvalida(OperacionInvalidaException e) {
+    public ResponseEntity<ErrorResponseDTO> manejarOperacionInvalida(OperacionInvalidaException e) {
         log.warn("Operación inválida: " + e.getMessage());
-        ApiResponse<Object> respuesta = new ApiResponse<>(false, e.getMessage(), null);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuesta);
+        String errorCodeStr = e.getErrorCode() != null ? e.getErrorCode().name() : "WGLB001";
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, errorCodeStr, e.getMessage());
     }
 
     // Una URL que no existe es un 404, no un fallo del servidor: sin esto caía en el catch general
     @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<ApiResponse<Object>> manejarRutaInexistente(NoResourceFoundException e) {
+    public ResponseEntity<ErrorResponseDTO> manejarRutaInexistente(NoResourceFoundException e) {
         log.warn("Ruta inexistente: " + e.getResourcePath());
-        ApiResponse<Object> respuesta = new ApiResponse<>(false, "La ruta solicitada no existe", null);
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
+        return buildErrorResponse(HttpStatus.NOT_FOUND, ErrorCode.WGLB404.name(), "La ruta solicitada no existe");
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Object>> manejarGeneral(Exception e) {
+    public ResponseEntity<ErrorResponseDTO> manejarGeneral(Exception e) {
         log.error("Error inesperado: ", e);
-        ApiResponse<Object> respuesta = new ApiResponse<>(false, "Ocurrió un error inesperado. Contacte al administrador", null);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuesta);
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCode.WGLB500.name(), "Ocurrió un error inesperado. Contacte al administrador");
+    }
+
+    private ResponseEntity<ErrorResponseDTO> buildErrorResponse(HttpStatus status, String errorCode, String message) {
+        ErrorResponseDTO errorResponse = new ErrorResponseDTO(status.value(), errorCode, message);
+        return ResponseEntity.status(status).body(errorResponse);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
