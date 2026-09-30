@@ -4,15 +4,19 @@ import iTicket.Douglas.Notificaciones.DTO.NotificacionDTO;
 import iTicket.Douglas.Notificaciones.DTO.NotificacionPaginaDTO;
 import iTicket.Douglas.Notificaciones.Service.NotificacionService;
 import iTicket.Douglas.Response.ApiResponse;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/notificaciones")
 @RequiredArgsConstructor
+@Validated
 public class NotificacionController {
 
     private final NotificacionService service;
@@ -21,8 +25,9 @@ public class NotificacionController {
     @GetMapping
     public ResponseEntity<ApiResponse<NotificacionPaginaDTO>> obtenerPorUsuario(
             @RequestParam Long idUsuario,
-            @RequestParam(defaultValue = "1") int pagina,
-            @RequestParam(defaultValue = "10") int tamano) {
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "La página mínima es 1") int pagina,
+            @RequestParam(defaultValue = "10") @Min(value = 5, message = "El tamaño mínimo de página es 5")
+            @Max(value = 50, message = "El tamaño máximo de página es 50") int tamano) {
         NotificacionPaginaDTO resultado = service.obtenerPorUsuarioPaginado(idUsuario, pagina, tamano);
         return ResponseEntity.ok(new ApiResponse<>(true, "Notificaciones encontradas", resultado));
     }

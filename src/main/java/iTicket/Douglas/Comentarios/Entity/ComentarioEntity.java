@@ -14,7 +14,10 @@ import java.util.List;
 @Entity
 @Getter
 @Setter
-@Table(name = "Comentarios")
+@Table(name = "Comentarios", indexes = {
+        @Index(name = "idx_comentarios_ticket_fecha", columnList = "id_ticket, fecha_hora"),
+        @Index(name = "idx_comentarios_usuario", columnList = "id_usuario_comentario")
+})
 public class ComentarioEntity {
 
     @Id
@@ -30,18 +33,18 @@ public class ComentarioEntity {
     @Column(name = "comentario")
     private String comentario;
 
-    @OneToMany(mappedBy = "comentario")
+    @OneToMany(mappedBy = "comentario", fetch = FetchType.LAZY)
     private List<MultimediaComentarioEntity> multimediaComentarios;
 
     @CreationTimestamp
     @Column(name = "fecha_hora")
     private LocalDateTime fechaHora;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_ticket")
     private TicketEntity ticket;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_usuario_comentario")
     private UsuarioEntity usuario;
 }

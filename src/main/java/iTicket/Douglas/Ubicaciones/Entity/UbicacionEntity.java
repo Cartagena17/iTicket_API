@@ -1,9 +1,12 @@
 package iTicket.Douglas.Ubicaciones.Entity;
 
+import iTicket.Douglas.Articulos.Entity.ArticuloEntity;
 import iTicket.Douglas.TipoUbicacion.Entity.TipoUbicacionEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
 
 @Entity
 @Getter
@@ -18,7 +21,10 @@ public class UbicacionEntity {
     private Long id;
     @Column (name = "nombre_ubicacion")
     private String nombreUbicacion;
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_tipo_ubicacion")
     private TipoUbicacionEntity tipoUbicacion;
+
+    @OneToMany(mappedBy = "ubicacion", fetch = FetchType.LAZY)
+    private List<ArticuloEntity> articulos;
 }

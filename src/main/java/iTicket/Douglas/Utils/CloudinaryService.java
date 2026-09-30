@@ -2,6 +2,7 @@ package iTicket.Douglas.Utils;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.cloudinary.Transformation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,27 @@ public class CloudinaryService {
             log.error("Error al subir la imagen a Cloudinary: " + e.getMessage());
             throw new RuntimeException("No se pudo subir la imagen", e);
         }
+    }
+
+    // Miniatura cuadrada para los avatares
+    public String urlMiniatura(String publicId) {
+        if (publicId == null || publicId.isBlank()) return null;
+        return cloudinary.url()
+                .secure(true)
+                .transformation(new Transformation()
+                        // Aqui se declara el tamaño que tendra la miniatura
+                        .width(120).height(120).crop("fill").gravity("face")
+                        .quality("auto").fetchFormat("auto"))
+                .generate(publicId);
+    }
+
+    //La misma imagen a tamaño completo, pero con formato y compresión optimizados
+    public String urlOptimizada(String publicId) {
+        if (publicId == null || publicId.isBlank()) return null;
+        return cloudinary.url()
+                .secure(true)
+                .transformation(new Transformation().quality("auto").fetchFormat("auto"))
+                .generate(publicId);
     }
 
     //Elimina una imagen usando su public_id

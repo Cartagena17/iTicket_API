@@ -13,6 +13,7 @@ import iTicket.Douglas.Modelos.Entity.ModeloEntity;
 import iTicket.Douglas.Modelos.Repository.ModeloRepository;
 import iTicket.Douglas.Ubicaciones.Entity.UbicacionEntity;
 import iTicket.Douglas.Ubicaciones.Repository.UbicacionRepository;
+import iTicket.Douglas.Utils.Ordenamiento;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -37,6 +39,12 @@ public class ArticuloService {
     private final ModeloRepository modelorepo;
     private final CategoriaRepository categoriaRepo;
     private final UbicacionRepository ubicacionRepo;
+
+    /* Artículos no tiene columna de fecha: el id sirve de criterio de antigüedad.
+       Modelo y marca quedan fuera a propósito: id_modelo admite nulos, y el JOIN que
+       arma el ordenamiento escondería los artículos que no tienen modelo asignado. */
+    private static final Set<String> CAMPOS_ORDENABLES = Set.of(
+            "idArticulo", "codigoArticulo", "categoria.nombreCategoria", "ubicacion.nombreUbicacion");
 
     @Transactional
     public ArticuloDTO nuevoArticulo(@Valid ArticuloDTO dto) {
@@ -115,7 +123,7 @@ public class ArticuloService {
         return lista.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
-    public ArticuloPaginaDTO obtenerPaginado(int pagina, int tamano, String busqueda, Long idCategoria, Long idUbicacion, Long idMarca) {
+    public ArticuloPaginaDTO obtenerPaginado(int pagina, int tamano, String busqueda, Long idCategoria, Long idUbicacion, Long idMarca, String sort) {
         Specification<ArticuloEntity> spec = (root, query, cb) -> cb.conjunction();
         if (busqueda != null && !busqueda.isBlank()) {
             spec = spec.and(ArticuloSpecifications.conBusqueda(busqueda));
@@ -129,7 +137,8 @@ public class ArticuloService {
         if (idMarca != null) {
             spec = spec.and(ArticuloSpecifications.conMarca(idMarca));
         }
-        Pageable pageable = PageRequest.of(pagina - 1, tamano, Sort.by("idArticulo").descending());
+        Sort orden = Ordenamiento.construir(sort, CAMPOS_ORDENABLES, Sort.by("idArticulo").descending());
+        Pageable pageable = PageRequest.of(pagina - 1, tamano, orden);
         Page<ArticuloEntity> resultado = repo.findAll(spec, pageable);
 
         List<ArticuloDTO> articulos = resultado.getContent().stream().map(this::convertirADTO).collect(Collectors.toList());
