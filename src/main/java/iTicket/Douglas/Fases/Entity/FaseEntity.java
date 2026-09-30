@@ -1,6 +1,7 @@
 package iTicket.Douglas.Fases.Entity;
 
 
+import iTicket.Douglas.DetalleFases.Entity.DetalleFEntity;
 import iTicket.Douglas.Proyectos.Entity.ProyectoEntity;
 import iTicket.Douglas.Utils.BooleanToCharConverter;
 import jakarta.persistence.*;
@@ -8,10 +9,13 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Getter @Setter
-@Table (name = "FASES")
+@Table(name = "FASES", indexes = {
+        @Index(name = "idx_fases_proyecto", columnList = "id_proyecto")
+})
 public class FaseEntity {
 
 
@@ -58,4 +62,7 @@ public class FaseEntity {
     @ManyToOne (fetch = FetchType.LAZY)
     @JoinColumn (name = "ID_PROYECTO", referencedColumnName = "ID_PROYECTO")
     private ProyectoEntity proyecto;
+
+    @OneToMany(mappedBy = "fase", fetch = FetchType.LAZY)
+    private List<DetalleFEntity> detalles;
 }

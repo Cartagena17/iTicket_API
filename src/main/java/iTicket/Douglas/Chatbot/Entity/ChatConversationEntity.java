@@ -57,7 +57,8 @@ public class ChatConversationEntity {
     @OneToMany(
             mappedBy = "conversacion",
             cascade = CascadeType.ALL,
-            orphanRemoval = true
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
     )
     @OrderBy("fechaHora ASC, idMensaje ASC") // Estos mensajes se ordenan por la hora
     private List<ChatMessageEntity> mensajes = new ArrayList<>();

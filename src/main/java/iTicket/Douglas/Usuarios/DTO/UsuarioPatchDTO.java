@@ -1,6 +1,5 @@
 package iTicket.Douglas.Usuarios.DTO;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
@@ -17,9 +16,7 @@ public class UsuarioPatchDTO {
     @Size(max = 100, message = "El correo no puede exceder los 100 caracteres")
     private String correo;
 
-    @Size
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    private String clave;
+    // Sin campo de contraseña: al editar un usuario no se toca su clave
 
     @URL(message = "La url de la imagen no es válida")
     @Size(max = 2050, message = "La url  no puede exceder los 2050 caracteres")

@@ -9,7 +9,9 @@ import lombok.Setter;
 
 @Entity
 @Getter @Setter
-@Table (name = "DETALLE_FASES")
+@Table(name = "DETALLE_FASES", indexes = {
+        @Index(name = "idx_detalle_fases_fase", columnList = "id_fase")
+})
 public class DetalleFEntity {
 
     @Id

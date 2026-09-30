@@ -79,14 +79,18 @@ public class UsuarioService {
 
         entidad.setNombreUsuario(dto.getNombreUsuario());
         entidad.setCorreo(dto.getCorreo());
-        entidad.setImagenUrl(dto.getImagenUrl());
+
+        // Antes si se actualizaba la clave de un usuario se le quitaba la foto de perfil
+        if (dto.getImagenUrl() != null && !dto.getImagenUrl().isBlank()) {
+            entidad.setImagenUrl(dto.getImagenUrl());
+        }
+        
         entidad.setRol(rol);
         entidad.setDepartamento(departamento);
         entidad.setEstado(dto.getEstado());
 
-        if (dto.getClave() != null && !dto.getClave().isBlank()) {
-            entidad.setClave(passwordUtil.encriptar(dto.getClave()));
-        }
+        /* La contraseña no se edita desde aquí: solo se asigna al crear el usuario y después
+           la cambia su dueño desde el panel de perfil, que pide la contraseña actual. */
 
         UsuarioEntity datosGuardados = repo.save(entidad);
         log.info("Usuario con id " + id + " actualizado");
@@ -103,9 +107,6 @@ public class UsuarioService {
         }
         if (dto.getCorreo() != null && !dto.getCorreo().isBlank()) {
             entidad.setCorreo(dto.getCorreo());
-        }
-        if (dto.getClave() != null && !dto.getClave().isBlank()) {
-            entidad.setClave(passwordUtil.encriptar(dto.getClave()));
         }
         if (dto.getImagenUrl() != null && !dto.getImagenUrl().isBlank()) {
             entidad.setImagenUrl(dto.getImagenUrl());
@@ -146,6 +147,7 @@ public class UsuarioService {
         }
 
         entidad.setClave(passwordUtil.encriptar(dto.getClaveNueva()));
+        entidad.setClaveInicial(false); // Cuando el usuario ya no usa la clave que le asignaron
         repo.save(entidad);
         log.info("Usuario con id " + id + " cambió su contraseña");
     }
@@ -193,6 +195,7 @@ public class UsuarioService {
         objEntity.setDepartamento(departamento);
         objEntity.setEstado(dto.getEstado());
         objEntity.setCloudinaryId(dto.getCloudinaryId());
+        objEntity.setClaveInicial(true);
         return objEntity;
     }
 
@@ -208,6 +211,8 @@ public class UsuarioService {
         objDTO.setNombreDepartamento(entity.getDepartamento().getNombreDepartamento());
         objDTO.setEstado(entity.getEstado());
         objDTO.setCloudinaryId(entity.getCloudinaryId());
+        objDTO.setClaveInicial(entity.getClaveInicial());
+        objDTO.setImagenMiniaturaUrl(cloudinaryService.urlMiniatura(entity.getCloudinaryId()));
         return objDTO;
     }
 
