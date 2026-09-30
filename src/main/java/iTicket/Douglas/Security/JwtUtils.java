@@ -61,6 +61,21 @@ public class JwtUtils {
             return false;
         }
     }
+    public String createCodeVerificationToken(String correo, String codigo) {
+        Date now = new Date();
+        Date expiration = new Date(now.getTime() + (1000 * 60 * 30));
+
+        return Jwts.builder()
+                .setSubject(correo)
+                .claim("purpose", "CODE_VERIFICATION")
+                .claim("codigo", codigo)
+                .setIssuer(jwtIssuer)
+                .setIssuedAt(now)
+                .setExpiration(expiration)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
     public String createRecoveryToken(String correo) {
         Date now = new Date();
         // 30 minutos = 1000 ms * 60 s * 30 m
@@ -80,3 +95,4 @@ public class JwtUtils {
         return jwtExpirationMs / 1000;
     }
 }
+
