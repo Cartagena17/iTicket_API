@@ -120,7 +120,8 @@ public class ArticuloService {
     }
 
     public List<ArticuloDTO> buscarPorCodigoParcial(String fragmento) {
-        List<ArticuloEntity> lista = repo.findByCodigoArticuloContainingIgnoreCase(fragmento);
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("codigoArticulo").ascending());
+        List<ArticuloEntity> lista = repo.findByCodigoArticuloContainingIgnoreCase(fragmento, pageable);
         return lista.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
