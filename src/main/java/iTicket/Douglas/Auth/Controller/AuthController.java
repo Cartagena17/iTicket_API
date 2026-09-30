@@ -17,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import iTicket.Douglas.Auth.DTO.RecuperacionRequestDTO;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -39,12 +40,6 @@ public class AuthController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Inicio de sesion exitoso", respuesta));
     }
 
-    /**
-     * No consulta la base de datos: todo sale del token que ya validó el
-     * JwtCookieAuthFilter (Modulo 2/4). Si no hay sesion valida, la peticion
-     * ni siquiera llega aqui — la corta el authenticationEntryPoint del
-     * SecurityConfig (Modulo 3) con el 401.
-     */
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<Map<String, Object>>> me() {
         AuthenticatedUser usuario = (AuthenticatedUser) SecurityContextHolder.getContext()
@@ -62,5 +57,48 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> logout(HttpServletResponse response) {
         response.addHeader(HttpHeaders.SET_COOKIE, cookieFactory.clear().toString());
         return ResponseEntity.ok(new ApiResponse<>(true, "Sesion cerrada"));
+    }
+
+    @PostMapping("/recuperar-contrasena")
+    public ResponseEntity<ApiResponse<Void>> solicitarRecuperacion(@RequestBody Map<String, String> body, HttpServletResponse response) {
+        String correo = body.get("correo");
+        if (correo == null || correo.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "El correo es requerido"));
+        }
+        
+        String tokenValidacion = authService.solicitarRecuperacion(correo);
+        ResponseCookie cookie = cookieFactory.build(tokenValidacion, 30 * 60);
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        
+        return ResponseEntity.ok(new ApiResponse<>(true, "Correo enviado exitosamente"));
+    }
+
+    @PostMapping("/validar-codigo")
+    public ResponseEntity<ApiResponse<Void>> validarCodigo(@RequestBody Map<String, String> body, 
+                                                                         @CookieValue(value = "authToken", required = false) String token,
+                                                                         HttpServletResponse response) {
+        String codigo = body.get("codigo");
+        if (token == null || token.trim().isEmpty() || codigo == null || codigo.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Token y codigo son requeridos"));
+        }
+        
+        String tokenRecuperacion = authService.validarCodigo(token, codigo);
+        ResponseCookie cookie = cookieFactory.build(tokenRecuperacion, 30 * 60);
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        
+        return ResponseEntity.ok(new ApiResponse<>(true, "Codigo valido"));
+    }
+
+    @PostMapping("/restablecer-contrasena")
+    public ResponseEntity<ApiResponse<Void>> restablecerContrasena(@RequestBody RecuperacionRequestDTO dto,
+                                                                   @CookieValue(value = "authToken", required = false) String token,
+                                                                   HttpServletResponse response) {
+        if (token == null || dto.getNuevaContrasena() == null) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Token y nueva contrasena son requeridos"));
+        }
+        
+        authService.restablecerContrasena(token, dto.getNuevaContrasena());
+        response.addHeader(HttpHeaders.SET_COOKIE, cookieFactory.clear().toString());
+        return ResponseEntity.ok(new ApiResponse<>(true, "Contrasena actualizada exitosamente"));
     }
 }

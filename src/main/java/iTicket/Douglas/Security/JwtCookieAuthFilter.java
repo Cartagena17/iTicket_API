@@ -38,6 +38,11 @@ public class JwtCookieAuthFilter extends OncePerRequestFilter {
         if (token != null) {
             try {
                 Claims claims = jwtUtils.parseTokenAndClaims(token);
+
+                // Escudo de Seguridad: Bloquear tokens de recuperacion de contrasena
+                if ("PASSWORD_RECOVERY".equals(claims.get("purpose", String.class)) || "CODE_VERIFICATION".equals(claims.get("purpose", String.class))) {
+                    throw new JwtException("Token de recuperacion no valido para sesion");
+                }
                 String rol = claims.get("rol", String.class);
                 String correo = claims.getSubject();
                 Long idUsuario = claims.get("id", Long.class);
@@ -72,3 +77,4 @@ public class JwtCookieAuthFilter extends OncePerRequestFilter {
         return null;
     }
 }
+
