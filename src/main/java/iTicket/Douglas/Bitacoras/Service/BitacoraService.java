@@ -1,19 +1,25 @@
 package iTicket.Douglas.Bitacoras.Service;
 
 import iTicket.Douglas.Bitacoras.DTO.BitacoraDTO;
+import iTicket.Douglas.Bitacoras.DTO.BitacoraPaginaDTO;
 import iTicket.Douglas.Bitacoras.Entity.BitacoraEntity;
 import iTicket.Douglas.Bitacoras.Repository.BitacoraRepository;
+import iTicket.Douglas.Bitacoras.Specification.BitacoraSpecifications;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -41,6 +47,7 @@ public class BitacoraService {
         entity.setCodigoTicket(dto.getCodigoTicket());
         entity.setAsuntoTicket(dto.getAsuntoTicket());
         entity.setNuevoEstado(dto.getNuevoEstado());
+        entity.setTipoDepartamentoTicket(dto.getTipoDepartamentoTicket());
         return entity;
     }
 
@@ -54,6 +61,7 @@ public class BitacoraService {
         dto.setCodigoTicket(entity.getCodigoTicket());
         dto.setAsuntoTicket(entity.getAsuntoTicket());
         dto.setNuevoEstado(entity.getNuevoEstado());
+        dto.setTipoDepartamentoTicket(entity.getTipoDepartamentoTicket());
         dto.setFechaHora(entity.getFechaHora());
         return dto;
     }
@@ -63,14 +71,22 @@ public class BitacoraService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún usuario con id: " + id));
     }
 
-    public List<BitacoraDTO> obtenerBitacoras(Long idUsuarioAdmin) {
+    public BitacoraPaginaDTO obtenerBitacoras(Long idUsuarioAdmin, int pagina, int tamano, String busqueda, String estado) {
         String tipoDepartamento = buscarUsuario(idUsuarioAdmin).getDepartamento().getTipoDepartamento();
-        List<BitacoraEntity> lista = bitacoraRepo.obtenerBitacorasPorDepartamento(tipoDepartamento);
-        List<BitacoraDTO> dto = new ArrayList<>();
-        for (BitacoraEntity entity : lista) {
-            dto.add(convertirADTO(entity));
+
+        Specification<BitacoraEntity> spec = BitacoraSpecifications.conTipoDepartamento(tipoDepartamento);
+        if (busqueda != null && !busqueda.isBlank()) {
+            spec = spec.and(BitacoraSpecifications.conBusqueda(busqueda));
         }
-        return dto;
+        if (estado != null && !estado.isBlank()) {
+            spec = spec.and(BitacoraSpecifications.conEstado(estado));
+        }
+
+        Pageable pageable = PageRequest.of(pagina - 1, tamano, Sort.by("fechaHora").descending());
+        Page<BitacoraEntity> resultado = bitacoraRepo.findAll(spec, pageable);
+
+        List<BitacoraDTO> bitacoras = resultado.getContent().stream().map(this::convertirADTO).collect(Collectors.toList());
+        return new BitacoraPaginaDTO(bitacoras, resultado.getTotalElements(), resultado.getTotalPages(), pagina);
     }
 
     public List<BitacoraDTO> obtenerBitacorasIdTicket(Long idTicket) {

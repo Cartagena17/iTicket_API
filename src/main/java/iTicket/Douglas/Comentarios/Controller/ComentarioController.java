@@ -3,6 +3,7 @@ package iTicket.Douglas.Comentarios.Controller;
 import iTicket.Douglas.Comentarios.DTO.ComentarioDTO;
 import iTicket.Douglas.Comentarios.Service.ComentarioService;
 import iTicket.Douglas.Response.ApiResponse;
+import iTicket.Douglas.Security.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +21,11 @@ public class ComentarioController {
 
     private final ComentarioService service;
 
+    //El autor del comentario ya no viaja en el cuerpo: el backend lo resuelve de la cookie de sesion.
     @PostMapping
     public ResponseEntity<ApiResponse<ComentarioDTO>> nuevoComentario(@Valid @RequestBody ComentarioDTO json) {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
+        json.setIdUsuarioComentario(idUsuario);
         ComentarioDTO dto = service.nuevoComentario(json);
         log.info("Nuevo comentario: " + dto);
         ApiResponse<ComentarioDTO> respuesta = new ApiResponse<>(true, "Datos ingresados correctamente", dto);
@@ -53,7 +57,8 @@ public class ComentarioController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> eliminarComentario(@PathVariable Long id, @RequestParam Long idUsuario) {
+    public ResponseEntity<ApiResponse<Void>> eliminarComentario(@PathVariable Long id) {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         boolean eliminado = service.eliminarData(id, idUsuario);
         if (eliminado) {
             log.info("El comentario con ID: " + id + " ya fue eliminado");
@@ -66,7 +71,8 @@ public class ComentarioController {
 
     @PatchMapping("/{id}")
     public ResponseEntity<ApiResponse<ComentarioDTO>> actualizarData(@PathVariable Long id, @Valid @RequestBody ComentarioDTO dto) {
-        ComentarioDTO data = service.actualizar(id, dto);
+        Long idUsuario = SecurityUtils.idUsuarioActual();
+        ComentarioDTO data = service.actualizar(id, dto, idUsuario);
         log.info("El comentario con ID: " + id + " ha sido actualizado");
         ApiResponse<ComentarioDTO> respuesta = new ApiResponse<>(true, "El comentario con ID: " + id + " ha sido actualizado", data);
         return ResponseEntity.ok(respuesta);

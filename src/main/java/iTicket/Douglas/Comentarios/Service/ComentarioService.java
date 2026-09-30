@@ -148,9 +148,14 @@ public class ComentarioService {
     }
 
     @Transactional
-    public ComentarioDTO actualizar(Long id, @Valid ComentarioDTO dto) {
+    public ComentarioDTO actualizar(Long id, @Valid ComentarioDTO dto, Long idUsuarioSolicitante) {
         ComentarioEntity entidad = repo.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un comentario con id " + id));
+
+        //Solo el autor del comentario puede editarlo
+        if (!entidad.getUsuario().getIdUsuario().equals(idUsuarioSolicitante)) {
+            throw new OperacionInvalidaException("Solo el autor del comentario puede editarlo");
+        }
 
         entidad.setComentario(dto.getComentario());
 
@@ -158,9 +163,7 @@ public class ComentarioService {
         ticket.setIdTicket(dto.getIdTicket());
         entidad.setTicket(ticket);
 
-        UsuarioEntity usuario = new UsuarioEntity();
-        usuario.setIdUsuario(dto.getIdUsuarioComentario());
-        entidad.setUsuario(usuario);
+        //El autor del comentario no cambia al editarlo, sin importar lo que traiga el DTO
 
         ComentarioEntity datosGuardados = repo.save(entidad);
         log.info("Comentario con id " + id + " actualizado");

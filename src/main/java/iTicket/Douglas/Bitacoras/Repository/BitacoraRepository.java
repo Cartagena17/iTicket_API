@@ -2,13 +2,14 @@ package iTicket.Douglas.Bitacoras.Repository;
 
 import iTicket.Douglas.Bitacoras.Entity.BitacoraEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface BitacoraRepository extends JpaRepository<BitacoraEntity, Long> {
+public interface BitacoraRepository extends JpaRepository<BitacoraEntity, Long>, JpaSpecificationExecutor<BitacoraEntity> {
 
     //Metodos personalizados
 
@@ -25,14 +26,6 @@ public interface BitacoraRepository extends JpaRepository<BitacoraEntity, Long> 
     Long contarTicketsCerradosEnRango(
             @org.springframework.data.repository.query.Param("inicio") java.time.LocalDateTime inicio,
             @org.springframework.data.repository.query.Param("fin") java.time.LocalDateTime fin
-    );
-
-    @org.springframework.data.jpa.repository.Query("SELECT b FROM BitacoraEntity b " +
-            "JOIN iTicket.Douglas.Tickets.Entity.TicketEntity t ON t.idTicket = b.idTicket " +
-            "WHERE t.departamento.tipoDepartamento = :tipoDepartamento " +
-            "ORDER BY b.fechaHora DESC")
-    List<BitacoraEntity> obtenerBitacorasPorDepartamento(
-            @org.springframework.data.repository.query.Param("tipoDepartamento") String tipoDepartamento
     );
 
     //b.idTicket no es una relacion JPA, por eso el join manual contra TicketEntity.

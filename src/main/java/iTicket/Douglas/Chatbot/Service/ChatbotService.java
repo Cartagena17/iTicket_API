@@ -196,7 +196,7 @@ public class ChatbotService {
      * Obtiene los datos autorizados del usuario, construye el contexto y solicita
      * una respuesta a Groq.
      */
-    public ChatbotResponse responder(ChatbotRequest request) {
+    public ChatbotResponse responder(ChatbotRequest request, Long idUsuario) {
 
         if (request == null) {
             throw new IllegalArgumentException("Debes enviar un mensaje.");
@@ -204,23 +204,23 @@ public class ChatbotService {
 
         // El rol se lee siempre del usuario autenticado en la BD, nunca de lo
         // que el mensaje del chat pueda decir.
-        UsuarioEntity usuarioActual = usuarioRepository.findById(request.getIdUsuario())
+        UsuarioEntity usuarioActual = usuarioRepository.findById(idUsuario)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No se pudo identificar al usuario."
                 ));
         String rolVerificado = usuarioActual.getRol().getNombreRol();
 
         List<ChatMessageDTO> historial = conversationService.obtenerMemoria(
-                request.getIdUsuario(),
+                idUsuario,
                 request.getIdConversacion()
         );
 
         TickteIndicadoresEstadoDTO indicadores =
-                ticketService.obtenerIndicadoresPropios(request.getIdUsuario());
+                ticketService.obtenerIndicadoresPropios(idUsuario);
 
         TicketPaginaDTO paginaReciente =
                 ticketService.obtenerTicketsPorUsuario(
-                        request.getIdUsuario(),
+                        idUsuario,
                         1,
                         CANTIDAD_TICKETS_RECIENTES,
                         null,
@@ -236,7 +236,7 @@ public class ChatbotService {
 
         TicketDTO ticketSolicitado = codigoSolicitado
                 .map(codigo -> buscarTicketDelUsuarioPorCodigo(
-                        request.getIdUsuario(),
+                        idUsuario,
                         codigo
                 ))
                 .orElse(null);
@@ -265,7 +265,7 @@ public class ChatbotService {
 
         ChatConversationSummaryDTO conversacion =
                 conversationService.guardarIntercambio(
-                        request.getIdUsuario(),
+                        idUsuario,
                         request.getIdConversacion(),
                         request.getMensaje(),
                         respuesta

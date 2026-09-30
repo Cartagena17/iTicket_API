@@ -6,6 +6,7 @@ import iTicket.Douglas.Response.AlertaInsatisfaccionDTO;
 import iTicket.Douglas.Response.ApiResponse;
 import iTicket.Douglas.Response.MetricasResponseDTO;
 import iTicket.Douglas.Response.PaginatedResponseDTO;
+import iTicket.Douglas.Security.SecurityUtils;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +23,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/estadisticas")
-@CrossOrigin(origins = "*")
 @Validated
 public class EstadisticasController {
 
@@ -36,11 +36,10 @@ public class EstadisticasController {
     // ================================================================
     // ENDPOINT CONSOLIDADO DE MÉTRICAS (Dashboard principal)
     // GET /api/estadisticas/metricas
+    // El id del admin ya no viaja en la URL: sale del usuario autenticado en la cookie.
     // ================================================================
     @GetMapping("/metricas")
     public ResponseEntity<ApiResponse<MetricasResponseDTO>> obtenerMetricas(
-            @RequestParam Long idUsuarioAdmin,
-
             @RequestParam(value = "fechaInicio", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
 
@@ -53,6 +52,7 @@ public class EstadisticasController {
             @RequestParam(value = "pageEquipos", defaultValue = "0") @Min(value = 0, message = "La página mínima es 0") int pageEquipos,
             @RequestParam(value = "sizeEquipos", defaultValue = "5") @Min(value = 5, message = "El tamaño mínimo de página es 5") @Max(value = 50, message = "El tamaño máximo de página es 50") int sizeEquipos) {
 
+        Long idUsuarioAdmin = SecurityUtils.idUsuarioActual();
         MetricasResponseDTO metricas = estadisticasService.obtenerMetricas(
                 idUsuarioAdmin,
                 fechaInicio,
@@ -70,8 +70,6 @@ public class EstadisticasController {
     // ================================================================
     @GetMapping("/alertas")
     public ResponseEntity<ApiResponse<PaginatedResponseDTO<AlertaInsatisfaccionDTO>>> obtenerAlertasInsatisfaccion(
-            @RequestParam Long idUsuarioAdmin,
-
             @RequestParam(value = "fechaInicio", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
 
@@ -85,6 +83,7 @@ public class EstadisticasController {
             @Min(value = 5, message = "El tamaño mínimo de página es 5")
             @Max(value = 50, message = "El tamaño máximo de página es 50") int size) {
 
+        Long idUsuarioAdmin = SecurityUtils.idUsuarioActual();
         LocalDateTime inicio = fechaInicio != null ? fechaInicio.atStartOfDay() : null;
         LocalDateTime fin = fechaFin != null ? fechaFin.atTime(LocalTime.MAX) : null;
 
@@ -100,8 +99,6 @@ public class EstadisticasController {
     // ================================================================
     @GetMapping("/equipos-reportados")
     public ResponseEntity<ApiResponse<PaginatedResponseDTO<ReportadosDTO>>> obtenerArticulosMasReportados(
-            @RequestParam Long idUsuarioAdmin,
-
             @RequestParam(value = "fechaInicio", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
 
@@ -113,6 +110,7 @@ public class EstadisticasController {
             @Min(value = 5, message = "El tamaño mínimo de página es 5")
             @Max(value = 50, message = "El tamaño máximo de página es 50") int size) {
 
+        Long idUsuarioAdmin = SecurityUtils.idUsuarioActual();
         LocalDateTime inicio = fechaInicio != null ? fechaInicio.atStartOfDay() : null;
         LocalDateTime fin = fechaFin != null ? fechaFin.atTime(LocalTime.MAX) : null;
 
@@ -128,14 +126,13 @@ public class EstadisticasController {
     // ================================================================
     @GetMapping("/resolucion-por-dia")
     public ResponseEntity<ApiResponse<List<Object[]>>> obtenerResolucionPorDia(
-            @RequestParam Long idUsuarioAdmin,
-
             @RequestParam(value = "fechaInicio", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
 
             @RequestParam(value = "fechaFin", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin) {
 
+        Long idUsuarioAdmin = SecurityUtils.idUsuarioActual();
         LocalDateTime inicio = fechaInicio != null ? fechaInicio.atStartOfDay() : null;
         LocalDateTime fin = fechaFin != null ? fechaFin.atTime(LocalTime.MAX) : null;
 

@@ -1,6 +1,7 @@
 package iTicket.Douglas.Tickets.Controller;
 
 import iTicket.Douglas.Response.ApiResponse;
+import iTicket.Douglas.Security.SecurityUtils;
 import iTicket.Douglas.Tickets.DTO.*;
 import iTicket.Douglas.Tickets.Service.TicketService;
 import jakarta.validation.Valid;
@@ -28,8 +29,11 @@ public class TicketController {
 
     private final TicketService service;
 
+    //El creador ya no viaja en el cuerpo: el backend lo resuelve de la cookie de sesion.
     @PostMapping
     public ResponseEntity<ApiResponse<TicketDTO>> nuevoTicket(@Valid @RequestBody TicketDTO json) {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
+        json.setCreador(idUsuario);
         TicketDTO dto = service.nuevoTicket(json);
         log.info("Nuevo ticket creado: " + dto);
         ApiResponse<TicketDTO> respuesta = new ApiResponse<>(true, "Datos ingresados correctamente", dto);
@@ -53,7 +57,8 @@ public class TicketController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> eliminarTicket(@PathVariable Long id, @RequestParam Long idUsuario) {
+    public ResponseEntity<ApiResponse<Void>> eliminarTicket(@PathVariable Long id) {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         boolean eliminado = service.eliminarData(id, idUsuario);
         if (eliminado) {
             log.info("Ticket con ID: " + id + ", eliminado");
@@ -89,7 +94,8 @@ public class TicketController {
     }
 
     @PatchMapping("/{id}/asignacion")
-    public ResponseEntity<ApiResponse<TicketAsignacionDTO>> asignarTicket(@PathVariable Long id, @Valid @RequestBody TicketAsignacionDTO dto, @RequestParam Long idUsuario) {
+    public ResponseEntity<ApiResponse<TicketAsignacionDTO>> asignarTicket(@PathVariable Long id, @Valid @RequestBody TicketAsignacionDTO dto) {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         boolean resultado = service.asignarTicket(id, dto, idUsuario);
         if (resultado) {
             log.info("Ticket con ID: " + id + " ha sido asignado.");
@@ -101,7 +107,8 @@ public class TicketController {
     }
 
     @PatchMapping("/{id}/reporte")
-    public ResponseEntity<ApiResponse<TicketResolucionDTO>> reporteTicket(@PathVariable Long id, @Valid @RequestBody TicketResolucionDTO dto, @RequestParam Long idUsuario) {
+    public ResponseEntity<ApiResponse<TicketResolucionDTO>> reporteTicket(@PathVariable Long id, @Valid @RequestBody TicketResolucionDTO dto) {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         boolean resultado = service.reporteTicket(id, dto, idUsuario);
         if (resultado) {
             log.info("El reporte del ticket con ID: " + id + " ha sido registrado.");
@@ -112,24 +119,28 @@ public class TicketController {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(respuesta);
     }
 
-    @GetMapping("/indicadores/gestion/{idUsuario}")
-    public ResponseEntity<ApiResponse<TickteIndicadoresEstadoDTO>> obtenerIndicadoresPorDepartamento(@PathVariable Long idUsuario) {
+    //El id del admin ya no viaja en la URL: sale del usuario autenticado en la cookie.
+    @GetMapping("/indicadores/gestion")
+    public ResponseEntity<ApiResponse<TickteIndicadoresEstadoDTO>> obtenerIndicadoresPorDepartamento() {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         TickteIndicadoresEstadoDTO dto = service.obtenerIndicadoresDepartamento(idUsuario);
         log.info("Indicadores de tickets consultados");
         ApiResponse<TickteIndicadoresEstadoDTO> respuesta = new ApiResponse<>(true, "Indicadores de estado obtenidos", dto);
         return ResponseEntity.ok(respuesta);
     }
 
-    @GetMapping("/indicadores/{idUsuario}")
-    public ResponseEntity<ApiResponse<TickteIndicadoresEstadoDTO>> obtenerIndicadoresPropios(@PathVariable Long idUsuario) {
+    @GetMapping("/indicadores")
+    public ResponseEntity<ApiResponse<TickteIndicadoresEstadoDTO>> obtenerIndicadoresPropios() {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         TickteIndicadoresEstadoDTO dto = service.obtenerIndicadoresPropios(idUsuario);
         log.info("Indicadores de tickets consultados");
         ApiResponse<TickteIndicadoresEstadoDTO> respuesta = new ApiResponse<>(true, "Indicadores de estado obtenidos", dto);
         return ResponseEntity.ok(respuesta);
     }
 
-    @GetMapping("/resumen-semanal/{idUsuario}")
-    public ResponseEntity<ApiResponse<List<TicketResumenDiaDTO>>> obtenerResumenSemanal(@PathVariable Long idUsuario) {
+    @GetMapping("/resumen-semanal")
+    public ResponseEntity<ApiResponse<List<TicketResumenDiaDTO>>> obtenerResumenSemanal() {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         List<TicketResumenDiaDTO> resumen = service.obtenerResumenSemanal(idUsuario);
         log.info("Resumen semanal de tickets consultado");
         ApiResponse<List<TicketResumenDiaDTO>> respuesta = new ApiResponse<>(true, "Resumen semanal obtenido", resumen);
@@ -139,8 +150,8 @@ public class TicketController {
     @GetMapping("/resumen-mensual")
     public ResponseEntity<ApiResponse<Map<String, Long>>> obtenerResumenMensual(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
-            @RequestParam(required = false) Long idUsuarioAdmin) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin) {
+        Long idUsuarioAdmin = SecurityUtils.idUsuarioActual();
         Map<String, Long> resumen = service.obtenerResumenMensual(fechaInicio, fechaFin, idUsuarioAdmin);
         log.info("Resumen mensual de tickets consultado");
         ApiResponse<Map<String, Long>> respuesta = new ApiResponse<>(true, "Resumen mensual obtenido", resumen);
@@ -151,11 +162,11 @@ public class TicketController {
     @PreAuthorize("hasRole('Administrador')")
     @GetMapping("/resumen-panel-admin")
     public ResponseEntity<ApiResponse<TicketPaginaDTO>> obtenerResumenPanelAdmin(
-            @RequestParam Long idUsuarioAdmin,
             @RequestParam(defaultValue = "pendientes") String categoria,
             @RequestParam(defaultValue = "1") @Min(value = 1, message = "La página mínima es 1") int pagina,
             @RequestParam(defaultValue = "5") @Min(value = 5, message = "El tamaño mínimo de página es 5")
             @Max(value = 50, message = "El tamaño máximo de página es 50") int tamano) {
+        Long idUsuarioAdmin = SecurityUtils.idUsuarioActual();
         TicketPaginaDTO resultado = service.obtenerResumenPanelAdmin(idUsuarioAdmin, categoria, pagina, tamano);
         log.info("Resumen del panel admin consultado, categoría: " + categoria);
         ApiResponse<TicketPaginaDTO> respuesta = new ApiResponse<>(true, "Resumen obtenido", resultado);
@@ -165,7 +176,8 @@ public class TicketController {
     //Contadores (sin paginar) para las tarjetas Pendientes/Vencidos/Vencen hoy del mismo panel
     @PreAuthorize("hasRole('Administrador')")
     @GetMapping("/resumen-panel-admin/contadores")
-    public ResponseEntity<ApiResponse<Map<String, Long>>> obtenerContadoresPanelAdmin(@RequestParam Long idUsuarioAdmin) {
+    public ResponseEntity<ApiResponse<Map<String, Long>>> obtenerContadoresPanelAdmin() {
+        Long idUsuarioAdmin = SecurityUtils.idUsuarioActual();
         Map<String, Long> resultado = service.obtenerContadoresPanelAdmin(idUsuarioAdmin);
         log.info("Contadores del panel admin consultados");
         ApiResponse<Map<String, Long>> respuesta = new ApiResponse<>(true, "Contadores obtenidos", resultado);
@@ -176,11 +188,11 @@ public class TicketController {
     @PreAuthorize("hasAnyRole('Administrador', 'Tecnico')")
     @GetMapping("/resumen-panel-tecnico")
     public ResponseEntity<ApiResponse<TicketPaginaDTO>> obtenerResumenPanelTecnico(
-            @RequestParam Long idUsuario,
             @RequestParam(defaultValue = "pendientes") String categoria,
             @RequestParam(defaultValue = "1") @Min(value = 1, message = "La página mínima es 1") int pagina,
             @RequestParam(defaultValue = "5") @Min(value = 5, message = "El tamaño mínimo de página es 5")
             @Max(value = 50, message = "El tamaño máximo de página es 50") int tamano) {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         TicketPaginaDTO resultado = service.obtenerResumenPanelTecnico(idUsuario, categoria, pagina, tamano);
         log.info("Resumen del panel técnico consultado, categoría: " + categoria);
         ApiResponse<TicketPaginaDTO> respuesta = new ApiResponse<>(true, "Resumen obtenido", resultado);
@@ -190,7 +202,8 @@ public class TicketController {
     //Contadores (sin paginar) para las tarjetas Pendientes/Vencidos/Vencen hoy del mismo panel
     @PreAuthorize("hasAnyRole('Administrador', 'Tecnico')")
     @GetMapping("/resumen-panel-tecnico/contadores")
-    public ResponseEntity<ApiResponse<Map<String, Long>>> obtenerContadoresPanelTecnico(@RequestParam Long idUsuario) {
+    public ResponseEntity<ApiResponse<Map<String, Long>>> obtenerContadoresPanelTecnico() {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         Map<String, Long> resultado = service.obtenerContadoresPanelTecnico(idUsuario);
         log.info("Contadores del panel técnico consultados");
         ApiResponse<Map<String, Long>> respuesta = new ApiResponse<>(true, "Contadores obtenidos", resultado);
@@ -201,8 +214,8 @@ public class TicketController {
     @GetMapping("/aprobaciones-pendientes")
     public ResponseEntity<ApiResponse<List<TicketDTO>>> obtenerAprobacionesPendientes(
             @RequestParam(defaultValue = "5") @Min(value = 5, message = "El tamaño mínimo de página es 5")
-            @Max(value = 50, message = "El tamaño máximo de página es 50") int limite,
-            @RequestParam Long idUsuarioAdmin)  {
+            @Max(value = 50, message = "El tamaño máximo de página es 50") int limite)  {
+        Long idUsuarioAdmin = SecurityUtils.idUsuarioActual();
         List<TicketDTO> lista = service.obtenerAprobacionesPendientes(limite, idUsuarioAdmin);
         log.info("Se consultaron las aprobaciones pendientes");
         ApiResponse<List<TicketDTO>> respuesta = new ApiResponse<>(true, "Aprobaciones pendientes obtenidas", lista);
@@ -210,7 +223,8 @@ public class TicketController {
     }
 
     @PatchMapping("/{id}/editar-creador")
-    public ResponseEntity<ApiResponse<Void>> editarComoCreador(@PathVariable Long id, @Valid @RequestBody TicketEdicionCreadorDTO dto, @RequestParam Long idUsuario) {
+    public ResponseEntity<ApiResponse<Void>> editarComoCreador(@PathVariable Long id, @Valid @RequestBody TicketEdicionCreadorDTO dto) {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         boolean resultado = service.editarComoCreador(id, dto, idUsuario);
         if (resultado) {
             log.info("Ticket con ID: " + id + " editado por el creador");
@@ -220,7 +234,8 @@ public class TicketController {
     }
 
     @PatchMapping("/{id}/gestion")
-    public ResponseEntity<ApiResponse<Void>> editarComoGestor(@PathVariable Long id, @Valid @RequestBody TicketAsignacionDTO dto, @RequestParam Long idUsuario) {
+    public ResponseEntity<ApiResponse<Void>> editarComoGestor(@PathVariable Long id, @Valid @RequestBody TicketAsignacionDTO dto) {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         boolean resultado = service.editarComoAdmin(id, dto, idUsuario);
         if (resultado) {
             log.info("Ticket con ID: " + id + " editado por administrador");
@@ -230,7 +245,8 @@ public class TicketController {
     }
 
     @PatchMapping("/{id}/estado-asignado")
-    public ResponseEntity<ApiResponse<Void>> editarEstadoAsignado(@PathVariable Long id, @Valid @RequestBody TicketEstadoDTO dto, @RequestParam Long idUsuario) {
+    public ResponseEntity<ApiResponse<Void>> editarEstadoAsignado(@PathVariable Long id, @Valid @RequestBody TicketEstadoDTO dto) {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         boolean resultado = service.editarEstado(id, dto, idUsuario);
         if (resultado) {
             log.info("Estado del ticket con ID: " + id + " actualizado por el usuario asignado");
@@ -242,12 +258,12 @@ public class TicketController {
     @PreAuthorize("hasRole('Administrador')")
     @GetMapping("/departamento")
     public ResponseEntity<ApiResponse<TicketPaginaDTO>> obtenerTicketsPorDepartamento(
-            @RequestParam Long idUsuarioAdmin,
             @RequestParam(defaultValue = "1") @Min(value = 1, message = "La página mínima es 1") int pagina,
             @RequestParam(defaultValue = "10") @Min(value = 5, message = "El tamaño mínimo de página es 5")
             @Max(value = 50, message = "El tamaño máximo de página es 50") int tamano,
             @RequestParam(required = false) String busqueda, @RequestParam(required = false) String prioridad,
             @RequestParam(required = false) String estado, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
+        Long idUsuarioAdmin = SecurityUtils.idUsuarioActual();
         TicketPaginaDTO resultado = service.obtenerTicketsPorDepartamento(idUsuarioAdmin, pagina, tamano, busqueda, prioridad, estado, fecha);
         log.info("Tickets consultados por el usuario con ID: " + idUsuarioAdmin);
         ApiResponse<TicketPaginaDTO> respuesta = new ApiResponse<>(true, "Tickets obtenidos", resultado);
@@ -257,12 +273,12 @@ public class TicketController {
     @PreAuthorize("hasAnyRole('Administrador', 'Tecnico')")
     @GetMapping("/tickets-asignados")
     public ResponseEntity<ApiResponse<TicketPaginaDTO>> obtenerPorTecnicoAsignado(
-            @RequestParam Long idUsuario,
             @RequestParam(defaultValue = "1") @Min(value = 1, message = "La página mínima es 1") int pagina,
             @RequestParam(defaultValue = "5") @Min(value = 5, message = "El tamaño mínimo de página es 5")
             @Max(value = 50, message = "El tamaño máximo de página es 50") int tamano,
             @RequestParam(required = false) String busqueda, @RequestParam(required = false) String prioridad,
             @RequestParam(required = false) String estado, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         TicketPaginaDTO resultado = service.obtenerTicketsAsignados(idUsuario, pagina, tamano, busqueda, prioridad, estado, fecha);
         log.info("Tickets asignados al usuario con ID: " + idUsuario + ", consultados");
         ApiResponse<TicketPaginaDTO> respuesta = new ApiResponse<>(true, "Tickets asignados obtenidos", resultado);
@@ -271,12 +287,12 @@ public class TicketController {
 
     @GetMapping("/mis-tickets")
     public ResponseEntity<ApiResponse<TicketPaginaDTO>> obtenerPorUsuario(
-            @RequestParam Long idUsuario,
             @RequestParam(defaultValue = "1") @Min(value = 1, message = "La página mínima es 1") int pagina,
             @RequestParam(defaultValue = "5") @Min(value = 5, message = "El tamaño mínimo de página es 5")
             @Max(value = 50, message = "El tamaño máximo de página es 50") int tamano,
             @RequestParam(required = false) String busqueda, @RequestParam(required = false) String prioridad,
             @RequestParam(required = false) String estado, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         TicketPaginaDTO resultado = service.obtenerTicketsPorUsuario(idUsuario, pagina, tamano, busqueda, prioridad, estado, fecha);
         log.info("Tickets del usuario con ID: " + idUsuario + ", consultados");
         ApiResponse<TicketPaginaDTO> respuesta = new ApiResponse<>(true, "Tickets obtenidos", resultado);
@@ -284,7 +300,8 @@ public class TicketController {
     }
 
     @PatchMapping("/reasignar/{id}")
-    public ResponseEntity<ApiResponse<TicketReasignarDepDTO>> reasignarDepartamento(@PathVariable Long id, @Valid @RequestBody TicketReasignarDepDTO dto, @RequestParam Long idUsuario) {
+    public ResponseEntity<ApiResponse<TicketReasignarDepDTO>> reasignarDepartamento(@PathVariable Long id, @Valid @RequestBody TicketReasignarDepDTO dto) {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         boolean resultado = service.reasignarDepartamento(id, dto, idUsuario);
         if (resultado) {
             log.info("El departamento del ticket con ID: " + id + ", se reasignó correctamente");
