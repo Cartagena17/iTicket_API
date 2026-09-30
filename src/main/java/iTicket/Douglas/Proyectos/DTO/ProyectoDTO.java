@@ -45,4 +45,7 @@ public class ProyectoDTO {
 
     @NotNull(message = "El estado de finalización del proyecto es obligatorio")
     private Boolean finalizado;
+
+    @Size(max = 100, message = "Longitud inválida en el contratista [100 caracteres]")
+    private String contratista;
 }

@@ -15,8 +15,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.security.access.AccessDeniedException;
 
-
-
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -37,6 +35,7 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.CONFLICT, errorCodeStr, e.getMessage());
     }
 
+    // Errores de validación de @Valid en los DTO (@NotBlank, @NotNull, @Size, etc.)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDTO> manejarValidacion(MethodArgumentNotValidException e) {
         String mensajes = e.getBindingResult().getFieldErrors().stream()
@@ -46,8 +45,6 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, ErrorCode.WGLB001.name(), "Datos inválidos: " + mensajes);
     }
 
-<<<<<<< HEAD
-=======
     // Errores de la paginación, para que no devuelvan un 500 y devuelva un 400
     @ExceptionHandler
     public ResponseEntity<ApiResponse<Object>> manejarValidacionDeParametros(ConstraintViolationException e) {
@@ -59,7 +56,6 @@ public class GlobalExceptionHandler {
 
     // Red de seguridad: restricciones de la base de datos que no se validaron a mano antes
     // (llaves foráneas inexistentes, UNIQUE, NOT NULL, CHECK), decodificando el código Oracle real
->>>>>>> origin/master
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponseDTO> manejarIntegridad(DataIntegrityViolationException e) {
         log.error("Conflicto de integridad de datos: ", e);
@@ -113,6 +109,7 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, errorCodeStr, e.getMessage());
     }
 
+    // Una URL que no existe es un 404, no un fallo del servidor: sin esto caía en el catch general
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ErrorResponseDTO> manejarRutaInexistente(NoResourceFoundException e) {
         log.warn("Ruta inexistente: " + e.getResourcePath());
