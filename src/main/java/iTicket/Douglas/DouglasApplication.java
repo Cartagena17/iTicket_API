@@ -11,15 +11,21 @@ public class DouglasApplication {
 
 	public static void main(String[] args) {
 
+		//Cargar el env solo localmente. si no existe (Heroku), lo ignora
 		Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
-		dotenv.entries().forEach(entry ->
-				System.setProperty(entry.getKey(), entry.getValue())
-		);
+
+
+		dotenv.entries().forEach(entry -> {
+			// Solo asigna a System Property si no ah sido definida por el entorno real del servidor
+			if (System.getProperty(entry.getKey()) == null && System.getenv(entry.getKey()) == null) {
+			System.setProperty(entry.getKey(), entry.getValue());}
+		});
 
 
 		System.out.println("DB_URL cargada: " + System.getProperty("DB_URL"));
 		System.out.println("DB_USER cargada: " + System.getProperty("DB_USER"));
 
+		//Arrancar la API
 		SpringApplication.run(DouglasApplication.class, args);
 	}
 }
