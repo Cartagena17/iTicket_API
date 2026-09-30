@@ -14,6 +14,7 @@ import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
 import iTicket.Douglas.Utils.CloudinaryService;
 import iTicket.Douglas.Utils.PasswordUtil;
+import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,10 +40,10 @@ public class UsuarioService {
     @Transactional
     public UsuarioDTO nuevoUsuario(@Valid UsuarioDTO dto) {
         RolEntity rol = rolRepo.findById(dto.getIdRol())
-                .orElseThrow(() -> new RecursoNoEncontradoException("El rol con id " + dto.getIdRol() + " no existe"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WUSR002, "El rol con id " + dto.getIdRol() + " no existe"));
 
         DepartamentoEntity departamento = departamentoRepo.findById(dto.getIdDepartamento())
-                .orElseThrow(() -> new RecursoNoEncontradoException("El departamento con id " + dto.getIdDepartamento() + " no existe"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WDEP001, "El departamento con id " + dto.getIdDepartamento() + " no existe"));
 
         validarDepartamentoSegunRol(rol, departamento);
 
@@ -59,20 +60,20 @@ public class UsuarioService {
 
     public UsuarioDTO obtenerPorId(Long id) {
         UsuarioEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un usuario con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WUSR002, "No existe un usuario con id " + id));
         return convertirADTO(entidad);
     }
 
     @Transactional
     public UsuarioDTO actualizarData(Long id, @Valid UsuarioUpdateDTO dto) {
         UsuarioEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un usuario con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WUSR002, "No existe un usuario con id " + id));
 
         RolEntity rol = rolRepo.findById(dto.getIdRol())
-                .orElseThrow(() -> new RecursoNoEncontradoException("El rol con id " + dto.getIdRol() + " no existe"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WUSR002, "El rol con id " + dto.getIdRol() + " no existe"));
 
         DepartamentoEntity departamento = departamentoRepo.findById(dto.getIdDepartamento())
-                .orElseThrow(() -> new RecursoNoEncontradoException("El departamento con id " + dto.getIdDepartamento() + " no existe"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WDEP001, "El departamento con id " + dto.getIdDepartamento() + " no existe"));
 
         validarDepartamentoSegunRol(rol, departamento);
 
@@ -98,10 +99,8 @@ public class UsuarioService {
 
     @Transactional
     public UsuarioDTO actualizarParcial(Long id, UsuarioPatchDTO dto) {
-        // Bug corregido: antes decía "if (registroExistente != null)", que siempre es true
-        // (un Optional nunca es null), así que el .get() de abajo podía explotar sin control.
         UsuarioEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un usuario con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WUSR002, "No existe un usuario con id " + id));
 
         if (dto.getNombreUsuario() != null && !dto.getNombreUsuario().isBlank()) {
             entidad.setNombreUsuario(dto.getNombreUsuario());
@@ -114,16 +113,15 @@ public class UsuarioService {
         }
         if (dto.getIdRol() != null) {
             RolEntity rol = rolRepo.findById(dto.getIdRol())
-                    .orElseThrow(() -> new RecursoNoEncontradoException("El rol con id " + dto.getIdRol() + " no existe"));
+                    .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WUSR002, "El rol con id " + dto.getIdRol() + " no existe"));
             entidad.setRol(rol);
         }
         if (dto.getIdDepartamento() != null) {
             DepartamentoEntity departamento = departamentoRepo.findById(dto.getIdDepartamento())
-                    .orElseThrow(() -> new RecursoNoEncontradoException("El departamento con id " + dto.getIdDepartamento() + " no existe"));
+                    .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WDEP001, "El departamento con id " + dto.getIdDepartamento() + " no existe"));
             entidad.setDepartamento(departamento);
         }
 
-        //Se valida el resultado final: el PATCH puede cambiar rol y departamento por separado
         validarDepartamentoSegunRol(entidad.getRol(), entidad.getDepartamento());
 
         UsuarioEntity datosGuardados = repo.save(entidad);
@@ -165,9 +163,8 @@ public class UsuarioService {
 
     public List<UsuarioDTO> obtenerTecnicosPorDepartamento(Long idDepartamento) {
         DepartamentoEntity departamento = departamentoRepo.findById(idDepartamento)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún departamento con id: " + idDepartamento));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WDEP001, "No existe ningún departamento con id: " + idDepartamento));
 
-        // Un departamento 'Otro' no atiende tickets, no tiene tecnicos que asignar
         String tipo = departamento.getTipoDepartamento();
         if (tipo == null || "Otro".equalsIgnoreCase(tipo)) {
             return List.of();
@@ -178,13 +175,12 @@ public class UsuarioService {
         return lista.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
-    //Un tecnico o administrador atiende tickets, asi que no puede estar en un departamento 'Otro'
     private void validarDepartamentoSegunRol(RolEntity rol, DepartamentoEntity departamento) {
         boolean atiendeTickets = "Tecnico".equalsIgnoreCase(rol.getNombreRol())
                 || "Administrador".equalsIgnoreCase(rol.getNombreRol());
 
         if (atiendeTickets && "Otro".equalsIgnoreCase(departamento.getTipoDepartamento())) {
-            throw new OperacionInvalidaException("Un " + rol.getNombreRol() + " no puede pertenecer a "
+            throw new OperacionInvalidaException(ErrorCode.WUSR001, "Un " + rol.getNombreRol() + " no puede pertenecer a "
                     + departamento.getNombreDepartamento() + ", porque ese departamento no atiende tickets.");
         }
     }

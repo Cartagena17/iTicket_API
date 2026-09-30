@@ -12,6 +12,7 @@ import iTicket.Douglas.Tickets.Entity.TicketEntity;
 import iTicket.Douglas.Tickets.Repository.TicketRepository;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
+import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,9 +39,9 @@ public class ComentarioService {
     @Transactional
     public ComentarioDTO nuevoComentario(@Valid ComentarioDTO dto) {
         TicketEntity ticket = ticketsRepo.findById(dto.getIdTicket())
-                .orElseThrow(() -> new RecursoNoEncontradoException("El ticket con ID: " + dto.getIdTicket() + " no existe"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WTK008, "El ticket con ID: " + dto.getIdTicket() + " no existe"));
         if (!usuarioRepo.existsById(dto.getIdUsuarioComentario())) {
-            throw new RecursoNoEncontradoException("El usuario con ID: " + dto.getIdUsuarioComentario() + " no existe");
+            throw new RecursoNoEncontradoException(ErrorCode.WUSR002, "El usuario con ID: " + dto.getIdUsuarioComentario() + " no existe");
         }
 
         ComentarioEntity entity = convertirAEntity(dto);
@@ -111,7 +112,7 @@ public class ComentarioService {
 
     public List<ComentarioDTO> obtenerComentariosPorTicket(Long idTicket) {
         if (!ticketsRepo.existsById(idTicket)) {
-            throw new RecursoNoEncontradoException("El ticket con ID: " + idTicket + " no existe");
+            throw new RecursoNoEncontradoException(ErrorCode.WTK008, "El ticket con ID: " + idTicket + " no existe");
         }
         List<ComentarioEntity> data = repo.findByTicket_IdTicketOrderByFechaHoraAsc(idTicket);
         return data.stream().map(this::convertirADTO).collect(Collectors.toList());
@@ -119,7 +120,7 @@ public class ComentarioService {
 
     public ComentarioDTO buscarComentarioPorId(Long id) {
         ComentarioEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un comentario con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WEVI002, "No existe un comentario con id " + id));
         return convertirADTO(entidad);
     }
 
@@ -150,7 +151,7 @@ public class ComentarioService {
     @Transactional
     public ComentarioDTO actualizar(Long id, @Valid ComentarioDTO dto) {
         ComentarioEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un comentario con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WEVI002, "No existe un comentario con id " + id));
 
         entidad.setComentario(dto.getComentario());
 

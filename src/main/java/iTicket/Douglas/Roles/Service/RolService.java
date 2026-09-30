@@ -5,6 +5,7 @@ import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Roles.DTO.RolDTO;
 import iTicket.Douglas.Roles.Entity.RolEntity;
 import iTicket.Douglas.Roles.Repository.RolRepository;
+import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +43,7 @@ public class RolService {
 
     public RolDTO obtenerPorId(Long id) {
         RolEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un rol con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WUSR002, "No existe un rol con id " + id));
         return convertirADTO(entidad);
     }
 
@@ -58,7 +59,7 @@ public class RolService {
     @Transactional
     public RolDTO actualizarData(Long id, @Valid RolDTO dto) {
         RolEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un rol con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WUSR002, "No existe un rol con id " + id));
 
         String nombre = dto.getNombreRol().trim();
         if (repo.existsByNombreRolIgnoreCaseAndIdRolNot(nombre, id)) {

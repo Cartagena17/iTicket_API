@@ -1,6 +1,7 @@
 package iTicket.Douglas.Articulos.Repository;
 
 import iTicket.Douglas.Articulos.Entity.ArticuloEntity;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
@@ -10,7 +11,7 @@ import java.util.Optional;
 
 @Repository
 public interface ArticuloRepository extends JpaRepository<ArticuloEntity, Long>, JpaSpecificationExecutor<ArticuloEntity> {
-    List<ArticuloEntity> findByCodigoArticuloContainingIgnoreCase(String fragmento);
+    List<ArticuloEntity> findByCodigoArticuloContainingIgnoreCase(String fragmento, Pageable pageable);
     Optional<ArticuloEntity> findByCodigoArticulo(String codigo);
     boolean existsByCodigoArticuloIgnoreCase(String codigoArticulo);
     boolean existsByCodigoArticuloIgnoreCaseAndIdArticuloNot(String codigoArticulo, Long idArticulo);

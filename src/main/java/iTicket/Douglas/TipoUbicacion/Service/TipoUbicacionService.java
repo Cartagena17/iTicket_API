@@ -5,6 +5,7 @@ import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.TipoUbicacion.DTO.TipoUbicacionDTO;
 import iTicket.Douglas.TipoUbicacion.Entity.TipoUbicacionEntity;
 import iTicket.Douglas.TipoUbicacion.Repository.TipoUbicacionRepository;
+import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +43,7 @@ public class TipoUbicacionService {
 
     public TipoUbicacionDTO buscarNombreTipoUbicacion(Long id) {
         TipoUbicacionEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un tipo de ubicación con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe un tipo de ubicación con id " + id));
         return convertirADTO(entidad);
     }
 
@@ -58,7 +59,7 @@ public class TipoUbicacionService {
     @Transactional
     public TipoUbicacionDTO actualizar(Long id, @Valid TipoUbicacionDTO dto) {
         TipoUbicacionEntity entidad = repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un tipo de ubicación con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe un tipo de ubicación con id " + id));
 
         String nombre = normalizar(dto.getNombre_tipo_ubicacion());
         if (repo.existsByNombreTipoUbicacionIgnoreCaseAndIdNot(nombre, id)) {
@@ -72,7 +73,7 @@ public class TipoUbicacionService {
 
     public TipoUbicacionDTO buscarNombreTipoUbicacion(String nombreTipoUbicacion) {
         TipoUbicacionEntity entidad = repo.findByNombreTipoUbicacion(nombreTipoUbicacion)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe ningún tipo de ubicación con nombre: " + nombreTipoUbicacion));
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe ningún tipo de ubicación con nombre: " + nombreTipoUbicacion));
         return convertirADTO(entidad);
     }
 
