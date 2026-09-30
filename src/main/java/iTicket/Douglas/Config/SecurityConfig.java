@@ -43,6 +43,11 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login").permitAll()
 
+                        /* Arranque del sistema: publicas a la fuerza, porque sirven cuando
+                           todavia no existe ningun usuario que pueda iniciar sesion. El
+                           SetupService las cierra solo en cuanto la tabla deja de estar vacia. */
+                        .requestMatchers("/api/setup/**").permitAll()
+
                         // --- Administracion pura: solo Administrador ---
                         .requestMatchers("/api/roles/**").hasRole("Administrador")
                         .requestMatchers("/api/areas/**").hasRole("Administrador")
