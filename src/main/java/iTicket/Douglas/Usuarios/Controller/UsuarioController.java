@@ -1,6 +1,7 @@
 package iTicket.Douglas.Usuarios.Controller;
 
 import iTicket.Douglas.Response.ApiResponse;
+import iTicket.Douglas.Security.SecurityUtils;
 import iTicket.Douglas.Usuarios.DTO.CambioContraseñaDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioPatchDTO;
@@ -64,9 +65,12 @@ public class UsuarioController {
         return ResponseEntity.ok(respuesta);
     }
 
-    @PatchMapping("/{id}/clave")
-    public ResponseEntity<ApiResponse<Void>> cambiarClave(@PathVariable Long id, @Valid @RequestBody CambioContraseñaDTO dto) {
-        service.cambiarClave(id, dto);
+    //Autoservicio: el usuario solo puede cambiar su propia clave. El id ya no
+    //viaja en la ruta: el backend lo resuelve del usuario autenticado en la cookie.
+    @PatchMapping("/clave")
+    public ResponseEntity<ApiResponse<Void>> cambiarClave(@Valid @RequestBody CambioContraseñaDTO dto) {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
+        service.cambiarClave(idUsuario, dto);
         return ResponseEntity.ok(new ApiResponse<>(true, "Contraseña actualizada correctamente", null));
     }
 
@@ -89,10 +93,13 @@ public class UsuarioController {
         return ResponseEntity.ok(respuesta);
     }
 
-    @PatchMapping(value = "/{id}/imagen", consumes = "multipart/form-data")
-    public ResponseEntity<ApiResponse<UsuarioDTO>> actualizarImagen(@PathVariable Long id, @RequestParam("archivo") MultipartFile archivo) {
-        UsuarioDTO dto = service.actualizarImagen(id, archivo);
-        log.info("Imagen de perfil actualizada para el usuario con id " + id);
+    //Autoservicio: el usuario solo puede cambiar su propia foto de perfil. El id ya no
+    //viaja en la ruta: el backend lo resuelve del usuario autenticado en la cookie.
+    @PatchMapping(value = "/imagen", consumes = "multipart/form-data")
+    public ResponseEntity<ApiResponse<UsuarioDTO>> actualizarImagen(@RequestParam("archivo") MultipartFile archivo) {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
+        UsuarioDTO dto = service.actualizarImagen(idUsuario, archivo);
+        log.info("Imagen de perfil actualizada para el usuario con id " + idUsuario);
         ApiResponse<UsuarioDTO> respuesta = new ApiResponse<>(true, "Imagen actualizada correctamente", dto);
         return ResponseEntity.ok(respuesta);
     }

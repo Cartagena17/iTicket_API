@@ -7,6 +7,7 @@ import iTicket.Douglas.Chatbot.DTO.ChatbotResponse;
 import iTicket.Douglas.Chatbot.Service.ChatConversationService;
 import iTicket.Douglas.Chatbot.Service.ChatbotService;
 import iTicket.Douglas.Response.ApiResponse;
+import iTicket.Douglas.Security.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,10 +27,10 @@ public class ChatbotController {
     private final ChatbotService chatbotService;
     private final ChatConversationService conversationService;
 
+    //El usuario ya no viaja en la URL: el backend lo resuelve de la cookie de sesion.
     @GetMapping(value = "/conversaciones", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<List<ChatConversationSummaryDTO>>> listarConversaciones(
-            @RequestParam Long idUsuario
-    ) {
+    public ResponseEntity<ApiResponse<List<ChatConversationSummaryDTO>>> listarConversaciones() {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
                 "Conversaciones obtenidas.",
@@ -42,9 +43,9 @@ public class ChatbotController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<ApiResponse<ChatConversationDetailDTO>> obtenerConversacion(
-            @PathVariable Long idConversacion,
-            @RequestParam Long idUsuario
+            @PathVariable Long idConversacion
     ) {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
                 "Conversación obtenida.",
@@ -57,9 +58,9 @@ public class ChatbotController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<ApiResponse<Void>> eliminarConversacion(
-            @PathVariable Long idConversacion,
-            @RequestParam Long idUsuario
+            @PathVariable Long idConversacion
     ) {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         conversationService.eliminar(idUsuario, idConversacion);
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
@@ -76,7 +77,8 @@ public class ChatbotController {
     public ResponseEntity<ApiResponse<ChatbotResponse>> responder(
             @Valid @RequestBody ChatbotRequest request) {
 
-        ChatbotResponse respuesta = chatbotService.responder(request);
+        Long idUsuario = SecurityUtils.idUsuarioActual();
+        ChatbotResponse respuesta = chatbotService.responder(request, idUsuario);
 
         return ResponseEntity.ok(
                 new ApiResponse<>(

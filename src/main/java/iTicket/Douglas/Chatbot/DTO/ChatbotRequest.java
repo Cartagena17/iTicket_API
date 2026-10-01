@@ -1,7 +1,6 @@
 package iTicket.Douglas.Chatbot.DTO;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -13,10 +12,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class ChatbotRequest {
     // Aqui se enviara el mensaje para preguntarle lo que sea al Chatbot
-
-    @NotNull(message = "No se pudo identificar al usuario.")
-    @Positive(message = "El identificador del usuario no es valido.") // Impide aceptar 0 o números negativos
-    private Long idUsuario; // id del usuario que envio la petición para saber como le puede contestar
+    // El usuario ya no viaja en el cuerpo: el backend lo resuelve de la cookie de sesion.
 
     @Positive(message = "El identificador de la conversación no es válido.")
     private Long idConversacion; // id de la conversacion

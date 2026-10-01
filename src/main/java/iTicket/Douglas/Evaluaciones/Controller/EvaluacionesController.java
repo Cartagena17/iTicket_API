@@ -4,6 +4,7 @@ import iTicket.Douglas.Response.ApiResponse;
 import iTicket.Douglas.Evaluaciones.DTO.MetricasDTO;
 import iTicket.Douglas.Evaluaciones.DTO.EvaluacionesDTO;
 import iTicket.Douglas.Evaluaciones.Service.EvaluacionesService;
+import iTicket.Douglas.Security.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +28,8 @@ public class EvaluacionesController {
     private final EvaluacionesService service;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<EvaluacionesDTO>> registrarEvaluacion(@Valid @RequestBody EvaluacionesDTO json, @RequestParam Long idUsuario) {
+    public ResponseEntity<ApiResponse<EvaluacionesDTO>> registrarEvaluacion(@Valid @RequestBody EvaluacionesDTO json) {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         EvaluacionesDTO dto = service.nuevaEvaluacion(json, idUsuario);
         log.info("Nueva evaluación creada: " + dto);
         ApiResponse<EvaluacionesDTO> respuesta = new ApiResponse<>(true, "Evaluación ingresada correctamente", dto);
@@ -78,15 +80,16 @@ public class EvaluacionesController {
         return ResponseEntity.ok(respuesta);
     }
 
-    // Listado paginado con filtros: panel de Administrador/Tecnico (usa idUsuarioAdmin).
+    // Listado paginado con filtros: panel de Administrador/Tecnico. El id del
+    // admin ya no viaja en la URL: sale del usuario autenticado en la cookie.
     @PreAuthorize("hasAnyRole('Administrador', 'Tecnico')")
     @GetMapping
     public ResponseEntity<ApiResponse<Page<EvaluacionesDTO>>> obtenerTodas(
-            @RequestParam Long idUsuarioAdmin,
             @RequestParam(required = false) String busqueda,
             @RequestParam(required = false) Double calificacion,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
             @PageableDefault(page = 0, size = 10) Pageable pageable) {
+        Long idUsuarioAdmin = SecurityUtils.idUsuarioActual();
         Page<EvaluacionesDTO> pagina = service.obtenerEvaluacionesPaginadas(idUsuarioAdmin, busqueda, calificacion, fecha, pageable);
         log.info("Consulta paginada de evaluaciones realizada exitosamente");
         ApiResponse<Page<EvaluacionesDTO>> respuesta = new ApiResponse<>(true, "Evaluaciones consultadas correctamente", pagina);
@@ -95,7 +98,8 @@ public class EvaluacionesController {
 
     @PreAuthorize("hasAnyRole('Administrador', 'Tecnico')")
     @GetMapping("/tecnico/calificaciones")
-    public ResponseEntity<ApiResponse<List<Long>>> obtenerCalificacionesPorTecnico(@RequestParam Long idUsuario) {
+    public ResponseEntity<ApiResponse<List<Long>>> obtenerCalificacionesPorTecnico() {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         List<Long> distribucion = service.obtenerDistribucionCalificacionesPorTecnico(idUsuario);
         log.info("Distribución de calificaciones consultada para el técnico con ID: " + idUsuario);
         ApiResponse<List<Long>> respuesta = new ApiResponse<>(true, "Distribución de calificaciones obtenida", distribucion);
@@ -104,7 +108,8 @@ public class EvaluacionesController {
 
     @PreAuthorize("hasAnyRole('Administrador', 'Tecnico')")
     @GetMapping("/usuario/calificaciones")
-    public ResponseEntity<ApiResponse<List<Long>>> obtenerCalificacionesPorUsuario(@RequestParam Long idUsuario) {
+    public ResponseEntity<ApiResponse<List<Long>>> obtenerCalificacionesPorUsuario() {
+        Long idUsuario = SecurityUtils.idUsuarioActual();
         List<Long> distribucion = service.obtenerDistribucionCalificacionesPorUsuario(idUsuario);
         log.info("Distribución de calificaciones consultada para el usuario con ID: " + idUsuario);
         ApiResponse<List<Long>> respuesta = new ApiResponse<>(true, "Distribución de calificaciones obtenida", distribucion);
@@ -114,10 +119,10 @@ public class EvaluacionesController {
     @PreAuthorize("hasAnyRole('Administrador', 'Tecnico')")
     @GetMapping("/metricas")
     public ResponseEntity<ApiResponse<MetricasDTO>> obtenerMetricas(
-            @RequestParam Long idUsuarioAdmin,
             @RequestParam(required = false) String busqueda,
             @RequestParam(required = false) Double calificacion,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
+        Long idUsuarioAdmin = SecurityUtils.idUsuarioActual();
         MetricasDTO metricas = service.obtenerMetricas(idUsuarioAdmin, busqueda, calificacion, fecha);
         log.info("Consulta de métricas globales realizada exitosamente");
         ApiResponse<MetricasDTO> respuesta = new ApiResponse<>(true, "Métricas consultadas correctamente", metricas);

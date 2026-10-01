@@ -34,5 +34,9 @@ public class BitacoraDTO {
     @Size(max = 10, message = "El nuevo estado no puede exceder los 10 caracteres.")
     private String nuevoEstado;
 
+    @NotBlank(message = "El tipo de departamento del ticket es obligatorio.")
+    @Size(max = 15, message = "El tipo de departamento no puede exceder los 15 caracteres.")
+    private String tipoDepartamentoTicket;
+
     private LocalDateTime fechaHora;
 }

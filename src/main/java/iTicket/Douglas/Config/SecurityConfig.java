@@ -76,7 +76,8 @@ public class SecurityConfig {
                         // --- Usuarios: autoservicio (propia clave/imagen, ver tecnico o un usuario puntual) ---
                         .requestMatchers(HttpMethod.GET, "/api/usuarios/tecnicos", "/api/usuarios/*")
                         .hasAnyRole("Administrador", "Tecnico", "Usuario")
-                        .requestMatchers(HttpMethod.PATCH, "/api/usuarios/*/clave", "/api/usuarios/*/imagen")
+                        // El id ya no viaja en la ruta: siempre es el usuario autenticado en la cookie.
+                        .requestMatchers(HttpMethod.PATCH, "/api/usuarios/clave", "/api/usuarios/imagen")
                         .hasAnyRole("Administrador", "Tecnico", "Usuario")
                         .requestMatchers("/api/usuarios/**").hasRole("Administrador")
 

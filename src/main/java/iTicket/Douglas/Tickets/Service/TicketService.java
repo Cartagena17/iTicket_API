@@ -142,6 +142,7 @@ public class TicketService {
         bitacoraDto.setAsuntoTicket(ticket.getAsunto());
         bitacoraDto.setUsuario(idUsuarioAccion);
         bitacoraDto.setNuevoEstado(ticket.getEstado());
+        bitacoraDto.setTipoDepartamentoTicket(ticket.getDepartamento().getTipoDepartamento());
         bitacoraService.nuevaBitacora(bitacoraDto);
     }
 

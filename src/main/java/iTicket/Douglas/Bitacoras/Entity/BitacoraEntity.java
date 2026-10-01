@@ -38,6 +38,9 @@ public class BitacoraEntity {
     @Column (name = "NUEVO_ESTADO")
     private String nuevoEstado;
 
+    @Column (name = "TIPO_DEPARTAMENTO_TICKET")
+    private String tipoDepartamentoTicket;
+
     @CreationTimestamp
     @Column (name = "FECHA_HORA")
     private LocalDateTime fechaHora;
