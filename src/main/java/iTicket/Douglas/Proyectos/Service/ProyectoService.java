@@ -9,6 +9,7 @@ import iTicket.Douglas.Proyectos.DTO.ProyectoDTO;
 import iTicket.Douglas.Proyectos.DTO.ProyectoPaginaDTO;
 import iTicket.Douglas.Proyectos.Entity.ProyectoEntity;
 import iTicket.Douglas.Proyectos.Repository.ProyectoRepository;
+import iTicket.Douglas.Security.AutorizacionUtils;
 import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import iTicket.Douglas.Usuarios.Repository.UsuarioRepository;
 import iTicket.Douglas.util.ErrorCode;
@@ -17,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -171,5 +173,27 @@ public class ProyectoService {
                     "El usuario asignado como " + cargo + " debe tener rol Administrador o Tecnico.");
         }
         return usuario;
+    }
+
+    // Válvula de escape para deshacer una finalización por error: reabre un proyecto ya
+    // finalizado (lo regresa a "en progreso"), devolviendo el acceso normal a sus fases y
+    // detalles. De un solo sentido y restringida a Administrador, igual que reabrirFase.
+    @Transactional
+    public ProyectoDTO reabrirProyecto(Long id) {
+        ProyectoEntity entidad = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WPRY001, "No existe un proyecto con id " + id));
+
+        if (!AutorizacionUtils.esAdministrador()) {
+            throw new AccessDeniedException("Solo un Administrador puede reabrir un proyecto ya finalizado.");
+        }
+
+        if (!Boolean.TRUE.equals(entidad.getFinalizado())) {
+            throw new OperacionInvalidaException("El proyecto no está finalizado; no hay nada que reabrir.");
+        }
+
+        entidad.setFinalizado(false);
+        ProyectoEntity datosGuardados = repo.save(entidad);
+        log.info("Proyecto con id " + id + " reabierto por un administrador");
+        return convertirADTO(datosGuardados);
     }
 }

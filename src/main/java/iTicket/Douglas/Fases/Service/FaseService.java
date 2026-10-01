@@ -88,6 +88,9 @@ public class FaseService {
         validarProyectoNoFinalizado(entity.getProyecto());
         validarNombreFaseUnico(dto.getProyecto(), dto.getNombreFase(), null);
         validarPresupuestoNoExcedido(entity.getProyecto(), null, entity.getGastoTotal());
+        if (Boolean.TRUE.equals(dto.getFinalizado())) {
+            validarFechasRealesCompletas(dto);
+        }
         FaseEntity entitySave = repo.save(entity);
         log.info("Nueva fase registrada: " + entitySave.getIdFase());
 
@@ -124,9 +127,10 @@ public class FaseService {
         validarFaseYaFinalizada(entidad);
 
         // Bloqueo duro: no se puede finalizar una fase mientras tenga detalles declarados
-        // que aún no están marcados como completados.
+        // que aún no están marcados como completados, o sin sus fechas reales registradas.
         if (Boolean.TRUE.equals(dto.getFinalizado())) {
             validarDetallesCompletados(id);
+            validarFechasRealesCompletas(dto);
         }
 
         ProyectoEntity proyecto = buscarProyecto(dto.getProyecto());
@@ -198,6 +202,15 @@ public class FaseService {
         if (existe) {
             throw new RecursoDuplicadoException(
                     "Ya existe una fase con el nombre \"" + nombreFase + "\" en este proyecto.");
+        }
+    }
+
+    // Una fase finalizada debe dejar registrado cuándo empezó y cuándo terminó realmente;
+    // sin esas fechas queda un hueco en los datos (no se sabría cuánto duró en la práctica).
+    private void validarFechasRealesCompletas(FaseDTO dto) {
+        if (dto.getFechaInicioReal() == null || dto.getFechaFinalReal() == null) {
+            throw new OperacionInvalidaException(
+                    "No se puede finalizar la fase: debe registrar la fecha de inicio real y la fecha final real.");
         }
     }
 
@@ -282,5 +295,34 @@ public class FaseService {
     public List<FaseDTO> buscarPorIdProyecto(Long proyecto) {
         List<FaseEntity> registro = repo.findByProyecto_IdProyecto(proyecto);
         return registro.stream().map(this::convertirADTO).collect(Collectors.toList());
+    }
+
+    // Válvula de escape para deshacer una finalización por error: reabre una fase ya
+    // finalizada (la regresa a "en progreso") para que vuelva a su comportamiento normal
+    // (editable, con sus detalles editables de nuevo, y se puede volver a finalizar más
+    // adelante pasando otra vez por la validación de detalles completos). Es intencionalmente
+    // de un solo sentido y restringida a Administrador: no es una acción operativa del día a
+    // día, es deshacer una regla de negocio, así que no se deja en manos del coordinador.
+    @Transactional
+    public FaseDTO reabrirFase(Long id) {
+        FaseEntity fase = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WPRY002, "No existe una fase con id " + id));
+
+        if (!AutorizacionUtils.esAdministrador()) {
+            throw new AccessDeniedException("Solo un Administrador puede reabrir una fase ya finalizada.");
+        }
+
+        // Si el proyecto que la contiene también está finalizado, sus fases quedan
+        // bloqueadas sin excepción: primero hay que reabrir el proyecto.
+        validarProyectoNoFinalizado(fase.getProyecto());
+
+        if (!Boolean.TRUE.equals(fase.getFinalizado())) {
+            throw new OperacionInvalidaException("La fase no está finalizada; no hay nada que reabrir.");
+        }
+
+        fase.setFinalizado(false);
+        FaseEntity datosGuardados = repo.save(fase);
+        log.info("Fase con id " + id + " reabierta por un administrador");
+        return convertirADTO(datosGuardados);
     }
 }

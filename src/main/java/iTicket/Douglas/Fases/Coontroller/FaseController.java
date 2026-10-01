@@ -86,4 +86,13 @@ public class FaseController {
         ApiResponse<FaseDTO> respuesta = new ApiResponse<>(true, "Se ha actualizado la fase: " + id, data);
         return ResponseEntity.ok(respuesta);
     }
+
+    // Acción administrativa para deshacer una finalización por error (ver FaseService.reabrirFase).
+    @PatchMapping("/{id}/reabrir")
+    public ResponseEntity<ApiResponse<FaseDTO>> reabrirFase(@PathVariable Long id) {
+        FaseDTO data = service.reabrirFase(id);
+        log.info("Fase con id: " + id + ", reabierta");
+        ApiResponse<FaseDTO> respuesta = new ApiResponse<>(true, "Fase con id: " + id + ", reabierta", data);
+        return ResponseEntity.ok(respuesta);
+    }
 }
