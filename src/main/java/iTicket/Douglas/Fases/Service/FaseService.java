@@ -3,6 +3,7 @@ package iTicket.Douglas.Fases.Service;
 import iTicket.Douglas.DetalleFases.Entity.DetalleFEntity;
 import iTicket.Douglas.DetalleFases.Repository.DetalleFRepository;
 import iTicket.Douglas.Exception.OperacionInvalidaException;
+import iTicket.Douglas.Exception.RecursoDuplicadoException;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Fases.DTO.FaseDTO;
 import iTicket.Douglas.Fases.DTO.PatchFaseDTO;
@@ -84,7 +85,12 @@ public class FaseService {
     public FaseDTO nuevaFase(@Valid FaseDTO dto) {
         FaseEntity entity = convertirAEntity(dto);
         validarPermisoEscrituraFase(entity.getProyecto());
+        validarProyectoNoFinalizado(entity.getProyecto());
+        validarNombreFaseUnico(dto.getProyecto(), dto.getNombreFase(), null);
         validarPresupuestoNoExcedido(entity.getProyecto(), null, entity.getGastoTotal());
+        if (Boolean.TRUE.equals(dto.getFinalizado())) {
+            validarFechasRealesCompletas(dto);
+        }
         FaseEntity entitySave = repo.save(entity);
         log.info("Nueva fase registrada: " + entitySave.getIdFase());
 
@@ -117,14 +123,20 @@ public class FaseService {
         FaseEntity entidad = repo.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WPRY002, "No existe una fase con id " + id));
 
+        // Si la fase YA estaba finalizada, queda cerrada: no se admite ningún cambio sobre ella.
+        validarFaseYaFinalizada(entidad);
+
         // Bloqueo duro: no se puede finalizar una fase mientras tenga detalles declarados
-        // que aún no están marcados como completados.
+        // que aún no están marcados como completados, o sin sus fechas reales registradas.
         if (Boolean.TRUE.equals(dto.getFinalizado())) {
             validarDetallesCompletados(id);
+            validarFechasRealesCompletas(dto);
         }
 
         ProyectoEntity proyecto = buscarProyecto(dto.getProyecto());
         validarPermisoEscrituraFase(proyecto);
+        validarProyectoNoFinalizado(proyecto);
+        validarNombreFaseUnico(dto.getProyecto(), dto.getNombreFase(), id);
         validarPresupuestoNoExcedido(proyecto, id, dto.getGastoTotal());
 
         entidad.setNombreFase(dto.getNombreFase());
@@ -158,6 +170,47 @@ public class FaseService {
 
         if (!esCoordinador) {
             throw new AccessDeniedException("Solo el coordinador del proyecto puede modificar sus fases.");
+        }
+    }
+
+    // Un proyecto ya finalizado no puede recibir fases nuevas, ni que sus fases existentes
+    // se editen o eliminen: finalizar un proyecto lo deja "cerrado".
+    private void validarProyectoNoFinalizado(ProyectoEntity proyecto) {
+        if (proyecto != null && Boolean.TRUE.equals(proyecto.getFinalizado())) {
+            throw new OperacionInvalidaException(
+                    "No se pueden modificar las fases de un proyecto ya finalizado.");
+        }
+    }
+
+    // Ademas del estado del proyecto, la fase tiene su propio candado: una vez que ELLA misma
+    // ya esta finalizada, no se puede editar ni eliminar (ni ella ni, por extension, sus detalles),
+    // sin importar que el proyecto que la contiene siga abierto.
+    private void validarFaseYaFinalizada(FaseEntity fase) {
+        if (fase != null && Boolean.TRUE.equals(fase.getFinalizado())) {
+            throw new OperacionInvalidaException(
+                    "No se puede modificar una fase que ya está finalizada.");
+        }
+    }
+
+    // El nombre de una fase debe ser unico DENTRO de su proyecto (no global): dos proyectos
+    // distintos si pueden tener, cada uno, una fase llamada igual.
+    private void validarNombreFaseUnico(Long idProyecto, String nombreFase, Long idFaseExcluir) {
+        boolean existe = idFaseExcluir == null
+                ? repo.existsByProyecto_IdProyectoAndNombreFaseIgnoreCase(idProyecto, nombreFase)
+                : repo.existsByProyecto_IdProyectoAndNombreFaseIgnoreCaseAndIdFaseNot(idProyecto, nombreFase, idFaseExcluir);
+
+        if (existe) {
+            throw new RecursoDuplicadoException(
+                    "Ya existe una fase con el nombre \"" + nombreFase + "\" en este proyecto.");
+        }
+    }
+
+    // Una fase finalizada debe dejar registrado cuándo empezó y cuándo terminó realmente;
+    // sin esas fechas queda un hueco en los datos (no se sabría cuánto duró en la práctica).
+    private void validarFechasRealesCompletas(FaseDTO dto) {
+        if (dto.getFechaInicioReal() == null || dto.getFechaFinalReal() == null) {
+            throw new OperacionInvalidaException(
+                    "No se puede finalizar la fase: debe registrar la fecha de inicio real y la fecha final real.");
         }
     }
 
@@ -208,6 +261,8 @@ public class FaseService {
         if (fase == null) return false;
 
         validarPermisoEscrituraFase(fase.getProyecto());
+        validarProyectoNoFinalizado(fase.getProyecto());
+        validarFaseYaFinalizada(fase);
         repo.deleteById(id);
         return true;
     }
@@ -218,6 +273,8 @@ public class FaseService {
                 .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WPRY002, "No existe una fase con id " + id));
 
         validarPermisoEscrituraFase(entidad.getProyecto());
+        validarProyectoNoFinalizado(entidad.getProyecto());
+        validarFaseYaFinalizada(entidad);
 
         if (dto.getGastoTotal() != null) {
             validarPresupuestoNoExcedido(entidad.getProyecto(), id, dto.getGastoTotal());
@@ -238,5 +295,34 @@ public class FaseService {
     public List<FaseDTO> buscarPorIdProyecto(Long proyecto) {
         List<FaseEntity> registro = repo.findByProyecto_IdProyecto(proyecto);
         return registro.stream().map(this::convertirADTO).collect(Collectors.toList());
+    }
+
+    // Válvula de escape para deshacer una finalización por error: reabre una fase ya
+    // finalizada (la regresa a "en progreso") para que vuelva a su comportamiento normal
+    // (editable, con sus detalles editables de nuevo, y se puede volver a finalizar más
+    // adelante pasando otra vez por la validación de detalles completos). Es intencionalmente
+    // de un solo sentido y restringida a Administrador: no es una acción operativa del día a
+    // día, es deshacer una regla de negocio, así que no se deja en manos del coordinador.
+    @Transactional
+    public FaseDTO reabrirFase(Long id) {
+        FaseEntity fase = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WPRY002, "No existe una fase con id " + id));
+
+        if (!AutorizacionUtils.esAdministrador()) {
+            throw new AccessDeniedException("Solo un Administrador puede reabrir una fase ya finalizada.");
+        }
+
+        // Si el proyecto que la contiene también está finalizado, sus fases quedan
+        // bloqueadas sin excepción: primero hay que reabrir el proyecto.
+        validarProyectoNoFinalizado(fase.getProyecto());
+
+        if (!Boolean.TRUE.equals(fase.getFinalizado())) {
+            throw new OperacionInvalidaException("La fase no está finalizada; no hay nada que reabrir.");
+        }
+
+        fase.setFinalizado(false);
+        FaseEntity datosGuardados = repo.save(fase);
+        log.info("Fase con id " + id + " reabierta por un administrador");
+        return convertirADTO(datosGuardados);
     }
 }

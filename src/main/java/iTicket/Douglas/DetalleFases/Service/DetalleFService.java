@@ -4,6 +4,7 @@ import iTicket.Douglas.DetalleFases.DTO.DetalleFDTO;
 import iTicket.Douglas.DetalleFases.Entity.DetalleFEntity;
 import iTicket.Douglas.DetalleFases.Repository.DetalleFRepository;
 import iTicket.Douglas.Exception.OperacionInvalidaException;
+import iTicket.Douglas.Exception.RecursoDuplicadoException;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Proyectos.Entity.ProyectoEntity;
 import iTicket.Douglas.Security.AuthenticatedUser;
@@ -82,10 +83,34 @@ public class DetalleFService {
         }
     }
 
+    // Un proyecto ya finalizado no puede recibir detalles nuevos, ni que los existentes
+    // se editen o eliminen.
+    private void validarProyectoNoFinalizado(ProyectoEntity proyecto) {
+        if (proyecto != null && Boolean.TRUE.equals(proyecto.getFinalizado())) {
+            throw new OperacionInvalidaException(
+                    "No se pueden modificar los detalles de un proyecto ya finalizado.");
+        }
+    }
+
+    // La descripcion de un detalle debe ser unica DENTRO de su fase (no global): dos fases
+    // distintas si pueden tener, cada una, un detalle con la misma descripcion.
+    private void validarDescripcionDetalleUnica(Long idFase, String descripcion, Long idDetalleExcluir) {
+        boolean existe = idDetalleExcluir == null
+                ? repo.existsByFase_IdFaseAndDescripcionDetalleIgnoreCase(idFase, descripcion)
+                : repo.existsByFase_IdFaseAndDescripcionDetalleIgnoreCaseAndIdDetalleFaseNot(idFase, descripcion, idDetalleExcluir);
+
+        if (existe) {
+            throw new RecursoDuplicadoException(
+                    "Ya existe un detalle con la descripcion \"" + descripcion + "\" en esta fase.");
+        }
+    }
+
     @Transactional
     public DetalleFDTO nuevoDetalleF(@Valid DetalleFDTO dto) {
         FaseEntity fase = buscarFase(dto.getFase());
         validarPermisoEscrituraDetalle(fase.getProyecto());
+        validarProyectoNoFinalizado(fase.getProyecto());
+        validarDescripcionDetalleUnica(dto.getFase(), dto.getDescripcionDetalle(), null);
         validarFaseNoFinalizada(fase);
 
         DetalleFEntity entity = new DetalleFEntity();
@@ -110,12 +135,11 @@ public class DetalleFService {
 
         FaseEntity fase = buscarFase(dto.getFase());
         validarPermisoEscrituraDetalle(fase.getProyecto());
-        // Marcar un detalle como no completado en una fase ya finalizada reabriría esa
-        // inconsistencia, así que se bloquea (sí se permite editar la descripción o
-        // dejarlo completado, ya que eso no contradice el estado de la fase).
-        if (Boolean.FALSE.equals(dto.getCompletado())) {
-            validarFaseNoFinalizada(fase);
-        }
+        validarProyectoNoFinalizado(fase.getProyecto());
+        validarDescripcionDetalleUnica(dto.getFase(), dto.getDescripcionDetalle(), id);
+        // Una fase ya finalizada queda "cerrada": ninguno de sus detalles puede modificarse,
+        // sin importar qué campo se esté cambiando.
+        validarFaseNoFinalizada(fase);
 
         entity.setDescripcionDetalle(dto.getDescripcionDetalle());
         entity.setCompletado(dto.getCompletado());
@@ -132,6 +156,9 @@ public class DetalleFService {
         if (entity == null) return false;
 
         validarPermisoEscrituraDetalle(entity.getFase().getProyecto());
+        validarProyectoNoFinalizado(entity.getFase().getProyecto());
+        // Una fase ya finalizada no puede perder ninguno de sus detalles tampoco.
+        validarFaseNoFinalizada(entity.getFase());
         repo.deleteById(id);
         return true;
     }

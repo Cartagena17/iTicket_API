@@ -80,6 +80,15 @@ public class ProyectoController {
         return ResponseEntity.ok(respuesta);
     }
 
+    // Acción administrativa para deshacer una finalización por error (ver ProyectoService.reabrirProyecto).
+    @PatchMapping("/{id}/reabrir")
+    public ResponseEntity<ApiResponse<ProyectoDTO>> reabrirProyecto(@PathVariable Long id) {
+        ProyectoDTO data = service.reabrirProyecto(id);
+        log.info("Proyecto con ID: " + id + " reabierto.");
+        ApiResponse<ProyectoDTO> respuesta = new ApiResponse<>(true, "Proyecto con ID: " + id + " reabierto.", data);
+        return ResponseEntity.ok(respuesta);
+    }
+
     @GetMapping("/nombre")
     public ResponseEntity<ApiResponse<List<ProyectoDTO>>> buscarPorNombre(@RequestParam String nombre) {
         List<ProyectoDTO> lista = service.buscarPorNombre(nombre);

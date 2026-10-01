@@ -17,4 +17,9 @@ public interface FaseRepository extends JpaRepository<FaseEntity, Long> {
     Optional<FaseEntity> findByNombreFase(String nombreFase);
 
     List<FaseEntity> findByProyecto_IdProyecto(Long proyectoIdProyecto);
+
+    // Para la validacion de nombre de fase unico DENTRO de un mismo proyecto (no global).
+    boolean existsByProyecto_IdProyectoAndNombreFaseIgnoreCase(Long idProyecto, String nombreFase);
+
+    boolean existsByProyecto_IdProyectoAndNombreFaseIgnoreCaseAndIdFaseNot(Long idProyecto, String nombreFase, Long idFase);
 }
