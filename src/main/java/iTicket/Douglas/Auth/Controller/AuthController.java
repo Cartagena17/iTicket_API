@@ -72,6 +72,18 @@ public class AuthController {
         
         return ResponseEntity.ok(new ApiResponse<>(true, "Correo enviado exitosamente"));
     }
+    @PostMapping("/reenviar-codigo")
+    public ResponseEntity<ApiResponse<Void>> reenviarCodigo(@CookieValue(value = "authToken", required = false) String token, HttpServletResponse response) {
+        if (token == null || token.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Token requerido para reenviar"));
+        }
+        
+        String nuevoToken = authService.reenviarCodigo(token);
+        ResponseCookie cookie = cookieFactory.build(nuevoToken, 30 * 60);
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        
+        return ResponseEntity.ok(new ApiResponse<>(true, "Nuevo codigo enviado exitosamente"));
+    }
 
     @PostMapping("/validar-codigo")
     public ResponseEntity<ApiResponse<Void>> validarCodigo(@RequestBody Map<String, String> body, 

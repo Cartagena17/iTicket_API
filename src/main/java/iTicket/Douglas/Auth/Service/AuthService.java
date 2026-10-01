@@ -59,6 +59,25 @@ public class AuthService {
 
         return jwtUtils.createCodeVerificationToken(correo, codigo);
     }
+    public String reenviarCodigo(String token) {
+        try {
+            Claims claims = jwtUtils.parseTokenAndClaims(token);
+            if (!"CODE_VERIFICATION".equals(claims.get("purpose", String.class))) {
+                throw new OperacionInvalidaException("Token invalido");
+            }
+            String correo = claims.getSubject();
+            
+            UsuarioEntity usuario = usuarioRepository.findByCorreo(correo)
+                    .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+                    
+            String nuevoCodigo = String.format("%06d", new Random().nextInt(999999));
+            emailService.enviarCorreoRecuperacion(correo, nuevoCodigo, usuario.getNombreUsuario());
+            
+            return jwtUtils.createCodeVerificationToken(correo, nuevoCodigo);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new OperacionInvalidaException("Tu sesion de recuperacion ha expirado.");
+        }
+    }
 
     public String validarCodigo(String token, String codigoIngresado) {
         try {
@@ -108,3 +127,4 @@ public class AuthService {
         }
     }
 }
+
