@@ -1,5 +1,6 @@
 package iTicket.Douglas;
 
+import java.util.TimeZone;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -24,6 +25,9 @@ public class DouglasApplication {
 
 		System.out.println("DB_URL cargada: " + System.getProperty("DB_URL"));
 		System.out.println("DB_USER cargada: " + System.getProperty("DB_USER"));
+
+		// Para que tome en cuenta la hora de aqui, antes estaba en UTC y nosotros somos UTC-6 (6 horas atrasados)
+		TimeZone.setDefault(TimeZone.getTimeZone("America/El_Salvador"));
 
 		//Arrancar la API
 		SpringApplication.run(DouglasApplication.class, args);

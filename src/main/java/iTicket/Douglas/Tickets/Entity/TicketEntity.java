@@ -12,6 +12,7 @@ import iTicket.Douglas.Usuarios.Entity.UsuarioEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -81,7 +82,8 @@ public class TicketEntity {
     @OneToMany(mappedBy = "ticket", fetch = FetchType.LAZY)
     private List<ComentarioEntity> comentarios;
 
-    @Column(name = "FECHA_CREACION", insertable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "FECHA_CREACION", updatable = false)
     private LocalDateTime fechaCreacion;
 
     @OneToMany(mappedBy = "ticket", fetch = FetchType.LAZY)
