@@ -138,6 +138,14 @@ public class ComentarioService {
             throw new OperacionInvalidaException("Solo el autor del comentario puede eliminarlo");
         }
 
+        //No se puede eliminar si otro usuario ya comento despues
+        boolean otroUsuarioRespondio = repo.existsByTicket_IdTicketAndFechaHoraAfterAndUsuario_IdUsuarioNot(
+                entidad.getTicket().getIdTicket(), entidad.getFechaHora(), idUsuarioSolicitante);
+
+        if (otroUsuarioRespondio) {
+            throw new OperacionInvalidaException("No puedes eliminar este comentario porque otro usuario ya respondio despues");
+        }
+
         List<MultimediaComentarioEntity> multimedia = entidad.getMultimediaComentarios();
         if (multimedia != null) {
             //Se elimina primero la multimedia asociada (y sus imagenes en Cloudinary) para no dejar archivos huerfanos

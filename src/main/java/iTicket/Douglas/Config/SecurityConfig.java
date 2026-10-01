@@ -19,7 +19,7 @@ import java.io.IOException;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity // habilita @PreAuthorize en los Controllers
-public class SecurityConfig {
+public class  SecurityConfig {
 
     private final JwtCookieAuthFilter jwtCookieAuthFilter;
 
