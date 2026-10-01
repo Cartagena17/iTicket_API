@@ -83,14 +83,18 @@ public class FaseService {
 
     @Transactional
     public FaseDTO nuevaFase(@Valid FaseDTO dto) {
+        // Una fase recién creada no puede nacer ya finalizada: finalizar es el cierre de un
+        // proceso que todavía ni empezó aquí (sin detalles que revisar, sin fechas reales que
+        // tengan sentido todavía). Es una incoherencia de datos, así que se rechaza sin excepción.
+        if (Boolean.TRUE.equals(dto.getFinalizado())) {
+            throw new OperacionInvalidaException("Una fase no puede crearse ya finalizada.");
+        }
+
         FaseEntity entity = convertirAEntity(dto);
         validarPermisoEscrituraFase(entity.getProyecto());
         validarProyectoNoFinalizado(entity.getProyecto());
         validarNombreFaseUnico(dto.getProyecto(), dto.getNombreFase(), null);
         validarPresupuestoNoExcedido(entity.getProyecto(), null, entity.getGastoTotal());
-        if (Boolean.TRUE.equals(dto.getFinalizado())) {
-            validarFechasRealesCompletas(dto);
-        }
         FaseEntity entitySave = repo.save(entity);
         log.info("Nueva fase registrada: " + entitySave.getIdFase());
 
