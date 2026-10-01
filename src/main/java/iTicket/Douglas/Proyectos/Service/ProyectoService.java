@@ -2,6 +2,8 @@ package iTicket.Douglas.Proyectos.Service;
 
 import iTicket.Douglas.Exception.OperacionInvalidaException;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
+import iTicket.Douglas.Fases.Entity.FaseEntity;
+import iTicket.Douglas.Fases.Repository.FaseRepository;
 import iTicket.Douglas.Notificaciones.Event.ProyectoCreadoEvent;
 import iTicket.Douglas.Proyectos.DTO.ProyectoDTO;
 import iTicket.Douglas.Proyectos.DTO.ProyectoPaginaDTO;
@@ -32,6 +34,7 @@ public class ProyectoService {
 
     private final ProyectoRepository repo;
     private final UsuarioRepository repoUsuario;
+    private final FaseRepository faseRepo;
     private final ApplicationEventPublisher eventos;
 
     @Transactional
@@ -87,6 +90,11 @@ public class ProyectoService {
         ProyectoEntity entidad = repo.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WPRY001, "No existe un proyecto con id " + id));
 
+        // Un proyecto solo puede marcarse como finalizado si TODAS sus fases ya están finalizadas.
+        if (Boolean.TRUE.equals(dto.getFinalizado())) {
+            validarFasesCompletadas(id);
+        }
+
         entidad.setNombreProyecto(dto.getNombreProyecto());
         entidad.setTipoProyecto(dto.getTipoProyecto());
         entidad.setUbicacion(dto.getUbicacion());
@@ -138,6 +146,17 @@ public class ProyectoService {
     private UsuarioEntity buscarUsuario(Long id) {
         return repoUsuario.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WUSR002, "No existe ningún usuario con ID: " + id));
+    }
+
+    // Revisa todas las fases del proyecto; si al menos una existe y no está marcada como
+    // finalizada, no se permite finalizar el proyecto. Sin fases, se permite (nada que validar).
+    private void validarFasesCompletadas(Long idProyecto) {
+        List<FaseEntity> fases = faseRepo.findByProyecto_IdProyecto(idProyecto);
+        boolean hayIncompletas = fases.stream().anyMatch(f -> !Boolean.TRUE.equals(f.getFinalizado()));
+        if (hayIncompletas) {
+            throw new OperacionInvalidaException(
+                    "No se puede finalizar el proyecto: todavía tiene fases que no están finalizadas.");
+        }
     }
 
     // Solo el personal operativo (rol Administrador o Tecnico) puede ser coordinador o supervisor
