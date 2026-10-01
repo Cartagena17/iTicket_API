@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/setup")
 @RequiredArgsConstructor
-@CrossOrigin
 public class SetupController {
 
     private final SetupService setupService;

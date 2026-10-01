@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Random;
+import java.security.SecureRandom;
 
 @Slf4j
 @Service
@@ -27,6 +27,14 @@ public class AuthService {
     private final PasswordUtil passwordUtil;
     private final JwtUtils jwtUtils;
     private final EmailService emailService;
+
+    //SecureRandom usa una fuente criptografica: el codigo no se puede predecir
+    private static final SecureRandom GENERADOR_SEGURO = new SecureRandom();
+
+    //Genera un codigo de 6 digitos entre 000000 y 999999
+    private String generarCodigo() {
+        return String.format("%06d", GENERADOR_SEGURO.nextInt(1_000_000));
+    }
 
     public LoginResponseDTO login(LoginRequestDTO dto) {
         UsuarioEntity usuario = usuarioRepository.findByCorreo(dto.getCorreo())
@@ -53,7 +61,7 @@ public class AuthService {
         UsuarioEntity usuario = usuarioRepository.findByCorreo(correo)
                 .orElseThrow(() -> new RecursoNoEncontradoException("El correo proporcionado no esta registrado"));
 
-        String codigo = String.format("%06d", new Random().nextInt(999999));
+        String codigo = generarCodigo();
         
         emailService.enviarCorreoRecuperacion(correo, codigo, usuario.getNombreUsuario());
 
@@ -70,7 +78,7 @@ public class AuthService {
             UsuarioEntity usuario = usuarioRepository.findByCorreo(correo)
                     .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
                     
-            String nuevoCodigo = String.format("%06d", new Random().nextInt(999999));
+            String nuevoCodigo = generarCodigo();
             emailService.enviarCorreoRecuperacion(correo, nuevoCodigo, usuario.getNombreUsuario());
             
             return jwtUtils.createCodeVerificationToken(correo, nuevoCodigo);
@@ -87,10 +95,10 @@ public class AuthService {
                 throw new OperacionInvalidaException("Token invalido");
             }
             
-            String codigoCorrecto = claims.get("codigo", String.class);
+            String hashGuardado = claims.get("codigoHash", String.class);
             String correo = claims.getSubject();
 
-            if (!codigoCorrecto.equals(codigoIngresado)) {
+            if (!jwtUtils.codigoCoincide(correo, codigoIngresado, hashGuardado)) {
                 throw new OperacionInvalidaException("El codigo es incorrecto.");
             }
 

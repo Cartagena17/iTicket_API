@@ -20,7 +20,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/articulos")
 @RequiredArgsConstructor
-@CrossOrigin
 @Validated
 public class ArticuloController {
 
