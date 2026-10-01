@@ -41,7 +41,7 @@ public class SecurityConfig {
                                 escribirError(response, 403, "No tienes permisos para realizar esta accion"))
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/auth/recuperar-contrasena", "/api/auth/validar-codigo", "/api/auth/restablecer-contrasena").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/recuperar-contrasena", "/api/auth/reenviar-codigo", "/api/auth/validar-codigo", "/api/auth/restablecer-contrasena").permitAll()
 
                         /* Arranque del sistema: publicas a la fuerza, porque sirven cuando
                            todavia no existe ningun usuario que pueda iniciar sesion. El
@@ -109,3 +109,4 @@ public class SecurityConfig {
         response.getWriter().write("{\"success\":false,\"message\":\"" + mensaje + "\",\"data\":null}");
     }
 }
+
