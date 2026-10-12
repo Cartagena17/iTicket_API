@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +27,7 @@ public class ArticuloController {
     private final ArticuloService service;
 
     @PostMapping
+    //@PreAuthorize(hasAnyRole("Administrador", ""))
     public ResponseEntity<ApiResponse<ArticuloDTO>> nuevoArticulo(@Valid @RequestBody ArticuloDTO json) {
         ArticuloDTO dto = service.nuevoArticulo(json);
         log.info("Nuevo artículo registrado " + dto);
@@ -65,8 +67,8 @@ public class ArticuloController {
     }
 
     @GetMapping("/buscar")
-    public ResponseEntity<ApiResponse<List<ArticuloDTO>>> buscarPorCodigo(@RequestParam String codigo) {
-        List<ArticuloDTO> lista = service.buscarPorCodigoParcial(codigo);
+    public ResponseEntity<ApiResponse<List<ArticuloDTO>>> buscarPorCodigo(@RequestParam String codigo, @RequestParam Long idUbicacion) {
+        List<ArticuloDTO> lista = service.buscarPorCodigoParcial(codigo, idUbicacion);
         ApiResponse<List<ArticuloDTO>> respuesta = new ApiResponse<>(true, "Búsqueda completada", lista);
         return ResponseEntity.ok(respuesta);
     }

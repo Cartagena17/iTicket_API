@@ -70,4 +70,11 @@ public class UbicacionController {
         ApiResponse<UbicacionDTO> respuesta = new ApiResponse<>(true, "Se obtuvieron los datos de la Ubicacion con nombre: " + nombreUbicacion, data);
         return ResponseEntity.ok(respuesta);
     }
+
+    @GetMapping("/buscar")
+    public ResponseEntity<ApiResponse<List<UbicacionDTO>>> buscarPorNombre(@RequestParam String nombre) {
+        List<UbicacionDTO> lista = service.buscarPorNombreParcial(nombre);
+        ApiResponse<List<UbicacionDTO>> respuesta = new ApiResponse<>(true, "Búsqueda completada", lista);
+        return ResponseEntity.ok(respuesta);
+    }
 }

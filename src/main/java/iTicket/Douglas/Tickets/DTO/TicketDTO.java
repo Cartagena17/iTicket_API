@@ -62,6 +62,7 @@ public class TicketDTO {
     //Atributos que se muestran según el tipo de ticket
     private String descripcionUbicacion; //Si tipoTicket = "General"
     private List<String> codigosArticulos; //Si tipoTicket = "Articulo"
+    private Long idUbicacionArticulos; //Si tipoTicket = "Articulo": ubicación elegida; todos los códigos deben pertenecer a ella
     private Long idUbicacionSoftware; //Si tipoTicket = "Software"
     private List<DetalleTSDTO> detallesSoftware; //Si tipoTicket = "Software"
 

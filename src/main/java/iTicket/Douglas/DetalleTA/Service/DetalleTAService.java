@@ -104,13 +104,12 @@ public class DetalleTAService {
     }
 
     @Transactional
-    public void reemplazarDetalles(TicketEntity ticket, List<String> codigosArticulos) {
+    public void reemplazarDetalles(TicketEntity ticket, Long idUbicacion, List<String> codigosArticulos) {
         repo.deleteByTicket(ticket);
-
         for (String codigo : codigosArticulos) {
-            ArticuloEntity articulo = articuloRepo.findByCodigoArticulo(codigo)
-                    .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe ningún artículo con código: " + codigo));
-
+            ArticuloEntity articulo = articuloRepo.findByCodigoArticuloAndUbicacion_Id(codigo, idUbicacion)
+                    .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002,
+                            "No existe ningún artículo con código '" + codigo + "' en la ubicación seleccionada."));
             DetalleTAEntity entity = new DetalleTAEntity();
             entity.setTicket(ticket);
             entity.setArticulo(articulo);

@@ -27,5 +27,6 @@ public class TicketEdicionCreadorDTO {
     //Según tipoTicket
     private String descripcionUbicacion;
     private List<String> codigosArticulos;
+    private Long idUbicacionArticulos; //Si tipoTicket = "Articulo": ubicación elegida; todos los códigos deben pertenecer a ella
     private List<DetalleTSDTO> detallesSoftware;
 }
