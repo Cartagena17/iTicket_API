@@ -20,7 +20,7 @@ public interface UbicacionRepository extends JpaRepository<UbicacionEntity, Long
     @Query("""
         SELECT u FROM UbicacionEntity u
         WHERE UPPER(u.nombreUbicacion) LIKE UPPER(CONCAT(:fragmento, '%'))
-        OR UPPER(u.tipoUbicacion.nombreTipoUbicacion) LIKE UPPER(CONCAT('%', :fragmento, '%'))
+        OR UPPER(u.tipoUbicacion.nombreTipoUbicacion) LIKE UPPER(CONCAT(:fragmento, '%'))
         """)
     List<UbicacionEntity> buscarPorNombreOTipo(@Param("fragmento") String fragmento, Pageable pageable);
 }
