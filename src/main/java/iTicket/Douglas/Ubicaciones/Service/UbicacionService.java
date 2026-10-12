@@ -93,7 +93,7 @@ public class UbicacionService {
 
     public List<UbicacionDTO> buscarPorNombreParcial(String fragmento) {
         Pageable pageable = PageRequest.of(0, 10, Sort.by("nombreUbicacion").ascending());
-        List<UbicacionEntity> lista = repo.findByNombreUbicacionContainingIgnoreCase(fragmento, pageable);
+        List<UbicacionEntity> lista = repo.buscarPorNombreOTipo(fragmento, pageable);
         return lista.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
