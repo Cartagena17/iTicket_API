@@ -89,7 +89,7 @@ public class TicketService {
         switch (dto.getTipoTicket()) {
             case "General" -> {
                 if (dto.getDescripcionUbicacion() == null || dto.getDescripcionUbicacion().isBlank()) {
-                    throw new OperacionInvalidaException(ErrorCode.WTK001, "Debe indicar la ubicaciÃ³n del problema.");
+                    throw new OperacionInvalidaException(ErrorCode.WTK001, "Debe indicar la ubicación del problema.");
                 }
                 DetalleGDTO detalleDto = new DetalleGDTO();
                 detalleDto.setTicket(ticket.getIdTicket());
@@ -97,24 +97,16 @@ public class TicketService {
                 detalleGService.nuevoDetalleG(detalleDto);
             }
             case "Articulo" -> {
+                if (dto.getIdUbicacionArticulos() == null) {
+                    throw new OperacionInvalidaException(ErrorCode.WTK004, "Debe seleccionar la ubicación de los equipos/mobiliarios.");
+                }
                 if (dto.getCodigosArticulos() == null || dto.getCodigosArticulos().isEmpty()) {
-                    throw new OperacionInvalidaException(ErrorCode.WTK004, "Debe agregar al menos un cÃ³digo de equipo/mobiliario.");
+                    throw new OperacionInvalidaException(ErrorCode.WTK004, "Debe agregar al menos un código de equipo/mobiliario.");
                 }
-
-                List<ArticuloEntity> articulos = new ArrayList<>();
                 for (String codigo : dto.getCodigosArticulos()) {
-                    ArticuloEntity articulo = articuloRepo.findByCodigoArticulo(codigo)
-                            .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WGLB404, "No existe ningÃºn artÃ­culo con cÃ³digo: " + codigo));
-                    articulos.add(articulo);
-                }
-
-                long ubicacionesDistintas = articulos.stream().map(a -> a.getUbicacion().getId()).distinct().count();
-
-                if (ubicacionesDistintas > 1) {
-                    throw new OperacionInvalidaException(ErrorCode.WTK004, "Los artÃ­culos seleccionados deben estar en la misma ubicaciÃ³n. No puedes reportar en un solo ticket equipos de distintos lugares.");
-                }
-
-                for (ArticuloEntity articulo : articulos) {
+                    ArticuloEntity articulo = articuloRepo.findByCodigoArticuloAndUbicacion_Id(codigo, dto.getIdUbicacionArticulos())
+                            .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WGLB404,
+                                    "No existe ningún artículo con código '" + codigo + "' en la ubicación seleccionada."));
                     DetalleTADTO detalleDto = new DetalleTADTO();
                     detalleDto.setIdTicket(ticket.getIdTicket());
                     detalleDto.setIdArticulo(articulo.getIdArticulo());
@@ -401,7 +393,10 @@ public class TicketService {
                     throw new RecursoNoEncontradoException(ErrorCode.WTK008, "El ticket " + entity.getCodigo() + " es de tipo Articulo pero no tiene ningún detalle registrado.");
                 }
                 objDTO.setCodigosArticulos(detalles.stream().map(d -> d.getArticulo().getCodigoArticulo()).collect(Collectors.toList()));
-                detalles.stream().findFirst().ifPresent(d -> objDTO.setUbicacion(d.getArticulo().getUbicacion().getNombreUbicacion()));
+                detalles.stream().findFirst().ifPresent(d -> {
+                    objDTO.setUbicacion(d.getArticulo().getUbicacion().getNombreUbicacion());
+                    objDTO.setIdUbicacionArticulos(d.getArticulo().getUbicacion().getId()); // nuevo
+                });
                 break;
             case "Software":
                 List<DetalleTSEntity> detallesS = detalleTSRepo.findByTicket_IdTicket(entity.getIdTicket());
@@ -458,10 +453,13 @@ public class TicketService {
                 detalleGService.actualizarDetalle(detalleDto);
             }
             case "Articulo" -> {
+                if (dto.getIdUbicacionArticulos() == null) {
+                    throw new OperacionInvalidaException(ErrorCode.WTK004, "Debe seleccionar la ubicación de los equipos/mobiliarios.");
+                }
                 if (dto.getCodigosArticulos() == null || dto.getCodigosArticulos().isEmpty()) {
                     throw new OperacionInvalidaException(ErrorCode.WTK004, "Debe agregar al menos un código de equipo/mobiliario.");
                 }
-                detalleTAService.reemplazarDetalles(ticket, dto.getCodigosArticulos());
+                detalleTAService.reemplazarDetalles(ticket, dto.getIdUbicacionArticulos(), dto.getCodigosArticulos());
             }
             case "Software" -> {
                 if (dto.getDetallesSoftware() == null || dto.getDetallesSoftware().isEmpty()) {

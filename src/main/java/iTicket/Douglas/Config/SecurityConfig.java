@@ -23,7 +23,6 @@ public class  SecurityConfig {
 
     private final JwtCookieAuthFilter jwtCookieAuthFilter;
 
-    @Autowired
     public SecurityConfig(JwtCookieAuthFilter jwtCookieAuthFilter) {
         this.jwtCookieAuthFilter = jwtCookieAuthFilter;
     }

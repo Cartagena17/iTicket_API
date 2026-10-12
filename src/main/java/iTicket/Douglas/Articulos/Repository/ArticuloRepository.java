@@ -11,8 +11,8 @@ import java.util.Optional;
 
 @Repository
 public interface ArticuloRepository extends JpaRepository<ArticuloEntity, Long>, JpaSpecificationExecutor<ArticuloEntity> {
-    List<ArticuloEntity> findByCodigoArticuloContainingIgnoreCase(String fragmento, Pageable pageable);
-    Optional<ArticuloEntity> findByCodigoArticulo(String codigo);
-    boolean existsByCodigoArticuloIgnoreCase(String codigoArticulo);
-    boolean existsByCodigoArticuloIgnoreCaseAndIdArticuloNot(String codigoArticulo, Long idArticulo);
+    List<ArticuloEntity> findByUbicacion_IdAndCodigoArticuloContainingIgnoreCase(Long idUbicacion, String fragmento, Pageable pageable);
+    Optional<ArticuloEntity> findByCodigoArticuloAndUbicacion_Id(String codigoArticulo, Long idUbicacion);
+    boolean existsByCodigoArticuloIgnoreCaseAndUbicacion_Id(String codigoArticulo, Long idUbicacion);
+    boolean existsByCodigoArticuloIgnoreCaseAndUbicacion_IdAndIdArticuloNot(String codigoArticulo, Long idUbicacion, Long idArticulo);
 }

@@ -50,8 +50,8 @@ public class ArticuloService {
     @Transactional
     public ArticuloDTO nuevoArticulo(@Valid ArticuloDTO dto) {
         String codigo = dto.getCodigoArticulo().trim();
-        if (repo.existsByCodigoArticuloIgnoreCase(codigo)) {
-            throw new RecursoDuplicadoException("El artículo con código '" + codigo + "' ya está registrado.");
+        if (repo.existsByCodigoArticuloIgnoreCaseAndUbicacion_Id(codigo, dto.getIdUbicacion())) {
+            throw new RecursoDuplicadoException("Ya existe un artículo con código '" + codigo + "' en esa ubicación.");
         }
         dto.setCodigoArticulo(codigo);
         CategoriaEntity categoria = categoriaRepo.findById(dto.getIdCategoria())
@@ -89,8 +89,8 @@ public class ArticuloService {
                 .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe un artículo con id " + id));
 
         String codigo = dto.getCodigoArticulo().trim();
-        if (repo.existsByCodigoArticuloIgnoreCaseAndIdArticuloNot(codigo, id)) {
-            throw new RecursoDuplicadoException("El artículo con código '" + codigo + "' ya está registrado.");
+        if (repo.existsByCodigoArticuloIgnoreCaseAndUbicacion_IdAndIdArticuloNot(codigo, dto.getIdUbicacion(), id)) {
+            throw new RecursoDuplicadoException("Ya existe un artículo con código '" + codigo + "' en esa ubicación.");
         }
 
         if (dto.getIdCategoria() != null) {
@@ -119,9 +119,9 @@ public class ArticuloService {
         return convertirADTO(datosGuardados);
     }
 
-    public List<ArticuloDTO> buscarPorCodigoParcial(String fragmento) {
+    public List<ArticuloDTO> buscarPorCodigoParcial(String fragmento, Long idUbicacion) {
         Pageable pageable = PageRequest.of(0, 10, Sort.by("codigoArticulo").ascending());
-        List<ArticuloEntity> lista = repo.findByCodigoArticuloContainingIgnoreCase(fragmento, pageable);
+        List<ArticuloEntity> lista = repo.findByUbicacion_IdAndCodigoArticuloContainingIgnoreCase(idUbicacion, fragmento, pageable);
         return lista.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 

@@ -11,6 +11,9 @@ import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -86,6 +89,12 @@ public class UbicacionService {
         UbicacionEntity entidad = repo.findByNombreUbicacion(nombreUbicacion)
                 .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WMAR002, "No existe ninguna ubicación con nombre: " + nombreUbicacion));
         return convertirADTO(entidad);
+    }
+
+    public List<UbicacionDTO> buscarPorNombreParcial(String fragmento) {
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("nombreUbicacion").ascending());
+        List<UbicacionEntity> lista = repo.buscarPorNombreOTipo(fragmento, pageable);
+        return lista.stream().map(this::convertirADTO).collect(Collectors.toList());
     }
 
     private UbicacionEntity convertirAEntity(@Valid UbicacionDTO dto, TipoUbicacionEntity tipo) {
