@@ -28,6 +28,7 @@ public enum ErrorCode {
     // Usuarios y Roles (WUSRxxx)
     WUSR001("Rol de sistema incompatible con el departamento asignado."),
     WUSR002("Usuario o Rol no encontrado en los registros."),
+    WUSR003("Un administrador no puede editar, desactivar ni eliminar su propia cuenta."),
 
     // Departamentos (WDEPxxx)
     WDEP001("Departamento o Área no encontrado."),

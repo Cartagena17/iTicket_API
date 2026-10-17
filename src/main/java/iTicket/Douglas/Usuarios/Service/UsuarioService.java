@@ -6,6 +6,7 @@ import iTicket.Douglas.Exception.OperacionInvalidaException;
 import iTicket.Douglas.Exception.RecursoNoEncontradoException;
 import iTicket.Douglas.Roles.Entity.RolEntity;
 import iTicket.Douglas.Roles.Repository.RolRepository;
+import iTicket.Douglas.Security.AuthenticatedUser;
 import iTicket.Douglas.Usuarios.DTO.CambioContraseñaDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioDTO;
 import iTicket.Douglas.Usuarios.DTO.UsuarioPatchDTO;
@@ -18,6 +19,8 @@ import iTicket.Douglas.util.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,6 +39,19 @@ public class UsuarioService {
     private final DepartamentoRepository departamentoRepo;
     private final PasswordUtil passwordUtil;
     private final CloudinaryService cloudinaryService;
+
+    /* Un administrador no puede editarse, desactivarse ni eliminarse a si mismo desde la
+       gestion de usuarios (podria quitarse el rol o dejar el sistema sin administrador).
+       El id del usuario logueado sale del JWT de la cookie, no de lo que mande el frontend.
+       Sus datos propios los cambia por el autoservicio: clave e imagen de perfil. */
+    private void impedirAutogestion(Long idObjetivo) {
+        Authentication autenticacion = SecurityContextHolder.getContext().getAuthentication();
+        if (autenticacion != null && autenticacion.getPrincipal() instanceof AuthenticatedUser usuario
+                && usuario.idUsuario() != null && usuario.idUsuario().equals(idObjetivo)) {
+            throw new OperacionInvalidaException(ErrorCode.WUSR003,
+                    "No puedes editar, desactivar ni eliminar tu propia cuenta.");
+        }
+    }
 
     @Transactional
     public UsuarioDTO nuevoUsuario(@Valid UsuarioDTO dto) {
@@ -66,6 +82,7 @@ public class UsuarioService {
 
     @Transactional
     public UsuarioDTO actualizarData(Long id, @Valid UsuarioUpdateDTO dto) {
+        impedirAutogestion(id);
         UsuarioEntity entidad = repo.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WUSR002, "No existe un usuario con id " + id));
 
@@ -99,6 +116,7 @@ public class UsuarioService {
 
     @Transactional
     public UsuarioDTO actualizarParcial(Long id, UsuarioPatchDTO dto) {
+        impedirAutogestion(id);
         UsuarioEntity entidad = repo.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException(ErrorCode.WUSR002, "No existe un usuario con id " + id));
 
@@ -154,6 +172,7 @@ public class UsuarioService {
 
     @Transactional
     public boolean eliminarUsuario(Long id) {
+        impedirAutogestion(id);
         if (repo.existsById(id)) {
             repo.deleteById(id);
             return true;
